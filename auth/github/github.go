@@ -27,11 +27,18 @@ func VerifyUser(token string) (GitHubUser, error) {
 	if err != nil {
 		return GitHubUser{}, err
 	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		var v struct {
+			Message string `json:"message"`
+		}
+		_ = json.NewDecoder(resp.Body).Decode(&v)
+		return GitHubUser{}, fmt.Errorf("github: failed to authenticate (%d): %s", resp.StatusCode, v.Message)
+	}
 	var user struct {
 		Login string `json:"login"`
 		Id    uint64 `json:"id"`
 	}
-	defer resp.Body.Close()
 	err = json.NewDecoder(resp.Body).Decode(&user)
 	return GitHubUser{ID: user.Id, Username: user.Login}, err
 }
