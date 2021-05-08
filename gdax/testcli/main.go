@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/ahmetb/paperbtctrade/gdax"
+	"github.com/ahmetb/grpcoin/gdax"
 )
 
 func main() {

@@ -70,8 +70,9 @@ func StartWatch(ctx context.Context, product string) (<-chan Quote, error) {
 			}
 			var message coinbasepro.Message
 			if err := wsConn.ReadJSON(&message); err != nil {
-				log.Printf("warn: json parse err: %v", err)
-				continue
+				log.Printf("warn: json read/parse err: %v", err)
+				close(ch)
+				return
 			}
 			if message.Type != "ticker" {
 				continue
