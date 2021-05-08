@@ -4,7 +4,7 @@ variable "project" {
 }
 
 variable "billing_account" {
-  default = "005E60-364ED9-72CEA0"
+  default = "0050EC-505932-A9F334"
 }
 
 provider "google" {
@@ -27,6 +27,11 @@ resource "google_project_service" "firestore" {
   service = "firestore.googleapis.com"
 }
 
+resource "google_project_service" "redis" {
+  project = var.project
+  service = "redis.googleapis.com"
+}
+
 # TODO enable later when setting up a clean project
 resource "google_app_engine_application" "app" {
   project       = var.project
@@ -43,6 +48,9 @@ resource "google_compute_network" "vpc" {
 }
 
 resource "google_redis_instance" "cache" {
+  depends_on = [
+    google_project_service.redis
+  ]
   project            = var.project
   name               = "cache"
   region             = "us-west2"
