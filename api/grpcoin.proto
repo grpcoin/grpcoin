@@ -4,38 +4,20 @@ option go_package = "api/grpcoin";
 
 import "google/protobuf/timestamp.proto";
 
-service TickerInfo {
-    rpc Watch(Ticker) returns (stream TickerQuote){}
-}
+// service TickerInfo {
+//     rpc Watch(Ticker) returns (stream TickerQuote){}
+// }
 
 service Account {
     rpc TestAuth(TestAuthRequest) returns (TestAuthResponse) {}
 }
 
-service PaperTrade {
-    rpc Portfolio(PortfolioRequest) returns (PortfolioResponse) {}
-    // order history
-    // trading methods sell/buy
-}
+// service PaperTrade {
+//     rpc Portfolio(PortfolioRequest) returns (PortfolioResponse) {}
+//     // order history
+//     // trading methods sell/buy
+// }
 
-message Empty {}
-message TestAuthRequest {}
-message TestAuthResponse {}
-
-message Ticker {
-    string ticker = 1; // e.g. BTC
-}
-
-message TickerQuote {
-    google.protobuf.Timestamp t = 10;
-    Amount price = 20;
-}
-
-message PortfolioRequest {}
-
-message PortfolioResponse {
-    repeated PortfolioPosition positions = 1;
-}
 
 message Amount {
     // The whole units of the amount.
@@ -51,7 +33,26 @@ message Amount {
     int32 nanos = 2;
 }
 
-message PortfolioPosition {
-    Ticker ticker = 1;
-    Amount amount = 2;
-}
+message Empty {}
+message TestAuthRequest {}
+message TestAuthResponse {}
+
+// message Ticker {
+//     string ticker = 1; // e.g. BTC
+// }
+
+// message TickerQuote {
+//     google.protobuf.Timestamp t = 10;
+//     Amount price = 20;
+// }
+
+// message PortfolioRequest {}
+
+// message PortfolioResponse {
+//     repeated PortfolioPosition positions = 1;
+// }
+
+// message PortfolioPosition {
+//     Ticker ticker = 1;
+//     Amount amount = 2;
+// }

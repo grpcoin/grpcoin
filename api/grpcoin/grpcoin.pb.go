@@ -9,7 +9,7 @@ package grpcoin
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	_ "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 )
@@ -20,307 +20,6 @@ const (
 	// Verify that runtime/protoimpl is sufficiently up-to-date.
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
-
-type Empty struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-}
-
-func (x *Empty) Reset() {
-	*x = Empty{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_grpcoin_proto_msgTypes[0]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *Empty) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Empty) ProtoMessage() {}
-
-func (x *Empty) ProtoReflect() protoreflect.Message {
-	mi := &file_grpcoin_proto_msgTypes[0]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Empty.ProtoReflect.Descriptor instead.
-func (*Empty) Descriptor() ([]byte, []int) {
-	return file_grpcoin_proto_rawDescGZIP(), []int{0}
-}
-
-type TestAuthRequest struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-}
-
-func (x *TestAuthRequest) Reset() {
-	*x = TestAuthRequest{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_grpcoin_proto_msgTypes[1]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *TestAuthRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*TestAuthRequest) ProtoMessage() {}
-
-func (x *TestAuthRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grpcoin_proto_msgTypes[1]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use TestAuthRequest.ProtoReflect.Descriptor instead.
-func (*TestAuthRequest) Descriptor() ([]byte, []int) {
-	return file_grpcoin_proto_rawDescGZIP(), []int{1}
-}
-
-type TestAuthResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-}
-
-func (x *TestAuthResponse) Reset() {
-	*x = TestAuthResponse{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_grpcoin_proto_msgTypes[2]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *TestAuthResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*TestAuthResponse) ProtoMessage() {}
-
-func (x *TestAuthResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grpcoin_proto_msgTypes[2]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use TestAuthResponse.ProtoReflect.Descriptor instead.
-func (*TestAuthResponse) Descriptor() ([]byte, []int) {
-	return file_grpcoin_proto_rawDescGZIP(), []int{2}
-}
-
-type Ticker struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Ticker string `protobuf:"bytes,1,opt,name=ticker,proto3" json:"ticker,omitempty"` // e.g. BTC
-}
-
-func (x *Ticker) Reset() {
-	*x = Ticker{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_grpcoin_proto_msgTypes[3]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *Ticker) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Ticker) ProtoMessage() {}
-
-func (x *Ticker) ProtoReflect() protoreflect.Message {
-	mi := &file_grpcoin_proto_msgTypes[3]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Ticker.ProtoReflect.Descriptor instead.
-func (*Ticker) Descriptor() ([]byte, []int) {
-	return file_grpcoin_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *Ticker) GetTicker() string {
-	if x != nil {
-		return x.Ticker
-	}
-	return ""
-}
-
-type TickerQuote struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	T     *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=t,proto3" json:"t,omitempty"`
-	Price *Amount                `protobuf:"bytes,20,opt,name=price,proto3" json:"price,omitempty"`
-}
-
-func (x *TickerQuote) Reset() {
-	*x = TickerQuote{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_grpcoin_proto_msgTypes[4]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *TickerQuote) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*TickerQuote) ProtoMessage() {}
-
-func (x *TickerQuote) ProtoReflect() protoreflect.Message {
-	mi := &file_grpcoin_proto_msgTypes[4]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use TickerQuote.ProtoReflect.Descriptor instead.
-func (*TickerQuote) Descriptor() ([]byte, []int) {
-	return file_grpcoin_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *TickerQuote) GetT() *timestamppb.Timestamp {
-	if x != nil {
-		return x.T
-	}
-	return nil
-}
-
-func (x *TickerQuote) GetPrice() *Amount {
-	if x != nil {
-		return x.Price
-	}
-	return nil
-}
-
-type PortfolioRequest struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-}
-
-func (x *PortfolioRequest) Reset() {
-	*x = PortfolioRequest{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_grpcoin_proto_msgTypes[5]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *PortfolioRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PortfolioRequest) ProtoMessage() {}
-
-func (x *PortfolioRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grpcoin_proto_msgTypes[5]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PortfolioRequest.ProtoReflect.Descriptor instead.
-func (*PortfolioRequest) Descriptor() ([]byte, []int) {
-	return file_grpcoin_proto_rawDescGZIP(), []int{5}
-}
-
-type PortfolioResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Positions []*PortfolioPosition `protobuf:"bytes,1,rep,name=positions,proto3" json:"positions,omitempty"`
-}
-
-func (x *PortfolioResponse) Reset() {
-	*x = PortfolioResponse{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_grpcoin_proto_msgTypes[6]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *PortfolioResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PortfolioResponse) ProtoMessage() {}
-
-func (x *PortfolioResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grpcoin_proto_msgTypes[6]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PortfolioResponse.ProtoReflect.Descriptor instead.
-func (*PortfolioResponse) Descriptor() ([]byte, []int) {
-	return file_grpcoin_proto_rawDescGZIP(), []int{6}
-}
-
-func (x *PortfolioResponse) GetPositions() []*PortfolioPosition {
-	if x != nil {
-		return x.Positions
-	}
-	return nil
-}
 
 type Amount struct {
 	state         protoimpl.MessageState
@@ -342,7 +41,7 @@ type Amount struct {
 func (x *Amount) Reset() {
 	*x = Amount{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_grpcoin_proto_msgTypes[7]
+		mi := &file_grpcoin_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -355,7 +54,7 @@ func (x *Amount) String() string {
 func (*Amount) ProtoMessage() {}
 
 func (x *Amount) ProtoReflect() protoreflect.Message {
-	mi := &file_grpcoin_proto_msgTypes[7]
+	mi := &file_grpcoin_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -368,7 +67,7 @@ func (x *Amount) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Amount.ProtoReflect.Descriptor instead.
 func (*Amount) Descriptor() ([]byte, []int) {
-	return file_grpcoin_proto_rawDescGZIP(), []int{7}
+	return file_grpcoin_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *Amount) GetUnits() int64 {
@@ -385,32 +84,29 @@ func (x *Amount) GetNanos() int32 {
 	return 0
 }
 
-type PortfolioPosition struct {
+type Empty struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
-
-	Ticker *Ticker `protobuf:"bytes,1,opt,name=ticker,proto3" json:"ticker,omitempty"`
-	Amount *Amount `protobuf:"bytes,2,opt,name=amount,proto3" json:"amount,omitempty"`
 }
 
-func (x *PortfolioPosition) Reset() {
-	*x = PortfolioPosition{}
+func (x *Empty) Reset() {
+	*x = Empty{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_grpcoin_proto_msgTypes[8]
+		mi := &file_grpcoin_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *PortfolioPosition) String() string {
+func (x *Empty) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*PortfolioPosition) ProtoMessage() {}
+func (*Empty) ProtoMessage() {}
 
-func (x *PortfolioPosition) ProtoReflect() protoreflect.Message {
-	mi := &file_grpcoin_proto_msgTypes[8]
+func (x *Empty) ProtoReflect() protoreflect.Message {
+	mi := &file_grpcoin_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -421,23 +117,85 @@ func (x *PortfolioPosition) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use PortfolioPosition.ProtoReflect.Descriptor instead.
-func (*PortfolioPosition) Descriptor() ([]byte, []int) {
-	return file_grpcoin_proto_rawDescGZIP(), []int{8}
+// Deprecated: Use Empty.ProtoReflect.Descriptor instead.
+func (*Empty) Descriptor() ([]byte, []int) {
+	return file_grpcoin_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *PortfolioPosition) GetTicker() *Ticker {
-	if x != nil {
-		return x.Ticker
-	}
-	return nil
+type TestAuthRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
 }
 
-func (x *PortfolioPosition) GetAmount() *Amount {
-	if x != nil {
-		return x.Amount
+func (x *TestAuthRequest) Reset() {
+	*x = TestAuthRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_grpcoin_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
 	}
-	return nil
+}
+
+func (x *TestAuthRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TestAuthRequest) ProtoMessage() {}
+
+func (x *TestAuthRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_grpcoin_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TestAuthRequest.ProtoReflect.Descriptor instead.
+func (*TestAuthRequest) Descriptor() ([]byte, []int) {
+	return file_grpcoin_proto_rawDescGZIP(), []int{2}
+}
+
+type TestAuthResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *TestAuthResponse) Reset() {
+	*x = TestAuthResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_grpcoin_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *TestAuthResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TestAuthResponse) ProtoMessage() {}
+
+func (x *TestAuthResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_grpcoin_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TestAuthResponse.ProtoReflect.Descriptor instead.
+func (*TestAuthResponse) Descriptor() ([]byte, []int) {
+	return file_grpcoin_proto_rawDescGZIP(), []int{3}
 }
 
 var File_grpcoin_proto protoreflect.FileDescriptor
@@ -446,50 +204,20 @@ var file_grpcoin_proto_rawDesc = []byte{
 	0x0a, 0x0d, 0x67, 0x72, 0x70, 0x63, 0x6f, 0x69, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12,
 	0x07, 0x67, 0x72, 0x70, 0x63, 0x6f, 0x69, 0x6e, 0x1a, 0x1f, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65,
 	0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f, 0x74, 0x69, 0x6d, 0x65, 0x73, 0x74,
-	0x61, 0x6d, 0x70, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x07, 0x0a, 0x05, 0x45, 0x6d, 0x70,
-	0x74, 0x79, 0x22, 0x11, 0x0a, 0x0f, 0x54, 0x65, 0x73, 0x74, 0x41, 0x75, 0x74, 0x68, 0x52, 0x65,
-	0x71, 0x75, 0x65, 0x73, 0x74, 0x22, 0x12, 0x0a, 0x10, 0x54, 0x65, 0x73, 0x74, 0x41, 0x75, 0x74,
-	0x68, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x20, 0x0a, 0x06, 0x54, 0x69, 0x63,
-	0x6b, 0x65, 0x72, 0x12, 0x16, 0x0a, 0x06, 0x74, 0x69, 0x63, 0x6b, 0x65, 0x72, 0x18, 0x01, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x06, 0x74, 0x69, 0x63, 0x6b, 0x65, 0x72, 0x22, 0x5e, 0x0a, 0x0b, 0x54,
-	0x69, 0x63, 0x6b, 0x65, 0x72, 0x51, 0x75, 0x6f, 0x74, 0x65, 0x12, 0x28, 0x0a, 0x01, 0x74, 0x18,
-	0x0a, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d,
-	0x70, 0x52, 0x01, 0x74, 0x12, 0x25, 0x0a, 0x05, 0x70, 0x72, 0x69, 0x63, 0x65, 0x18, 0x14, 0x20,
-	0x01, 0x28, 0x0b, 0x32, 0x0f, 0x2e, 0x67, 0x72, 0x70, 0x63, 0x6f, 0x69, 0x6e, 0x2e, 0x41, 0x6d,
-	0x6f, 0x75, 0x6e, 0x74, 0x52, 0x05, 0x70, 0x72, 0x69, 0x63, 0x65, 0x22, 0x12, 0x0a, 0x10, 0x50,
-	0x6f, 0x72, 0x74, 0x66, 0x6f, 0x6c, 0x69, 0x6f, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x22,
-	0x4d, 0x0a, 0x11, 0x50, 0x6f, 0x72, 0x74, 0x66, 0x6f, 0x6c, 0x69, 0x6f, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x12, 0x38, 0x0a, 0x09, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e,
-	0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x72, 0x70, 0x63, 0x6f, 0x69,
-	0x6e, 0x2e, 0x50, 0x6f, 0x72, 0x74, 0x66, 0x6f, 0x6c, 0x69, 0x6f, 0x50, 0x6f, 0x73, 0x69, 0x74,
-	0x69, 0x6f, 0x6e, 0x52, 0x09, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x22, 0x34,
-	0x0a, 0x06, 0x41, 0x6d, 0x6f, 0x75, 0x6e, 0x74, 0x12, 0x14, 0x0a, 0x05, 0x75, 0x6e, 0x69, 0x74,
-	0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x05, 0x75, 0x6e, 0x69, 0x74, 0x73, 0x12, 0x14,
-	0x0a, 0x05, 0x6e, 0x61, 0x6e, 0x6f, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x05, 0x6e,
-	0x61, 0x6e, 0x6f, 0x73, 0x22, 0x65, 0x0a, 0x11, 0x50, 0x6f, 0x72, 0x74, 0x66, 0x6f, 0x6c, 0x69,
-	0x6f, 0x50, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x27, 0x0a, 0x06, 0x74, 0x69, 0x63,
-	0x6b, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0f, 0x2e, 0x67, 0x72, 0x70, 0x63,
-	0x6f, 0x69, 0x6e, 0x2e, 0x54, 0x69, 0x63, 0x6b, 0x65, 0x72, 0x52, 0x06, 0x74, 0x69, 0x63, 0x6b,
-	0x65, 0x72, 0x12, 0x27, 0x0a, 0x06, 0x61, 0x6d, 0x6f, 0x75, 0x6e, 0x74, 0x18, 0x02, 0x20, 0x01,
-	0x28, 0x0b, 0x32, 0x0f, 0x2e, 0x67, 0x72, 0x70, 0x63, 0x6f, 0x69, 0x6e, 0x2e, 0x41, 0x6d, 0x6f,
-	0x75, 0x6e, 0x74, 0x52, 0x06, 0x61, 0x6d, 0x6f, 0x75, 0x6e, 0x74, 0x32, 0x40, 0x0a, 0x0a, 0x54,
-	0x69, 0x63, 0x6b, 0x65, 0x72, 0x49, 0x6e, 0x66, 0x6f, 0x12, 0x32, 0x0a, 0x05, 0x57, 0x61, 0x74,
-	0x63, 0x68, 0x12, 0x0f, 0x2e, 0x67, 0x72, 0x70, 0x63, 0x6f, 0x69, 0x6e, 0x2e, 0x54, 0x69, 0x63,
-	0x6b, 0x65, 0x72, 0x1a, 0x14, 0x2e, 0x67, 0x72, 0x70, 0x63, 0x6f, 0x69, 0x6e, 0x2e, 0x54, 0x69,
-	0x63, 0x6b, 0x65, 0x72, 0x51, 0x75, 0x6f, 0x74, 0x65, 0x22, 0x00, 0x30, 0x01, 0x32, 0x4c, 0x0a,
-	0x07, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x12, 0x41, 0x0a, 0x08, 0x54, 0x65, 0x73, 0x74,
-	0x41, 0x75, 0x74, 0x68, 0x12, 0x18, 0x2e, 0x67, 0x72, 0x70, 0x63, 0x6f, 0x69, 0x6e, 0x2e, 0x54,
-	0x65, 0x73, 0x74, 0x41, 0x75, 0x74, 0x68, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x19,
-	0x2e, 0x67, 0x72, 0x70, 0x63, 0x6f, 0x69, 0x6e, 0x2e, 0x54, 0x65, 0x73, 0x74, 0x41, 0x75, 0x74,
-	0x68, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x32, 0x52, 0x0a, 0x0a, 0x50,
-	0x61, 0x70, 0x65, 0x72, 0x54, 0x72, 0x61, 0x64, 0x65, 0x12, 0x44, 0x0a, 0x09, 0x50, 0x6f, 0x72,
-	0x74, 0x66, 0x6f, 0x6c, 0x69, 0x6f, 0x12, 0x19, 0x2e, 0x67, 0x72, 0x70, 0x63, 0x6f, 0x69, 0x6e,
-	0x2e, 0x50, 0x6f, 0x72, 0x74, 0x66, 0x6f, 0x6c, 0x69, 0x6f, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
-	0x74, 0x1a, 0x1a, 0x2e, 0x67, 0x72, 0x70, 0x63, 0x6f, 0x69, 0x6e, 0x2e, 0x50, 0x6f, 0x72, 0x74,
-	0x66, 0x6f, 0x6c, 0x69, 0x6f, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x42,
-	0x0d, 0x5a, 0x0b, 0x61, 0x70, 0x69, 0x2f, 0x67, 0x72, 0x70, 0x63, 0x6f, 0x69, 0x6e, 0x62, 0x06,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x61, 0x6d, 0x70, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x34, 0x0a, 0x06, 0x41, 0x6d, 0x6f,
+	0x75, 0x6e, 0x74, 0x12, 0x14, 0x0a, 0x05, 0x75, 0x6e, 0x69, 0x74, 0x73, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x03, 0x52, 0x05, 0x75, 0x6e, 0x69, 0x74, 0x73, 0x12, 0x14, 0x0a, 0x05, 0x6e, 0x61, 0x6e,
+	0x6f, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x05, 0x6e, 0x61, 0x6e, 0x6f, 0x73, 0x22,
+	0x07, 0x0a, 0x05, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x22, 0x11, 0x0a, 0x0f, 0x54, 0x65, 0x73, 0x74,
+	0x41, 0x75, 0x74, 0x68, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x22, 0x12, 0x0a, 0x10, 0x54,
+	0x65, 0x73, 0x74, 0x41, 0x75, 0x74, 0x68, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x32,
+	0x4c, 0x0a, 0x07, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x12, 0x41, 0x0a, 0x08, 0x54, 0x65,
+	0x73, 0x74, 0x41, 0x75, 0x74, 0x68, 0x12, 0x18, 0x2e, 0x67, 0x72, 0x70, 0x63, 0x6f, 0x69, 0x6e,
+	0x2e, 0x54, 0x65, 0x73, 0x74, 0x41, 0x75, 0x74, 0x68, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
+	0x1a, 0x19, 0x2e, 0x67, 0x72, 0x70, 0x63, 0x6f, 0x69, 0x6e, 0x2e, 0x54, 0x65, 0x73, 0x74, 0x41,
+	0x75, 0x74, 0x68, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x42, 0x0d, 0x5a,
+	0x0b, 0x61, 0x70, 0x69, 0x2f, 0x67, 0x72, 0x70, 0x63, 0x6f, 0x69, 0x6e, 0x62, 0x06, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -504,36 +232,21 @@ func file_grpcoin_proto_rawDescGZIP() []byte {
 	return file_grpcoin_proto_rawDescData
 }
 
-var file_grpcoin_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_grpcoin_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_grpcoin_proto_goTypes = []interface{}{
-	(*Empty)(nil),                 // 0: grpcoin.Empty
-	(*TestAuthRequest)(nil),       // 1: grpcoin.TestAuthRequest
-	(*TestAuthResponse)(nil),      // 2: grpcoin.TestAuthResponse
-	(*Ticker)(nil),                // 3: grpcoin.Ticker
-	(*TickerQuote)(nil),           // 4: grpcoin.TickerQuote
-	(*PortfolioRequest)(nil),      // 5: grpcoin.PortfolioRequest
-	(*PortfolioResponse)(nil),     // 6: grpcoin.PortfolioResponse
-	(*Amount)(nil),                // 7: grpcoin.Amount
-	(*PortfolioPosition)(nil),     // 8: grpcoin.PortfolioPosition
-	(*timestamppb.Timestamp)(nil), // 9: google.protobuf.Timestamp
+	(*Amount)(nil),           // 0: grpcoin.Amount
+	(*Empty)(nil),            // 1: grpcoin.Empty
+	(*TestAuthRequest)(nil),  // 2: grpcoin.TestAuthRequest
+	(*TestAuthResponse)(nil), // 3: grpcoin.TestAuthResponse
 }
 var file_grpcoin_proto_depIdxs = []int32{
-	9, // 0: grpcoin.TickerQuote.t:type_name -> google.protobuf.Timestamp
-	7, // 1: grpcoin.TickerQuote.price:type_name -> grpcoin.Amount
-	8, // 2: grpcoin.PortfolioResponse.positions:type_name -> grpcoin.PortfolioPosition
-	3, // 3: grpcoin.PortfolioPosition.ticker:type_name -> grpcoin.Ticker
-	7, // 4: grpcoin.PortfolioPosition.amount:type_name -> grpcoin.Amount
-	3, // 5: grpcoin.TickerInfo.Watch:input_type -> grpcoin.Ticker
-	1, // 6: grpcoin.Account.TestAuth:input_type -> grpcoin.TestAuthRequest
-	5, // 7: grpcoin.PaperTrade.Portfolio:input_type -> grpcoin.PortfolioRequest
-	4, // 8: grpcoin.TickerInfo.Watch:output_type -> grpcoin.TickerQuote
-	2, // 9: grpcoin.Account.TestAuth:output_type -> grpcoin.TestAuthResponse
-	6, // 10: grpcoin.PaperTrade.Portfolio:output_type -> grpcoin.PortfolioResponse
-	8, // [8:11] is the sub-list for method output_type
-	5, // [5:8] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	2, // 0: grpcoin.Account.TestAuth:input_type -> grpcoin.TestAuthRequest
+	3, // 1: grpcoin.Account.TestAuth:output_type -> grpcoin.TestAuthResponse
+	1, // [1:2] is the sub-list for method output_type
+	0, // [0:1] is the sub-list for method input_type
+	0, // [0:0] is the sub-list for extension type_name
+	0, // [0:0] is the sub-list for extension extendee
+	0, // [0:0] is the sub-list for field type_name
 }
 
 func init() { file_grpcoin_proto_init() }
@@ -543,90 +256,6 @@ func file_grpcoin_proto_init() {
 	}
 	if !protoimpl.UnsafeEnabled {
 		file_grpcoin_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Empty); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_grpcoin_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TestAuthRequest); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_grpcoin_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TestAuthResponse); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_grpcoin_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Ticker); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_grpcoin_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TickerQuote); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_grpcoin_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PortfolioRequest); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_grpcoin_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PortfolioResponse); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_grpcoin_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Amount); i {
 			case 0:
 				return &v.state
@@ -638,8 +267,32 @@ func file_grpcoin_proto_init() {
 				return nil
 			}
 		}
-		file_grpcoin_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PortfolioPosition); i {
+		file_grpcoin_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Empty); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_grpcoin_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*TestAuthRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_grpcoin_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*TestAuthResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -657,9 +310,9 @@ func file_grpcoin_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_grpcoin_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   4,
 			NumExtensions: 0,
-			NumServices:   3,
+			NumServices:   1,
 		},
 		GoTypes:           file_grpcoin_proto_goTypes,
 		DependencyIndexes: file_grpcoin_proto_depIdxs,
