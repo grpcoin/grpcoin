@@ -21,6 +21,7 @@ func TestTestAuth(t *testing.T) {
 	grpcoin.RegisterAccountServer(srv, newAccountService(accountServiceOpts{}))
 	go srv.Serve(l)
 	defer srv.Stop()
+	defer l.Close()
 
 	cc, err := grpc.Dial(l.Addr().String(), grpc.WithInsecure())
 	if err != nil {

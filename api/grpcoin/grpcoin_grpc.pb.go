@@ -14,6 +14,119 @@ import (
 // Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
+// TickerInfoClient is the client API for TickerInfo service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type TickerInfoClient interface {
+	Watch(ctx context.Context, in *Ticker, opts ...grpc.CallOption) (TickerInfo_WatchClient, error)
+}
+
+type tickerInfoClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewTickerInfoClient(cc grpc.ClientConnInterface) TickerInfoClient {
+	return &tickerInfoClient{cc}
+}
+
+func (c *tickerInfoClient) Watch(ctx context.Context, in *Ticker, opts ...grpc.CallOption) (TickerInfo_WatchClient, error) {
+	stream, err := c.cc.NewStream(ctx, &TickerInfo_ServiceDesc.Streams[0], "/grpcoin.TickerInfo/Watch", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &tickerInfoWatchClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type TickerInfo_WatchClient interface {
+	Recv() (*TickerQuote, error)
+	grpc.ClientStream
+}
+
+type tickerInfoWatchClient struct {
+	grpc.ClientStream
+}
+
+func (x *tickerInfoWatchClient) Recv() (*TickerQuote, error) {
+	m := new(TickerQuote)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// TickerInfoServer is the server API for TickerInfo service.
+// All implementations must embed UnimplementedTickerInfoServer
+// for forward compatibility
+type TickerInfoServer interface {
+	Watch(*Ticker, TickerInfo_WatchServer) error
+	mustEmbedUnimplementedTickerInfoServer()
+}
+
+// UnimplementedTickerInfoServer must be embedded to have forward compatible implementations.
+type UnimplementedTickerInfoServer struct {
+}
+
+func (UnimplementedTickerInfoServer) Watch(*Ticker, TickerInfo_WatchServer) error {
+	return status.Errorf(codes.Unimplemented, "method Watch not implemented")
+}
+func (UnimplementedTickerInfoServer) mustEmbedUnimplementedTickerInfoServer() {}
+
+// UnsafeTickerInfoServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to TickerInfoServer will
+// result in compilation errors.
+type UnsafeTickerInfoServer interface {
+	mustEmbedUnimplementedTickerInfoServer()
+}
+
+func RegisterTickerInfoServer(s grpc.ServiceRegistrar, srv TickerInfoServer) {
+	s.RegisterService(&TickerInfo_ServiceDesc, srv)
+}
+
+func _TickerInfo_Watch_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(Ticker)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(TickerInfoServer).Watch(m, &tickerInfoWatchServer{stream})
+}
+
+type TickerInfo_WatchServer interface {
+	Send(*TickerQuote) error
+	grpc.ServerStream
+}
+
+type tickerInfoWatchServer struct {
+	grpc.ServerStream
+}
+
+func (x *tickerInfoWatchServer) Send(m *TickerQuote) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+// TickerInfo_ServiceDesc is the grpc.ServiceDesc for TickerInfo service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var TickerInfo_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "grpcoin.TickerInfo",
+	HandlerType: (*TickerInfoServer)(nil),
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Watch",
+			Handler:       _TickerInfo_Watch_Handler,
+			ServerStreams: true,
+		},
+	},
+	Metadata: "grpcoin.proto",
+}
+
 // AccountClient is the client API for Account service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.

@@ -12,9 +12,9 @@ import (
 )
 
 type Quote struct {
-	Product string `json:"product"`
-	Price   string `json:"price"`
-	Time    string `json:"time"`
+	Product string    `json:"product"`
+	Price   string    `json:"price"`
+	Time    time.Time `json:"time"`
 }
 
 func RateLimited(ch <-chan Quote, d time.Duration) <-chan Quote {
@@ -58,12 +58,6 @@ func StartWatch(ctx context.Context, product string) (<-chan Quote, error) {
 	ch := make(chan Quote)
 	go func() {
 		for {
-			// select {
-			// case <-ctx.Done():
-			// 	close(ch)
-			// 	return
-			// default:
-			// }
 			if ctx.Err() != nil {
 				close(ch)
 				return
@@ -79,7 +73,7 @@ func StartWatch(ctx context.Context, product string) (<-chan Quote, error) {
 			}
 			ch <- Quote{Product: product,
 				Price: message.Price,
-				Time:  message.Time.Time().String(),
+				Time:  message.Time.Time(),
 			}
 		}
 	}()
