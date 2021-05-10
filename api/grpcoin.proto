@@ -1,3 +1,17 @@
+// Copyright 2021 Ahmet Alp Balkan
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 syntax = "proto3";
 package grpcoin;
 option go_package = "api/grpcoin";
@@ -11,10 +25,17 @@ service TickerInfo {
     // The stream might return error (if it fails to get prices) or
     // time out if you stream it for over 15 minutes.
     // If the stream terminates, please reconnect.
+    //
+    // Unauthenticated.
     rpc Watch(Ticker) returns (stream TickerQuote){}
 }
 
 service Account {
+    // Tests if your token works.
+    //
+    // Send a header (gRPC metadata) named "Authorization"
+    // with value "Bearer XXX" where XXX is a GitHub Personal Access token
+    // (does not require any permissions).
     rpc TestAuth(TestAuthRequest) returns (TestAuthResponse) {}
 }
 
@@ -23,7 +44,6 @@ service Account {
 //     // order history
 //     // trading methods sell/buy
 // }
-
 
 message Amount {
     // The whole units of the amount.
