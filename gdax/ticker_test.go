@@ -2,8 +2,11 @@ package gdax
 
 import (
 	"context"
+	"reflect"
 	"testing"
 	"time"
+
+	"github.com/ahmetb/grpcoin/api/grpcoin"
 )
 
 func TestStartWatch(t *testing.T) {
@@ -17,12 +20,9 @@ func TestStartWatch(t *testing.T) {
 
 	count := 0
 	for {
-		v, ok := <-c
+		_, ok := <-c
 		if !ok {
 			break
-		}
-		if v.Price == "" {
-			t.Fatalf("empty price received on count %d", count)
 		}
 		count++
 	}
@@ -55,5 +55,45 @@ func TestRateLimited(t *testing.T) {
 	}
 	if expected := 5; count != expected {
 		t.Fatalf("wrong msg recv count:%d expected:%d", count, expected)
+	}
+}
+
+func Test_convertPrice(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want *grpcoin.Amount
+	}{
+		{
+			in:   "",
+			want: &grpcoin.Amount{},
+		},
+		{
+			in:   "0.0",
+			want: &grpcoin.Amount{},
+		},
+		{
+			in:   "3.",
+			want: &grpcoin.Amount{Units: 3},
+		},
+		{
+			in:   ".3",
+			want: &grpcoin.Amount{Nanos: 300_000_000},
+		},
+		{
+			in:   "0.072",
+			want: &grpcoin.Amount{Nanos: 72_000_000},
+		},
+		{
+			in:   "57469.71",
+			want: &grpcoin.Amount{Units: 57_469, Nanos: 710_000_000},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := convertPrice(tt.in); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("convertPrice(%s) = %v, want %v", tt.in, got, tt.want)
+			}
+		})
 	}
 }

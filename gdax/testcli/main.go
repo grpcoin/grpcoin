@@ -16,6 +16,6 @@ func main() {
 	ch = gdax.RateLimited(ch, time.Millisecond*5)
 	log.SetFlags(log.Lmicroseconds)
 	for v := range ch {
-		log.Printf("[%s] %s: %s", v.Time, v.Product, v.Price)
+		log.Printf("[%s] %s: %v", v.Time, v.Product, v.Price)
 	}
 }

@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -41,6 +39,7 @@ func (t *tickerService) initWatch() error {
 	}()
 	quotes, err := gdax.StartWatch(ctx, "BTC-USD")
 	if err != nil {
+		stop()
 		t.lock.Unlock()
 		return err
 	}
@@ -75,30 +74,11 @@ func (f *tickerService) Watch(req *grpcoin.Ticker, stream grpcoin.TickerInfo_Wat
 	for m := range ch {
 		err = stream.Send(&grpcoin.TickerQuote{
 			T:     timestamppb.New(m.Time),
-			Price: convertPrice(m.Price),
+			Price: m.Price,
 		})
 		if err != nil {
 			return err
 		}
 	}
 	return status.Error(codes.Internal, "failed to get prices, please retry by reconnecting")
-}
-
-func convertPrice(p string) *grpcoin.Amount {
-	// TODO this is currently inefficient as each connected client converts the
-	// amount on every msg. move this to gdax package.
-	out := strings.SplitN(p, ".", 2)
-	if len(out) == 0 {
-		return &grpcoin.Amount{}
-	}
-	if out[0] == "" {
-		out[0] = "0"
-	}
-	i, _ := strconv.ParseInt(out[0], 10, 64)
-	if len(out) == 1 {
-		return &grpcoin.Amount{Units: i}
-	}
-	out[1] += strings.Repeat("0", 9-len(out[1]))
-	j, _ := strconv.Atoi(out[1])
-	return &grpcoin.Amount{Units: i, Nanos: int32(j)}
 }
