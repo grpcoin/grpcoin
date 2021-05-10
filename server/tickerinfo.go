@@ -80,5 +80,14 @@ func (f *tickerService) Watch(req *grpcoin.Ticker, stream grpcoin.TickerInfo_Wat
 			return err
 		}
 	}
-	return status.Error(codes.Internal, "failed to get prices, please retry by reconnecting")
+	select {
+	case <-stream.Context().Done():
+		err := stream.Context().Err()
+		if err == context.DeadlineExceeded {
+			return status.Error(codes.DeadlineExceeded, fmt.Sprintf("client cancelled request: %v", err))
+		}
+		return status.Error(codes.Internal, fmt.Sprintf("unknown error on ctx: %v", err))
+	default:
+		return status.Error(codes.Internal, "failed to get prices, please retry by reconnecting")
+	}
 }
