@@ -57,6 +57,7 @@ func TestWatch(t *testing.T) {
 		t.Fatal("no msgs received")
 	}
 }
+
 func TestWatchReconnect(t *testing.T) {
 	l, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
@@ -94,8 +95,8 @@ func TestWatchReconnect(t *testing.T) {
 		}
 	}
 
-	ctx, cleanup = context.WithTimeout(context.Background(), time.Second*5)
-	defer cleanup()
+	ctx, cleanup2 := context.WithTimeout(context.Background(), time.Second*5)
+	defer cleanup2()
 
 	count := 0
 	stream, err = client.Watch(ctx, &grpcoin.Ticker{Ticker: "BTC-USD"})
@@ -147,7 +148,7 @@ func TestWatchMulti(t *testing.T) {
 			defer cleanup()
 			stream, err := client.Watch(ctx, &grpcoin.Ticker{Ticker: "BTC-USD"})
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("routine %d: dial: %v", j, err)
 			}
 			for {
 				var m grpcoin.TickerQuote
@@ -158,7 +159,7 @@ func TestWatchMulti(t *testing.T) {
 							break
 						}
 					}
-					t.Fatal(err)
+					t.Fatalf("routine %d: recv: %v", j, err)
 				}
 				c[j]++
 			}
