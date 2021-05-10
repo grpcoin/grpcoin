@@ -7,7 +7,7 @@ import (
 )
 
 type PubSub struct {
-	// Src is where the producer sends the messages. Close
+	// src is where the producer sends the messages. Close
 	// this to close registered subscribers.
 	src <-chan gdax.Quote
 

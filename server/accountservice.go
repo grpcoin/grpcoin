@@ -23,7 +23,7 @@ type accountService struct {
 	grpcoin.UnimplementedAccountServer
 }
 
-func newAccountService(opts accountServiceOpts) grpcoin.AccountServer {
+func newAccountService(opts accountServiceOpts) (grpcoin.AccountServer, error) {
 	var r *redis.Client
 	if opts.redisIP != "" {
 		r = redis.NewClient(&redis.Options{
@@ -32,7 +32,10 @@ func newAccountService(opts accountServiceOpts) grpcoin.AccountServer {
 	} else {
 		r, _ = redismock.NewClientMock()
 	}
-	return &accountService{redis: r}
+	if err := r.Ping(context.TODO()).Err(); err != nil {
+		return nil, fmt.Errorf("failed to reach redis: %w", err)
+	}
+	return &accountService{redis: r}, nil
 }
 
 func (s *accountService) createAccount(ctx context.Context) {

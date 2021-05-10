@@ -18,7 +18,11 @@ func TestTestAuth(t *testing.T) {
 		t.Fatal(err)
 	}
 	srv := grpc.NewServer()
-	grpcoin.RegisterAccountServer(srv, newAccountService(accountServiceOpts{}))
+	as, err := newAccountService(accountServiceOpts{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	grpcoin.RegisterAccountServer(srv, as)
 	go srv.Serve(l)
 	defer srv.Stop()
 	defer l.Close()

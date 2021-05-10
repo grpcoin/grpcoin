@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"os"
 	"os/signal"
@@ -26,11 +27,21 @@ func main() {
 		panic(err)
 	}
 	srv := grpc.NewServer()
-	pb.RegisterAccountServer(srv, newAccountService(accountServiceOpts{}))
+	as, err := newAccountService(accountServiceOpts{
+		redisIP: os.Getenv("REDIS_IP"),
+	})
+	if err != nil {
+		panic(err)
+	}
+	pb.RegisterAccountServer(srv, as)
+	pb.RegisterTickerInfoServer(srv, new(tickerService))
 	go func() {
 		<-ctx.Done()
 		srv.GracefulStop()
 	}()
 	err = srv.Serve(lis)
-	panic(err)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("gracefully shut down the server")
 }

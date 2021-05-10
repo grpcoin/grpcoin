@@ -6,10 +6,11 @@ import "google/protobuf/timestamp.proto";
 
 service TickerInfo {
     // Watch returns real-time quotes of the ticker.
-    // The stream might return error (if it fails to get prices) or
-    // time out if you stream it for over 60 minutes.
-    //
     // The only supported ticker is "BTC-USD".
+    //
+    // The stream might return error (if it fails to get prices) or
+    // time out if you stream it for over 15 minutes.
+    // If the stream terminates, please reconnect.
     rpc Watch(Ticker) returns (stream TickerQuote){}
 }
 

@@ -7,6 +7,15 @@ variable "billing_account" {
   default = "0050EC-505932-A9F334"
 }
 
+variable "region" {
+  default = "us-west2"
+}
+
+variable "image" {
+  description = "main server container image"
+  type        = string
+}
+
 provider "google" {
   project = var.project
 }
@@ -32,10 +41,19 @@ resource "google_project_service" "redis" {
   service = "redis.googleapis.com"
 }
 
-# TODO enable later when setting up a clean project
+resource "google_project_service" "run" {
+  project = var.project
+  service = "run.googleapis.com"
+}
+
+resource "google_project_service" "vpcaccess" {
+  project = var.project
+  service = "vpcaccess.googleapis.com"
+}
+
 resource "google_app_engine_application" "app" {
   project       = var.project
-  location_id   = "us-west2"
+  location_id   = var.region
   database_type = "CLOUD_FIRESTORE"
 }
 
@@ -53,7 +71,80 @@ resource "google_redis_instance" "cache" {
   ]
   project            = var.project
   name               = "cache"
-  region             = "us-west2"
+  region             = var.region
   memory_size_gb     = 1
   authorized_network = google_compute_network.vpc.name
+}
+
+resource "google_service_account" "sa" {
+  account_id   = "grpcoin"
+  display_name = "grpc main server identity"
+}
+
+
+resource "google_vpc_access_connector" "default" {
+  depends_on = [
+    google_project_service.vpcaccess
+  ]
+  name          = "vpc-connector"
+  region        = var.region
+  project       = var.project
+  network       = google_compute_network.vpc.name
+  ip_cidr_range = "10.8.0.0/28"
+}
+
+resource "google_cloud_run_service" "default" {
+  depends_on = [
+    google_project_service.run
+  ]
+  project  = var.project
+  location = var.region
+  name     = "grpcoin-main"
+
+  template {
+    metadata {
+      annotations = {
+        "run.googleapis.com/vpc-access-connector" : google_vpc_access_connector.default.name
+      }
+    }
+    spec {
+      service_account_name  = google_service_account.sa.email
+      container_concurrency = 100
+      timeout_seconds       = 900
+
+      containers {
+        image = var.image
+        ports {
+          name = "h2c"
+          container_port = 8080
+        }
+        resources {
+          limits = {
+            cpu    = "2"
+            memory = "512Mi"
+          }
+        }
+        env {
+          name  = "REDIS_IP"
+          value = google_redis_instance.cache.host
+        }
+      }
+    }
+  }
+}
+
+data "google_iam_policy" "noauth" {
+  binding {
+    role = "roles/run.invoker"
+    members = [
+      "allUsers",
+    ]
+  }
+}
+
+resource "google_cloud_run_service_iam_policy" "default-noauth" {
+  location    = google_cloud_run_service.default.location
+  project     = google_cloud_run_service.default.project
+  service     = google_cloud_run_service.default.name
+  policy_data = data.google_iam_policy.noauth.policy_data
 }
