@@ -23,6 +23,8 @@ import (
 	"syscall"
 
 	pb "github.com/ahmetb/grpcoin/api/grpcoin"
+	"github.com/go-redis/redis/v8"
+	"github.com/go-redis/redismock/v8"
 	"google.golang.org/grpc"
 )
 
@@ -40,13 +42,19 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	srv := grpc.NewServer()
-	as, err := newAccountService(accountServiceOpts{
-		redisIP: os.Getenv("REDIS_IP"),
-	})
-	if err != nil {
+	var rc *redis.Client
+	if r := os.Getenv("REDIS_IP"); r == "" {
+		rc, _ = redismock.NewClientMock()
+	} else {
+		rc = redis.NewClient(&redis.Options{Addr: r})
+	}
+	if err := rc.Ping(ctx).Err(); err != nil {
 		panic(err)
 	}
+
+	srv := grpc.NewServer()
+	ac := &AccountCache{cache: rc}
+	as := &accountService{cache: ac}
 	pb.RegisterAccountServer(srv, as)
 	pb.RegisterTickerInfoServer(srv, new(tickerService))
 	go func() {

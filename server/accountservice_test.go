@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/ahmetb/grpcoin/api/grpcoin"
+	"github.com/go-redis/redismock/v8"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -32,11 +33,9 @@ func TestTestAuth(t *testing.T) {
 		t.Fatal(err)
 	}
 	srv := grpc.NewServer()
-	as, err := newAccountService(accountServiceOpts{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	grpcoin.RegisterAccountServer(srv, as)
+	rc, _ := redismock.NewClientMock()
+	grpcoin.RegisterAccountServer(srv, &accountService{
+		cache: &AccountCache{cache: rc}})
 	go srv.Serve(l)
 	defer srv.Stop()
 	defer l.Close()

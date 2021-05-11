@@ -21,8 +21,6 @@ import (
 
 	"github.com/ahmetb/grpcoin/api/grpcoin"
 	"github.com/ahmetb/grpcoin/auth/github"
-	"github.com/go-redis/redis/v8"
-	"github.com/go-redis/redismock/v8"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -33,23 +31,9 @@ type accountServiceOpts struct {
 }
 
 type accountService struct {
-	redis *redis.Client
-	grpcoin.UnimplementedAccountServer
-}
+	cache *AccountCache
 
-func newAccountService(opts accountServiceOpts) (grpcoin.AccountServer, error) {
-	var r *redis.Client
-	if opts.redisIP != "" {
-		r = redis.NewClient(&redis.Options{
-			Addr: opts.redisIP + ":6379",
-		})
-	} else {
-		r, _ = redismock.NewClientMock()
-	}
-	if err := r.Ping(context.TODO()).Err(); err != nil {
-		return nil, fmt.Errorf("failed to reach redis: %w", err)
-	}
-	return &accountService{redis: r}, nil
+	grpcoin.UnimplementedAccountServer
 }
 
 func (s *accountService) createAccount(ctx context.Context) {

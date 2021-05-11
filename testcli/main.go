@@ -28,6 +28,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -35,16 +36,22 @@ func main() {
 	log.SetFlags(log.Lmicroseconds | log.Ltime)
 	url := `grpcoin-main-kafjc7sboa-wl.a.run.app:443`
 	ctx := context.Background()
-	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	creds := credentials.NewTLS(&tls.Config{})
 	conn, err := grpc.DialContext(ctx, url, grpc.WithTransportCredentials(creds))
 	if err != nil {
 		panic(err)
 	}
-	client := grpcoin.NewTickerInfoClient(conn)
+	// try adding token to outgoing request
+	authCtx := metadata.AppendToOutgoingContext(ctx, "authentication", "Bearer GITHUB_PERSONAL_ACCESS_TOKEN")
+	_, err = grpcoin.NewAccountClient(conn).TestAuth(authCtx, &grpcoin.TestAuthRequest{})
+	if err != nil {
+		log.Printf("authentication failed: %v", err)
+	}
+
+	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	for ctx.Err() == nil {
-		log.Printf("connecting")
-		stream, err := client.Watch(ctx, &grpcoin.Ticker{Ticker: "BTC-USD"})
+		log.Printf("connecting to stream real-time BTC quotes")
+		stream, err := grpcoin.NewTickerInfoClient(conn).Watch(ctx, &grpcoin.Ticker{Ticker: "BTC-USD"})
 		if err != nil {
 			panic(err)
 		}
@@ -67,4 +74,5 @@ func main() {
 		log.Printf("disconnected")
 		time.Sleep(time.Second)
 	}
+
 }
