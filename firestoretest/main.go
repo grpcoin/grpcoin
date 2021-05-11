@@ -29,7 +29,6 @@ import (
 func main() {
 	ctx := context.Background()
 	projectID := "grpcoin"
-
 	client, err := firestore.NewClient(ctx, projectID)
 	if err != nil {
 		log.Fatalf("Failed to create client: %v", err)

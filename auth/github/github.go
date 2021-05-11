@@ -20,18 +20,14 @@ import (
 	"net/http"
 )
 
-type AuthenticatedUser interface {
-	Key() string
-	DisplayName()
-}
-
 type GitHubUser struct {
 	ID       uint64
 	Username string
 }
 
-func (g GitHubUser) Key() string         { return fmt.Sprintf("%v", g.ID) }
+func (g GitHubUser) DBKey() string       { return fmt.Sprintf("github_%v", g.ID) }
 func (g GitHubUser) DisplayName() string { return g.Username }
+func (g GitHubUser) ProfileURL() string  { return "https://github.com/" + g.Username }
 
 func VerifyUser(token string) (GitHubUser, error) {
 	req, _ := http.NewRequest("GET", "https://api.github.com/user", nil)
