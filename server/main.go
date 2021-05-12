@@ -16,7 +16,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"net"
 	"os"
 	"os/signal"
@@ -39,6 +38,23 @@ import (
 func main() {
 	ctx := context.Background()
 	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+	var log *zap.Logger
+	onCloudRun := os.Getenv("K_SERVICE") != ""
+	if onCloudRun {
+		z, err := zap.NewProduction()
+		if err != nil {
+			panic(err)
+		}
+		z = z.With(zap.String("env", "prod"), zap.String("revision", os.Getenv("K_REVISION")))
+		log = z
+	} else {
+		z, err := zap.NewDevelopment()
+		if err != nil {
+			panic(err)
+		}
+		z = z.With(zap.String("env", "dev"))
+		log = z
+	}
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -48,7 +64,7 @@ func main() {
 
 	lis, err := net.Listen("tcp", addr+":"+port)
 	if err != nil {
-		panic(err)
+		log.Fatal("tcp listen failed", zap.Error(err))
 	}
 	var rc *redis.Client
 	if r := os.Getenv("REDIS_IP"); r == "" {
@@ -57,12 +73,18 @@ func main() {
 		rc = redis.NewClient(&redis.Options{Addr: r + ":6379"})
 	}
 	if err := rc.Ping(ctx).Err(); err != nil {
-		panic(err)
+		log.Fatal("redis ping failed", zap.Error(err))
 	}
 
-	fs, err := firestore.NewClient(ctx, "grpcoin")
+	var proj string
+	if onCloudRun {
+		proj = firestore.DetectProjectID
+	} else {
+		proj = "grpcoin" // TODO do not hardcode this for local testing, maybe start fs emulator
+	}
+	fs, err := firestore.NewClient(ctx, proj)
 	if err != nil {
-		panic(err)
+		log.Fatal("failed to initialize firestore client", zap.String("project", proj), zap.Error(err))
 	}
 
 	ac := &AccountCache{cache: rc}
@@ -70,36 +92,32 @@ func main() {
 	as := &accountService{cache: ac, udb: udb}
 	au := &github.GitHubAuthenticator{}
 	ts := &tickerService{}
-	err = prepServer(ctx, au, udb, as, ts).Serve(lis)
+	log.Debug("starting to listen", zap.String("addr", addr+":"+port))
+	err = prepServer(ctx, log, au, udb, as, ts).Serve(lis)
 	if err != nil {
-		log.Fatalf("server failed: %v", err)
+		log.Fatal("server failed", zap.Error(err))
 	}
-	log.Println("gracefully shut down the server")
+	log.Debug("gracefully shut down the server")
 }
 
-func prepServer(ctx context.Context, au auth.Authenticator, udb *userdb.UserDB, as *accountService, ts *tickerService) *grpc.Server {
-	logOpts := []grpc_zap.Option{}
-	zapLogger, err := zap.NewProduction() // make an arg
-	if err != nil {
-		panic(err)
-	}
-
+func prepServer(ctx context.Context, log *zap.Logger, au auth.Authenticator, udb *userdb.UserDB, as *accountService, ts *tickerService) *grpc.Server {
 	unaryInterceptors := grpc_middleware.WithUnaryServerChain(
 		grpc_ctxtags.UnaryServerInterceptor(grpc_ctxtags.WithFieldExtractor(grpc_ctxtags.CodeGenRequestFieldExtractor)),
-		grpc_zap.UnaryServerInterceptor(zapLogger, logOpts...),
+		grpc_zap.UnaryServerInterceptor(log),
 		grpc_auth.UnaryServerInterceptor(auth.AuthenticatingInterceptor(au)),
 		grpc_auth.UnaryServerInterceptor(udb.EnsureAccountExistsInterceptor()),
 	)
 	streamInterceptors := grpc_middleware.WithStreamServerChain(
 		grpc_ctxtags.StreamServerInterceptor(grpc_ctxtags.WithFieldExtractor(grpc_ctxtags.CodeGenRequestFieldExtractor)),
-		grpc_zap.StreamServerInterceptor(zapLogger, logOpts...),
+		grpc_zap.StreamServerInterceptor(log),
 	)
-	// grpc_zap.ReplaceGrpcLoggerV2(zapLogger)
+	// grpc_zap.ReplaceGrpcLoggerV2(log)
 	srv := grpc.NewServer(unaryInterceptors, streamInterceptors)
 	pb.RegisterAccountServer(srv, as)
 	pb.RegisterTickerInfoServer(srv, ts) // this one is not authenticated (since it's stream-only, no unary)
 	go func() {
 		<-ctx.Done()
+		log.Debug("shutdown signal received")
 		srv.GracefulStop()
 	}()
 	return srv
