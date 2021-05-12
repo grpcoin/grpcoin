@@ -97,6 +97,14 @@ resource "google_service_account" "sa" {
   display_name = "grpc main server identity"
 }
 
+resource "google_project_iam_binding" "firestore-access" {
+  project = var.project
+  role    = "roles/datastore.user"
+
+  members = [
+    "serviceAccount:${google_service_account.sa.email}",
+  ]
+}
 
 resource "google_vpc_access_connector" "default" {
   depends_on = [

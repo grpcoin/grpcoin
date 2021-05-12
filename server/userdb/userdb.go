@@ -45,7 +45,7 @@ func (u *UserDB) Get(ctx context.Context, au auth.AuthenticatedUser) (User, bool
 		if status.Code(err) == codes.NotFound {
 			return User{}, false, nil
 		}
-		return User{}, false, err
+		return User{}, false, status.Errorf(codes.Internal, "failed to retrieve user: %v", err)
 	}
 	var uv User
 	if err := doc.DataTo(&uv); err != nil {
@@ -58,7 +58,7 @@ func (u *UserDB) EnsureAccountExists(ctx context.Context, au auth.AuthenticatedU
 	// TODO could use lots of caching here
 	err := u.Create(ctx, au)
 	if err != nil && status.Code(err) != codes.AlreadyExists {
-		return User{}, err
+		return User{}, status.Errorf(codes.Internal, "failed to create user: %v", err)
 	}
 	user, _, err := u.Get(ctx, au)
 	return user, err
@@ -79,7 +79,7 @@ func (u *UserDB) EnsureAccountExistsInterceptor() grpc_auth.AuthFunc {
 		}
 		uv, err := u.EnsureAccountExists(ctx, v)
 		if err != nil {
-			return ctx, err
+			return ctx, status.Errorf(codes.Internal, "failed to ensure user account: %v", err)
 		}
 		return context.WithValue(ctx, ctxUserRecordKey{}, uv), nil
 	}
