@@ -26,10 +26,13 @@ import (
 	"github.com/go-redis/redis/v8"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
+	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	pb "github.com/grpcoin/grpcoin/api/grpcoin"
 	"github.com/grpcoin/grpcoin/server/auth"
 	"github.com/grpcoin/grpcoin/server/auth/github"
 	"github.com/grpcoin/grpcoin/server/userdb"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
@@ -57,7 +60,7 @@ func main() {
 		panic(err)
 	}
 
-	fs, err := firestore.NewClient(ctx, firestore.DetectProjectID)
+	fs, err := firestore.NewClient(ctx, "grpcoin")
 	if err != nil {
 		panic(err)
 	}
@@ -75,11 +78,24 @@ func main() {
 }
 
 func prepServer(ctx context.Context, au auth.Authenticator, udb *userdb.UserDB, as *accountService, ts *tickerService) *grpc.Server {
-	interceptors := grpc_middleware.ChainUnaryServer(
+	logOpts := []grpc_zap.Option{}
+	zapLogger, err := zap.NewProduction() // make an arg
+	if err != nil {
+		panic(err)
+	}
+
+	unaryInterceptors := grpc_middleware.WithUnaryServerChain(
+		grpc_ctxtags.UnaryServerInterceptor(grpc_ctxtags.WithFieldExtractor(grpc_ctxtags.CodeGenRequestFieldExtractor)),
+		grpc_zap.UnaryServerInterceptor(zapLogger, logOpts...),
 		grpc_auth.UnaryServerInterceptor(auth.AuthenticatingInterceptor(au)),
 		grpc_auth.UnaryServerInterceptor(udb.EnsureAccountExistsInterceptor()),
 	)
-	srv := grpc.NewServer(grpc.UnaryInterceptor(interceptors))
+	streamInterceptors := grpc_middleware.WithStreamServerChain(
+		grpc_ctxtags.StreamServerInterceptor(grpc_ctxtags.WithFieldExtractor(grpc_ctxtags.CodeGenRequestFieldExtractor)),
+		grpc_zap.StreamServerInterceptor(zapLogger, logOpts...),
+	)
+	grpc_zap.ReplaceGrpcLoggerV2(zapLogger)
+	srv := grpc.NewServer(unaryInterceptors, streamInterceptors)
 	pb.RegisterAccountServer(srv, as)
 	pb.RegisterTickerInfoServer(srv, ts) // this one is not authenticated (since it's stream-only, no unary)
 	go func() {
