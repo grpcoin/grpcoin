@@ -19,6 +19,7 @@ import (
 
 	"github.com/ahmetb/grpcoin/api/grpcoin"
 	"github.com/ahmetb/grpcoin/server/auth"
+	"github.com/ahmetb/grpcoin/server/userdb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -29,7 +30,7 @@ type accountServiceOpts struct {
 
 type accountService struct {
 	cache *AccountCache
-	udb   *userDB
+	udb   *userdb.UserDB
 
 	grpcoin.UnimplementedAccountServer
 }
@@ -43,7 +44,7 @@ func (s *accountService) TestAuth(ctx context.Context, req *grpcoin.TestAuthRequ
 	if v == nil {
 		return nil, status.Error(codes.Internal, "request arrived without a token")
 	}
-	u, ok := UserRecordFromContext(ctx)
+	u, ok := userdb.UserRecordFromContext(ctx)
 	if !ok {
 		return nil, status.Error(codes.Internal, "no user record in request context")
 	}

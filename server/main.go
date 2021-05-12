@@ -26,6 +26,7 @@ import (
 	pb "github.com/ahmetb/grpcoin/api/grpcoin"
 	"github.com/ahmetb/grpcoin/server/auth"
 	"github.com/ahmetb/grpcoin/server/auth/github"
+	"github.com/ahmetb/grpcoin/server/userdb"
 	"github.com/go-redis/redis/v8"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
@@ -62,7 +63,7 @@ func main() {
 	}
 
 	ac := &AccountCache{cache: rc}
-	udb := &userDB{fs: fs}
+	udb := &userdb.UserDB{DB: fs}
 	as := &accountService{cache: ac, udb: udb}
 	au := &github.GitHubAuthenticator{}
 	ts := &tickerService{}
@@ -73,10 +74,10 @@ func main() {
 	log.Println("gracefully shut down the server")
 }
 
-func prepServer(ctx context.Context, au auth.Authenticator, udb *userDB, as *accountService, ts *tickerService) *grpc.Server {
+func prepServer(ctx context.Context, au auth.Authenticator, udb *userdb.UserDB, as *accountService, ts *tickerService) *grpc.Server {
 	interceptors := grpc_middleware.ChainUnaryServer(
 		grpc_auth.UnaryServerInterceptor(auth.AuthenticatingInterceptor(au)),
-		grpc_auth.UnaryServerInterceptor(udb.ensureAccountExistsInterceptor()),
+		grpc_auth.UnaryServerInterceptor(udb.EnsureAccountExistsInterceptor()),
 	)
 	srv := grpc.NewServer(grpc.UnaryInterceptor(interceptors))
 	pb.RegisterAccountServer(srv, as)

@@ -1,4 +1,4 @@
-package main
+package userdb
 
 import (
 	"context"
@@ -23,10 +23,10 @@ func TestGetUser_notFound(t *testing.T) {
 		t.Skip()
 	}
 	ctx := context.Background()
-	udb := &userDB{fs: firestoretestutil.StartEmulator(t, ctx)}
+	udb := &UserDB{DB: firestoretestutil.StartEmulator(t, ctx)}
 	tu := testUser{id: "foo"}
 
-	u, ok, err := udb.get(ctx, tu)
+	u, ok, err := udb.Get(ctx, tu)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -40,15 +40,15 @@ func TestNewUser(t *testing.T) {
 		t.Skip()
 	}
 	ctx := context.Background()
-	udb := &userDB{fs: firestoretestutil.StartEmulator(t, ctx)}
+	udb := &UserDB{DB: firestoretestutil.StartEmulator(t, ctx)}
 	tu := testUser{id: "foobar", name: "ab"}
 
-	err := udb.create(ctx, tu)
+	err := udb.Create(ctx, tu)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	uv, ok, err := udb.get(ctx, tu)
+	uv, ok, err := udb.Get(ctx, tu)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,17 +72,17 @@ func TestEnsureAccountExists(t *testing.T) {
 		t.Skip()
 	}
 	ctx := context.Background()
-	udb := &userDB{fs: firestoretestutil.StartEmulator(t, ctx)}
+	udb := &UserDB{DB: firestoretestutil.StartEmulator(t, ctx)}
 	tu := testUser{id: "testuser", name: "abc"}
 
-	u, err := udb.ensureAccountExists(ctx, tu)
+	u, err := udb.EnsureAccountExists(ctx, tu)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if u.ID == "" {
 		t.Fatal("id should not be empty")
 	}
-	u2, err := udb.ensureAccountExists(ctx, tu)
+	u2, err := udb.EnsureAccountExists(ctx, tu)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -23,6 +23,7 @@ import (
 	"github.com/ahmetb/grpcoin/auth/github"
 	"github.com/ahmetb/grpcoin/server/auth"
 	"github.com/ahmetb/grpcoin/server/firestoretestutil"
+	"github.com/ahmetb/grpcoin/server/userdb"
 	"google.golang.org/grpc"
 )
 
@@ -37,7 +38,7 @@ func TestTestAuth(t *testing.T) {
 			return &github.GitHubUser{ID: 1, Username: "abc"}, nil
 		},
 	}
-	udb := &userDB{fs: fs}
+	udb := &userdb.UserDB{DB: fs}
 	srv := prepServer(context.TODO(), au, udb, &accountService{cache: &AccountCache{cache: dummyRedis()}}, nil)
 	go srv.Serve(l)
 	defer srv.Stop()
