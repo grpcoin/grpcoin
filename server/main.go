@@ -31,7 +31,9 @@ import (
 	"github.com/grpcoin/grpcoin/server/auth"
 	"github.com/grpcoin/grpcoin/server/auth/github"
 	"github.com/grpcoin/grpcoin/server/userdb"
+	stackdriver "github.com/tommy351/zap-stackdriver"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 )
 
@@ -41,11 +43,22 @@ func main() {
 	var log *zap.Logger
 	onCloudRun := os.Getenv("K_SERVICE") != ""
 	if onCloudRun {
-		z, err := zap.NewProduction()
+		c := zap.NewProductionConfig()
+		c.EncoderConfig = stackdriver.EncoderConfig
+		c.OutputPaths = []string{"stdout"}
+		z, err := c.Build(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+			return &stackdriver.Core{
+				Core: core,
+			}
+		}), zap.Fields(
+			stackdriver.LogServiceContext(&stackdriver.ServiceContext{
+				Service: os.Getenv("K_SERVICE"),
+				Version: os.Getenv("K_REVISION"),
+			}),
+		))
 		if err != nil {
 			panic(err)
 		}
-		z = z.With(zap.String("env", "prod"), zap.String("revision", os.Getenv("K_REVISION")))
 		log = z
 	} else {
 		z, err := zap.NewDevelopment()
