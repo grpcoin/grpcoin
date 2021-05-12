@@ -61,7 +61,9 @@ message Amount {
 
 message Empty {}
 message TestAuthRequest {}
-message TestAuthResponse {}
+message TestAuthResponse {
+    string user_id = 10;
+}
 
 message Ticker {
     string ticker = 1; // e.g. BTC-USD

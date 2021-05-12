@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/ahmetb/grpcoin/server/firestoretestutil"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
@@ -22,7 +23,7 @@ func TestGetUser_notFound(t *testing.T) {
 		t.Skip()
 	}
 	ctx := context.Background()
-	udb := &userDB{fs: startFirebaseEmulator(t, ctx)}
+	udb := &userDB{fs: firestoretestutil.StartEmulator(t, ctx)}
 	tu := testUser{id: "foo"}
 
 	u, ok, err := udb.get(ctx, tu)
@@ -39,7 +40,7 @@ func TestNewUser(t *testing.T) {
 		t.Skip()
 	}
 	ctx := context.Background()
-	udb := &userDB{fs: startFirebaseEmulator(t, ctx)}
+	udb := &userDB{fs: firestoretestutil.StartEmulator(t, ctx)}
 	tu := testUser{id: "foobar", name: "ab"}
 
 	err := udb.create(ctx, tu)
@@ -71,7 +72,7 @@ func TestEnsureAccountExists(t *testing.T) {
 		t.Skip()
 	}
 	ctx := context.Background()
-	udb := &userDB{fs: startFirebaseEmulator(t, ctx)}
+	udb := &userDB{fs: firestoretestutil.StartEmulator(t, ctx)}
 	tu := testUser{id: "testuser", name: "abc"}
 
 	u, err := udb.ensureAccountExists(ctx, tu)

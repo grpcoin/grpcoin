@@ -29,6 +29,7 @@ type accountServiceOpts struct {
 
 type accountService struct {
 	cache *AccountCache
+	udb   *userDB
 
 	grpcoin.UnimplementedAccountServer
 }
@@ -42,5 +43,9 @@ func (s *accountService) TestAuth(ctx context.Context, req *grpcoin.TestAuthRequ
 	if v == nil {
 		return nil, status.Error(codes.Internal, "request arrived without a token")
 	}
-	return &grpcoin.TestAuthResponse{}, nil
+	u, ok := UserRecordFromContext(ctx)
+	if !ok {
+		return nil, status.Error(codes.Internal, "no user record in request context")
+	}
+	return &grpcoin.TestAuthResponse{UserId: u.ID}, nil
 }

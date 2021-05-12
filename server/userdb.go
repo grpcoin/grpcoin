@@ -12,6 +12,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+type ctxUserRecordKey struct{}
+
 const (
 	fsUserCol = "users"
 )
@@ -79,6 +81,12 @@ func (u *userDB) ensureAccountExistsInterceptor() grpc_auth.AuthFunc {
 		if err != nil {
 			return ctx, err
 		}
-		return context.WithValue(ctx, auth.CtxUserRecord, uv), nil
+		return context.WithValue(ctx, ctxUserRecordKey{}, uv), nil
 	}
+}
+
+func UserRecordFromContext(ctx context.Context) (User, bool) {
+	v := ctx.Value(ctxUserRecordKey{})
+	vv, ok := v.(User)
+	return vv, ok
 }

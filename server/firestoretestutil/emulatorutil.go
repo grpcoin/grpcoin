@@ -1,4 +1,6 @@
-package main
+// Package firestoretestutil contains test utilities for starting a firestore
+// emulator locally for unit tests.
+package firestoretestutil
 
 import (
 	"bytes"
@@ -6,6 +8,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"sync"
 	"testing"
 	"time"
 
@@ -13,7 +16,19 @@ import (
 	"google.golang.org/api/iterator"
 )
 
-func startFirebaseEmulator(t *testing.T, ctx context.Context) *firestore.Client {
+// cBuffer is a buffer safe for concurrent use.
+type cBuffer struct {
+	b bytes.Buffer
+	sync.Mutex
+}
+
+func (c *cBuffer) Write(p []byte) (n int, err error) {
+	c.Lock()
+	defer c.Unlock()
+	return c.b.Write(p)
+}
+
+func StartEmulator(t *testing.T, ctx context.Context) *firestore.Client {
 	t.Helper()
 	port := "8010"
 	addr := "localhost:" + port
@@ -23,11 +38,14 @@ func startFirebaseEmulator(t *testing.T, ctx context.Context) *firestore.Client 
 		cancel()
 	})
 
+	// TODO investigate why there are still java processes hanging around
+	// despite we kill the exec'd command, suspecting /bin/bash wrapper that gcloud
+	// applies around the java process.
 	cmd := exec.CommandContext(ctx, "gcloud", "beta", "emulators", "firestore", "start", "--host-port="+addr)
-	var out bytes.Buffer
-	cmd.Stdin, cmd.Stdout = &out, &out
+	out := &cBuffer{b: bytes.Buffer{}}
+	cmd.Stderr, cmd.Stdout = out, out
 	if err := cmd.Start(); err != nil {
-		t.Fatalf("failed to start firestore emulator: %v -- out:%s", err, out.String())
+		t.Fatalf("failed to start firestore emulator: %v -- out:%s", err, out.b.String())
 	}
 	dialCtx, clean := context.WithTimeout(ctx, time.Second*10)
 	defer clean()
@@ -35,7 +53,7 @@ func startFirebaseEmulator(t *testing.T, ctx context.Context) *firestore.Client 
 	for !connected {
 		select {
 		case <-dialCtx.Done():
-			t.Fatalf("emulator did not come up timely: %v -- output: %s", dialCtx.Err(), out.String())
+			t.Fatalf("emulator did not come up timely: %v -- output: %s", dialCtx.Err(), out.b.String())
 		default:
 			c, err := (&net.Dialer{Timeout: time.Millisecond * 200}).DialContext(ctx, "tcp", addr)
 			if err == nil {

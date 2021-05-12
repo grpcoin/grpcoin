@@ -8,14 +8,6 @@ import (
 	"github.com/ahmetb/grpcoin/auth/github"
 )
 
-type mockAuthenticator struct {
-	authFunc func(context.Context) (AuthenticatedUser, error)
-}
-
-func (m mockAuthenticator) Authenticate(ctx context.Context) (AuthenticatedUser, error) {
-	return m.authFunc(ctx)
-}
-
 func TestAuthInfoFromContext(t *testing.T) {
 	ctx := context.Background()
 
@@ -23,7 +15,7 @@ func TestAuthInfoFromContext(t *testing.T) {
 		t.Fatal("expected nil")
 	}
 
-	ctx = context.WithValue(ctx, ctxAuthUserInfo, github.GitHubUser{})
+	ctx = context.WithValue(ctx, ctxAuthUserInfo{}, github.GitHubUser{})
 	v := AuthInfoFromContext(ctx)
 	if v == nil {
 		t.Fatal("not expected nil")
@@ -31,7 +23,7 @@ func TestAuthInfoFromContext(t *testing.T) {
 }
 
 func TestAuthenticatingInterceptor(t *testing.T) {
-	got, err := AuthenticatingInterceptor(mockAuthenticator{
+	got, err := AuthenticatingInterceptor(MockAuthenticator{
 		func(c context.Context) (AuthenticatedUser, error) { return &github.GitHubUser{}, nil },
 	})(context.Background())
 	if err != nil {
@@ -41,7 +33,7 @@ func TestAuthenticatingInterceptor(t *testing.T) {
 		t.Fatal("auth info did not propagate into returned context")
 	}
 
-	_, err = AuthenticatingInterceptor(mockAuthenticator{
+	_, err = AuthenticatingInterceptor(MockAuthenticator{
 		func(c context.Context) (AuthenticatedUser, error) { return nil, fmt.Errorf("some error") },
 	})(context.Background())
 	if err == nil {

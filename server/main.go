@@ -27,7 +27,6 @@ import (
 	"github.com/ahmetb/grpcoin/server/auth"
 	"github.com/ahmetb/grpcoin/server/auth/github"
 	"github.com/go-redis/redis/v8"
-	"github.com/go-redis/redismock/v8"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	"google.golang.org/grpc"
@@ -49,9 +48,7 @@ func main() {
 	}
 	var rc *redis.Client
 	if r := os.Getenv("REDIS_IP"); r == "" {
-		c, rm := redismock.NewClientMock()
-		rm.ExpectPing().SetVal("pong")
-		rc = c
+		rc = dummyRedis()
 	} else {
 		rc = redis.NewClient(&redis.Options{Addr: r + ":6379"})
 	}
@@ -65,18 +62,18 @@ func main() {
 	}
 
 	ac := &AccountCache{cache: rc}
-	as := &accountService{cache: ac}
-	au := &github.GitHubAuthenticator{}
 	udb := &userDB{fs: fs}
+	as := &accountService{cache: ac, udb: udb}
+	au := &github.GitHubAuthenticator{}
 	ts := &tickerService{}
-	err = prepServe(ctx, au, udb, as, ts)(lis)
+	err = prepServer(ctx, au, udb, as, ts).Serve(lis)
 	if err != nil {
 		log.Fatalf("server failed: %v", err)
 	}
 	log.Println("gracefully shut down the server")
 }
 
-func prepServe(ctx context.Context, au auth.Authenticator, udb *userDB, as *accountService, ts *tickerService) func(net.Listener) error {
+func prepServer(ctx context.Context, au auth.Authenticator, udb *userDB, as *accountService, ts *tickerService) *grpc.Server {
 	interceptors := grpc_middleware.ChainUnaryServer(
 		grpc_auth.UnaryServerInterceptor(auth.AuthenticatingInterceptor(au)),
 		grpc_auth.UnaryServerInterceptor(udb.ensureAccountExistsInterceptor()),
@@ -88,5 +85,5 @@ func prepServe(ctx context.Context, au auth.Authenticator, udb *userDB, as *acco
 		<-ctx.Done()
 		srv.GracefulStop()
 	}()
-	return srv.Serve
+	return srv
 }

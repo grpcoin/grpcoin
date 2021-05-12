@@ -20,11 +20,10 @@ import (
 	"testing"
 
 	"github.com/ahmetb/grpcoin/api/grpcoin"
-	"github.com/go-redis/redismock/v8"
+	"github.com/ahmetb/grpcoin/auth/github"
+	"github.com/ahmetb/grpcoin/server/auth"
+	"github.com/ahmetb/grpcoin/server/firestoretestutil"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
 )
 
 func TestTestAuth(t *testing.T) {
@@ -32,10 +31,14 @@ func TestTestAuth(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	srv := grpc.NewServer()
-	rc, _ := redismock.NewClientMock()
-	grpcoin.RegisterAccountServer(srv, &accountService{
-		cache: &AccountCache{cache: rc}})
+	fs := firestoretestutil.StartEmulator(t, context.TODO())
+	au := auth.MockAuthenticator{
+		F: func(c context.Context) (auth.AuthenticatedUser, error) {
+			return &github.GitHubUser{ID: 1, Username: "abc"}, nil
+		},
+	}
+	udb := &userDB{fs: fs}
+	srv := prepServer(context.TODO(), au, udb, &accountService{cache: &AccountCache{cache: dummyRedis()}}, nil)
 	go srv.Serve(l)
 	defer srv.Stop()
 	defer l.Close()
@@ -46,43 +49,15 @@ func TestTestAuth(t *testing.T) {
 	}
 	client := grpcoin.NewAccountClient(cc)
 
-	_, err = client.TestAuth(context.Background(), &grpcoin.TestAuthRequest{})
-	if err == nil {
-		t.Fatal("expected err without any creds")
+	resp, err := client.TestAuth(context.TODO(), &grpcoin.TestAuthRequest{})
+	if err != nil {
+		t.Fatal(err)
 	}
-	s, ok := status.FromError(err)
-	if !ok {
-		t.Fatal("not a grpc status!")
+	if resp.GetUserId() == "" {
+		t.Fatal("got empty user id in auth response")
 	}
-	if s.Code() != codes.Unauthenticated {
-		t.Fatalf("got code: %v; expected Unauthenticated", s.Code())
-	}
-
-	md := metadata.New(map[string]string{"authorization": "bad format"})
-	ctx := metadata.NewOutgoingContext(context.Background(), md)
-	_, err = client.TestAuth(ctx, &grpcoin.TestAuthRequest{})
-	if err == nil {
-		t.Fatal("expected err with bad format")
-	}
-	s, ok = status.FromError(err)
-	if !ok {
-		t.Fatal("not a grpc status!")
-	}
-	if s.Code() != codes.InvalidArgument {
-		t.Fatalf("got code: %v; expected InvalidArgument", s.Code())
-	}
-
-	md = metadata.New(map[string]string{"authorization": "Bearer 123"})
-	ctx = metadata.NewOutgoingContext(context.Background(), md)
-	_, err = client.TestAuth(ctx, &grpcoin.TestAuthRequest{})
-	if err == nil {
-		t.Fatal("expected err with bad creds")
-	}
-	s, ok = status.FromError(err)
-	if !ok {
-		t.Fatal("not a grpc status!")
-	}
-	if s.Code() != codes.PermissionDenied {
-		t.Fatalf("got code: %v; expected PermissionDenied: %v", s.Code(), err)
+	expected := "github_1"
+	if resp.GetUserId() != expected {
+		t.Fatalf("uid expected=%q got=%q", expected, resp.GetUserId())
 	}
 }
