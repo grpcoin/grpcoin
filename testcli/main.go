@@ -39,23 +39,27 @@ func main() {
 	creds := credentials.NewTLS(&tls.Config{})
 	conn, err := grpc.DialContext(ctx, url, grpc.WithTransportCredentials(creds))
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	// try adding token to outgoing request
 	token := os.Getenv("TOKEN")
-	authCtx := metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+token)
-	_, err = grpcoin.NewAccountClient(conn).TestAuth(authCtx, &grpcoin.TestAuthRequest{})
-	if err != nil {
-		log.Printf("authentication failed: %v", err)
+	if token == "" {
+		log.Fatal("create a permissionless Personal Access Token on GitHub and set it to TOKEN environment variable")
 	}
+	authCtx := metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+token)
+	resp, err := grpcoin.NewAccountClient(conn).TestAuth(authCtx, &grpcoin.TestAuthRequest{})
+	if err != nil {
+		log.Fatalf("authentication failed: %v", err)
+	}
+	log.Printf("you are user %s", resp.GetUserId())
 
 	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	for ctx.Err() == nil {
-		log.Printf("connecting to stream real-time BTC quotes")
+		log.Printf("connecting to stream real-time BTC quotes, hit Ctrl-C to quit anytime")
 		stream, err := grpcoin.NewTickerInfoClient(conn).Watch(ctx, &grpcoin.Ticker{Ticker: "BTC-USD"})
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 		for ctx.Err() == nil {
 			msg, err := stream.Recv()

@@ -33,7 +33,7 @@ func (a *GitHubAuthenticator) Authenticate(ctx context.Context) (auth.Authentica
 	v = strings.TrimPrefix(v, "bearer ")
 	v = strings.TrimPrefix(v, "Bearer ")
 
-	// TODO make use of the redis cache for the GH API call resp
+	// TODO make use of the redis cache for the GH API call responses
 	u, err := github.VerifyUser(v)
 	if err != nil {
 		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("token denied: %s", err))
