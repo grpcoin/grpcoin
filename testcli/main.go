@@ -41,8 +41,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
 	// try adding token to outgoing request
-	authCtx := metadata.AppendToOutgoingContext(ctx, "authentication", "Bearer GITHUB_PERSONAL_ACCESS_TOKEN")
+	token := os.Getenv("TOKEN")
+	authCtx := metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+token)
 	_, err = grpcoin.NewAccountClient(conn).TestAuth(authCtx, &grpcoin.TestAuthRequest{})
 	if err != nil {
 		log.Printf("authentication failed: %v", err)

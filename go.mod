@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/firestore v1.5.0
 	github.com/go-redis/redis/v8 v8.8.0
 	github.com/go-redis/redismock/v8 v8.0.6
-	github.com/google/go-cmp v0.5.5 // indirect
+	github.com/google/go-cmp v0.5.5
 	github.com/gorilla/websocket v1.4.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/preichenberger/go-coinbasepro/v2 v2.0.5

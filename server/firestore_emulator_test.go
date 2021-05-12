@@ -10,6 +10,7 @@ import (
 	"time"
 
 	firestore "cloud.google.com/go/firestore"
+	"google.golang.org/api/iterator"
 )
 
 func startFirebaseEmulator(t *testing.T, ctx context.Context) *firestore.Client {
@@ -52,5 +53,37 @@ func startFirebaseEmulator(t *testing.T, ctx context.Context) *firestore.Client 
 		t.Fatal(err)
 	}
 	os.Unsetenv("FIRESTORE_EMULATOR_HOST")
+	clearDB(t, ctx, cl)
 	return cl
+}
+
+func clearDB(t *testing.T, ctx context.Context, cl *firestore.Client) {
+	t.Helper()
+	cs, err := cl.Collections(ctx).GetAll()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range cs {
+		it := c.Limit(1000).Documents(ctx)
+		for {
+			deleted := 0
+			batch := cl.Batch()
+			for {
+				doc, err := it.Next()
+				if err == iterator.Done {
+					break
+				} else if err != nil {
+					t.Fatal(err)
+				}
+				batch.Delete(doc.Ref)
+				deleted++
+			}
+			if deleted == 0 {
+				return
+			}
+			if _, err := batch.Commit(ctx); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
 }

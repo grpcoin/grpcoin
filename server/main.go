@@ -16,15 +16,20 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"cloud.google.com/go/firestore"
 	pb "github.com/ahmetb/grpcoin/api/grpcoin"
+	"github.com/ahmetb/grpcoin/server/auth"
+	"github.com/ahmetb/grpcoin/server/auth/github"
 	"github.com/go-redis/redis/v8"
 	"github.com/go-redis/redismock/v8"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	"google.golang.org/grpc"
 )
 
@@ -44,26 +49,44 @@ func main() {
 	}
 	var rc *redis.Client
 	if r := os.Getenv("REDIS_IP"); r == "" {
-		rc, _ = redismock.NewClientMock()
+		c, rm := redismock.NewClientMock()
+		rm.ExpectPing().SetVal("pong")
+		rc = c
 	} else {
-		rc = redis.NewClient(&redis.Options{Addr: r})
+		rc = redis.NewClient(&redis.Options{Addr: r + ":6379"})
 	}
 	if err := rc.Ping(ctx).Err(); err != nil {
 		panic(err)
 	}
 
-	srv := grpc.NewServer()
+	fs, err := firestore.NewClient(ctx, firestore.DetectProjectID)
+	if err != nil {
+		panic(err)
+	}
+
 	ac := &AccountCache{cache: rc}
 	as := &accountService{cache: ac}
+	au := &github.GitHubAuthenticator{}
+	udb := &userDB{fs: fs}
+	ts := &tickerService{}
+	err = prepServe(ctx, au, udb, as, ts)(lis)
+	if err != nil {
+		log.Fatalf("server failed: %v", err)
+	}
+	log.Println("gracefully shut down the server")
+}
+
+func prepServe(ctx context.Context, au auth.Authenticator, udb *userDB, as *accountService, ts *tickerService) func(net.Listener) error {
+	interceptors := grpc_middleware.ChainUnaryServer(
+		grpc_auth.UnaryServerInterceptor(auth.AuthenticatingInterceptor(au)),
+		grpc_auth.UnaryServerInterceptor(udb.ensureAccountExistsInterceptor()),
+	)
+	srv := grpc.NewServer(grpc.UnaryInterceptor(interceptors))
 	pb.RegisterAccountServer(srv, as)
-	pb.RegisterTickerInfoServer(srv, new(tickerService))
+	pb.RegisterTickerInfoServer(srv, ts) // this one is not authenticated (since it's stream-only, no unary)
 	go func() {
 		<-ctx.Done()
 		srv.GracefulStop()
 	}()
-	err = srv.Serve(lis)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("gracefully shut down the server")
+	return srv.Serve
 }

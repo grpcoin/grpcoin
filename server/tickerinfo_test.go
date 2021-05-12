@@ -100,7 +100,7 @@ func TestWatchReconnect(t *testing.T) {
 		err = stream.RecvMsg(&m)
 		if err != nil {
 			if e := status.Convert(err); e != nil {
-				if e.Code() == codes.DeadlineExceeded {
+				if e.Code() == codes.DeadlineExceeded || e.Code() == codes.Canceled {
 					break
 				}
 			}
@@ -121,7 +121,7 @@ func TestWatchReconnect(t *testing.T) {
 		err = stream.RecvMsg(&m)
 		if err != nil {
 			if e := status.Convert(err); e != nil {
-				if e.Code() == codes.DeadlineExceeded {
+				if e.Code() == codes.DeadlineExceeded || e.Code() == codes.Canceled {
 					break
 				}
 			}
@@ -168,7 +168,7 @@ func TestWatchMulti(t *testing.T) {
 				err = stream.RecvMsg(&m)
 				if err != nil {
 					if e := status.Convert(err); e != nil {
-						if e.Code() == codes.DeadlineExceeded {
+						if e.Code() == codes.DeadlineExceeded || e.Code() == codes.Canceled {
 							break
 						}
 					}
