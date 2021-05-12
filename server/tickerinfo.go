@@ -20,8 +20,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ahmetb/grpcoin/api/grpcoin"
-	"github.com/ahmetb/grpcoin/gdax"
+	"github.com/grpcoin/grpcoin/api/grpcoin"
+	"github.com/grpcoin/grpcoin/gdax"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"

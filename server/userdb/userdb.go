@@ -6,8 +6,8 @@ import (
 	"time"
 
 	firestore "cloud.google.com/go/firestore"
-	"github.com/ahmetb/grpcoin/server/auth"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
+	"github.com/grpcoin/grpcoin/server/auth"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

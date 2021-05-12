@@ -24,7 +24,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ahmetb/grpcoin/api/grpcoin"
+	"github.com/grpcoin/grpcoin/api/grpcoin"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"

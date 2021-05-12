@@ -19,11 +19,11 @@ import (
 	"net"
 	"testing"
 
-	"github.com/ahmetb/grpcoin/api/grpcoin"
-	"github.com/ahmetb/grpcoin/auth/github"
-	"github.com/ahmetb/grpcoin/server/auth"
-	"github.com/ahmetb/grpcoin/server/firestoretestutil"
-	"github.com/ahmetb/grpcoin/server/userdb"
+	"github.com/grpcoin/grpcoin/api/grpcoin"
+	"github.com/grpcoin/grpcoin/auth/github"
+	"github.com/grpcoin/grpcoin/server/auth"
+	"github.com/grpcoin/grpcoin/server/firestoretestutil"
+	"github.com/grpcoin/grpcoin/server/userdb"
 	"google.golang.org/grpc"
 )
 

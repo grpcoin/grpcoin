@@ -1,4 +1,4 @@
-module github.com/ahmetb/grpcoin
+module github.com/grpcoin/grpcoin
 
 go 1.16
 

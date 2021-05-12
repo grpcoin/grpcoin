@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ahmetb/grpcoin/server/firestoretestutil"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/grpcoin/grpcoin/server/firestoretestutil"
 )
 
 type testUser struct {

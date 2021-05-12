@@ -22,8 +22,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ahmetb/grpcoin/api/grpcoin"
 	ws "github.com/gorilla/websocket"
+	"github.com/grpcoin/grpcoin/api/grpcoin"
 	"github.com/preichenberger/go-coinbasepro/v2"
 	"golang.org/x/time/rate"
 )

@@ -17,9 +17,9 @@ package main
 import (
 	"context"
 
-	"github.com/ahmetb/grpcoin/api/grpcoin"
-	"github.com/ahmetb/grpcoin/server/auth"
-	"github.com/ahmetb/grpcoin/server/userdb"
+	"github.com/grpcoin/grpcoin/api/grpcoin"
+	"github.com/grpcoin/grpcoin/server/auth"
+	"github.com/grpcoin/grpcoin/server/userdb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

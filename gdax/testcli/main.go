@@ -19,7 +19,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/ahmetb/grpcoin/gdax"
+	"github.com/grpcoin/grpcoin/gdax"
 )
 
 func main() {

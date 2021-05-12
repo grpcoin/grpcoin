@@ -17,7 +17,7 @@ package main
 import (
 	"sync"
 
-	"github.com/ahmetb/grpcoin/gdax"
+	"github.com/grpcoin/grpcoin/gdax"
 )
 
 type PubSub struct {

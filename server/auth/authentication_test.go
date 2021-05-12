@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ahmetb/grpcoin/auth/github"
+	"github.com/grpcoin/grpcoin/auth/github"
 )
 
 func TestAuthInfoFromContext(t *testing.T) {

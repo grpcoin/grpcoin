@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ahmetb/grpcoin/auth/github"
-	"github.com/ahmetb/grpcoin/server/auth"
+	"github.com/grpcoin/grpcoin/auth/github"
+	"github.com/grpcoin/grpcoin/server/auth"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"

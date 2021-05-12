@@ -23,13 +23,13 @@ import (
 	"syscall"
 
 	"cloud.google.com/go/firestore"
-	pb "github.com/ahmetb/grpcoin/api/grpcoin"
-	"github.com/ahmetb/grpcoin/server/auth"
-	"github.com/ahmetb/grpcoin/server/auth/github"
-	"github.com/ahmetb/grpcoin/server/userdb"
 	"github.com/go-redis/redis/v8"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
+	pb "github.com/grpcoin/grpcoin/api/grpcoin"
+	"github.com/grpcoin/grpcoin/server/auth"
+	"github.com/grpcoin/grpcoin/server/auth/github"
+	"github.com/grpcoin/grpcoin/server/userdb"
 	"google.golang.org/grpc"
 )
 
