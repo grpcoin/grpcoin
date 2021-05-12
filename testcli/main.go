@@ -32,21 +32,35 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+const (
+	prod  = `grpcoin-main-kafjc7sboa-wl.a.run.app:443`
+	local = `localhost:8080`
+)
+
 func main() {
 	log.SetFlags(log.Lmicroseconds | log.Ltime)
-	url := `grpcoin-main-kafjc7sboa-wl.a.run.app:443`
-	ctx := context.Background()
-	creds := credentials.NewTLS(&tls.Config{})
-	conn, err := grpc.DialContext(ctx, url, grpc.WithTransportCredentials(creds))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// try adding token to outgoing request
 	token := os.Getenv("TOKEN")
 	if token == "" {
 		log.Fatal("create a permissionless Personal Access Token on GitHub and set it to TOKEN environment variable")
 	}
+	ctx := context.Background()
+
+	var conn *grpc.ClientConn
+	if os.Getenv("LOCAL") != "" {
+		c, err := grpc.DialContext(ctx, local, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
+		if err != nil {
+			log.Fatal(err)
+		}
+		conn = c
+	} else {
+		c, err := grpc.DialContext(ctx, prod, grpc.WithInsecure())
+		if err != nil {
+			log.Fatal(err)
+		}
+		conn = c
+	}
+
+	// try adding token to outgoing request
 	authCtx := metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+token)
 	resp, err := grpcoin.NewAccountClient(conn).TestAuth(authCtx, &grpcoin.TestAuthRequest{})
 	if err != nil {
