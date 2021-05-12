@@ -94,7 +94,7 @@ func prepServer(ctx context.Context, au auth.Authenticator, udb *userdb.UserDB, 
 		grpc_ctxtags.StreamServerInterceptor(grpc_ctxtags.WithFieldExtractor(grpc_ctxtags.CodeGenRequestFieldExtractor)),
 		grpc_zap.StreamServerInterceptor(zapLogger, logOpts...),
 	)
-	grpc_zap.ReplaceGrpcLoggerV2(zapLogger)
+	// grpc_zap.ReplaceGrpcLoggerV2(zapLogger)
 	srv := grpc.NewServer(unaryInterceptors, streamInterceptors)
 	pb.RegisterAccountServer(srv, as)
 	pb.RegisterTickerInfoServer(srv, ts) // this one is not authenticated (since it's stream-only, no unary)

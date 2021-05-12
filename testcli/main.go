@@ -46,14 +46,14 @@ func main() {
 	ctx := context.Background()
 
 	var conn *grpc.ClientConn
-	if os.Getenv("LOCAL") != "" {
-		c, err := grpc.DialContext(ctx, local, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
+	if os.Getenv("LOCAL") == "" {
+		c, err := grpc.DialContext(ctx, prod, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
 		if err != nil {
 			log.Fatal(err)
 		}
 		conn = c
 	} else {
-		c, err := grpc.DialContext(ctx, prod, grpc.WithInsecure())
+		c, err := grpc.DialContext(ctx, local, grpc.WithInsecure())
 		if err != nil {
 			log.Fatal(err)
 		}

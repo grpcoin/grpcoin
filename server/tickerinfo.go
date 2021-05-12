@@ -35,20 +35,17 @@ type tickerService struct {
 }
 
 func (t *tickerService) initWatch() error {
-	fmt.Println("init")
 	t.lock.Lock()
 	if t.bus != nil {
 		t.lock.Unlock()
 		return nil
 	}
 
-	fmt.Println("connecting to ws")
 	ctx, stop := context.WithCancel(context.Background())
 	go func() {
 		<-ctx.Done()
 		t.lock.Lock()
 		t.bus = nil
-		fmt.Println("last client disconnected")
 		t.lock.Unlock()
 	}()
 	quotes, err := gdax.StartWatch(ctx, "BTC-USD")
@@ -71,7 +68,6 @@ func (t *tickerService) registerWatch(ctx context.Context) (<-chan gdax.Quote, e
 	t.bus.Sub(ch)
 	go func() {
 		<-ctx.Done()
-		fmt.Println("client disconnect (rpc cancel)")
 		t.bus.Unsub(ch)
 	}()
 	return ch, nil
@@ -91,13 +87,16 @@ func (f *tickerService) Watch(req *grpcoin.Ticker, stream grpcoin.TickerInfo_Wat
 			Price: m.Price,
 		})
 		if err != nil {
+			if err == context.Canceled {
+				break
+			}
 			return err
 		}
 	}
 	select {
 	case <-stream.Context().Done():
 		err := stream.Context().Err()
-		if err == context.DeadlineExceeded {
+		if err == context.DeadlineExceeded || err == context.Canceled {
 			return status.Error(codes.Canceled, fmt.Sprintf("client cancelled request: %v", err))
 		}
 		return status.Error(codes.Internal, fmt.Sprintf("unknown error on ctx: %v", err))
