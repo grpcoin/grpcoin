@@ -105,8 +105,12 @@ enum TradeAction {
 }
 
 message TradeRequest{
+    message Ticker {
+        string ticker = 1; // e.g. BTC
+    }
     TradeAction action = 1;
-    Amount quantity = 2;
+    Ticker ticker = 2;
+    Amount quantity = 3;
 }
 
 message TradeResponse{
