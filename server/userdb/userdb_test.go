@@ -60,8 +60,10 @@ func TestNewUser(t *testing.T) {
 		ID:          "foobar",
 		DisplayName: "ab",
 		ProfileURL:  "https://ab",
-		CashUSD:     Amount{100_000, 0},
-		Positions:   map[string]Amount{"BTC": {0, 0}},
+		Portfolio: Portfolio{CashUSD: Amount{Units: 100_000},
+			Positions: map[string]Amount{
+				"BTC": {Units: 0, Nanos: 0},
+			}},
 	}
 	if diff := cmp.Diff(uv, expected,
 		cmpopts.IgnoreFields(User{}, "CreatedAt")); diff != "" {

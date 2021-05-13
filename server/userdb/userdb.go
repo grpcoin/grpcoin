@@ -24,7 +24,10 @@ type User struct {
 	DisplayName string
 	ProfileURL  string
 	CreatedAt   time.Time
+	Portfolio   Portfolio
+}
 
+type Portfolio struct {
 	CashUSD   Amount
 	Positions map[string]Amount
 }
