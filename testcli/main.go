@@ -69,13 +69,13 @@ func main() {
 	log.Printf("you are user %s", resp.GetUserId())
 
 	// retrieve portfolio
-	portfolio, err := grpcoin.NewPaperTradeClient(conn).Portfolio(ctx, &grpcoin.PortfolioRequest{})
+	portfolio, err := grpcoin.NewPaperTradeClient(conn).Portfolio(authCtx, &grpcoin.PortfolioRequest{})
 	if err != nil {
 		log.Fatalf("portfolio request failed: %v", err)
 	}
-	log.Printf("cash position: %#v", portfolio.CashUsd)
+	log.Printf("cash position: %#v", portfolio.CashUsd.String())
 	for _, p := range portfolio.Positions {
-		log.Printf("coin: ticker=%s amount=%#v", p.Ticker.Ticker, p.Amount)
+		log.Printf("coin position: %s", p.String())
 	}
 
 	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
