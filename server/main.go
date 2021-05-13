@@ -105,15 +105,18 @@ func main() {
 	as := &accountService{cache: ac, udb: udb}
 	au := &github.GitHubAuthenticator{}
 	ts := &tickerService{}
+	pt := &tradingService{udb: udb}
 	log.Debug("starting to listen", zap.String("addr", addr+":"+port))
-	err = prepServer(ctx, log, au, udb, as, ts).Serve(lis)
+	err = prepServer(ctx, log, au, udb, as, ts, pt).Serve(lis)
 	if err != nil {
 		log.Fatal("server failed", zap.Error(err))
 	}
 	log.Debug("gracefully shut down the server")
 }
 
-func prepServer(ctx context.Context, log *zap.Logger, au auth.Authenticator, udb *userdb.UserDB, as *accountService, ts *tickerService) *grpc.Server {
+func prepServer(ctx context.Context, log *zap.Logger, au auth.Authenticator,
+	udb *userdb.UserDB, as *accountService, ts *tickerService,
+	pt *tradingService) *grpc.Server {
 	unaryInterceptors := grpc_middleware.WithUnaryServerChain(
 		grpc_ctxtags.UnaryServerInterceptor(grpc_ctxtags.WithFieldExtractor(grpc_ctxtags.CodeGenRequestFieldExtractor)),
 		grpc_zap.UnaryServerInterceptor(log),
@@ -128,6 +131,7 @@ func prepServer(ctx context.Context, log *zap.Logger, au auth.Authenticator, udb
 	srv := grpc.NewServer(unaryInterceptors, streamInterceptors)
 	pb.RegisterAccountServer(srv, as)
 	pb.RegisterTickerInfoServer(srv, ts) // this one is not authenticated (since it's stream-only, no unary)
+	pb.RegisterPaperTradeServer(srv, pt)
 	go func() {
 		<-ctx.Done()
 		log.Debug("shutdown signal received")

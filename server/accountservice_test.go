@@ -41,7 +41,7 @@ func TestTestAuth(t *testing.T) {
 	}
 	udb := &userdb.UserDB{DB: fs}
 	lg, _ := zap.NewDevelopment()
-	srv := prepServer(context.TODO(), lg, au, udb, &accountService{cache: &AccountCache{cache: dummyRedis()}}, nil)
+	srv := prepServer(context.TODO(), lg, au, udb, &accountService{cache: &AccountCache{cache: dummyRedis()}}, nil, nil)
 	go srv.Serve(l)
 	defer srv.Stop()
 	defer l.Close()

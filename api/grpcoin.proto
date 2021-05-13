@@ -76,7 +76,8 @@ service PaperTrade {
 message PortfolioRequest {}
 
 message PortfolioResponse {
-    repeated PortfolioPosition positions = 1;
+    Amount cash_usd = 1;
+    repeated PortfolioPosition positions = 2;
 }
 
 message PortfolioPosition {

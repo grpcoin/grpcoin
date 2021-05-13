@@ -68,6 +68,16 @@ func main() {
 	}
 	log.Printf("you are user %s", resp.GetUserId())
 
+	// retrieve portfolio
+	portfolio, err := grpcoin.NewPaperTradeClient(conn).Portfolio(ctx, &grpcoin.PortfolioRequest{})
+	if err != nil {
+		log.Fatalf("portfolio request failed: %v", err)
+	}
+	log.Printf("cash position: %#v", portfolio.CashUsd)
+	for _, p := range portfolio.Positions {
+		log.Printf("coin: ticker=%s amount=%#v", p.Ticker.Ticker, p.Amount)
+	}
+
 	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	for ctx.Err() == nil {
 		log.Printf("connecting to stream real-time BTC quotes, hit Ctrl-C to quit anytime")
