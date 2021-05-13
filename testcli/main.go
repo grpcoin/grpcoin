@@ -71,7 +71,7 @@ func main() {
 	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	for ctx.Err() == nil {
 		log.Printf("connecting to stream real-time BTC quotes, hit Ctrl-C to quit anytime")
-		stream, err := grpcoin.NewTickerInfoClient(conn).Watch(ctx, &grpcoin.Ticker{Ticker: "BTC-USD"})
+		stream, err := grpcoin.NewTickerInfoClient(conn).Watch(ctx, &grpcoin.QuoteTicker{Ticker: "BTC-USD"})
 		if err != nil {
 			log.Fatal(err)
 		}

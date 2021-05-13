@@ -10,7 +10,7 @@ require (
 	github.com/gorilla/websocket v1.4.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/preichenberger/go-coinbasepro/v2 v2.0.5
-	github.com/tommy351/zap-stackdriver v0.1.4 // indirect
+	github.com/tommy351/zap-stackdriver v0.1.4
 	go.uber.org/zap v1.15.0
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba
 	google.golang.org/api v0.40.0

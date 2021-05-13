@@ -27,23 +27,19 @@ service TickerInfo {
     // If the stream terminates, please reconnect.
     //
     // Unauthenticated.
-    rpc Watch(Ticker) returns (stream TickerQuote){}
+    rpc Watch(QuoteTicker) returns (stream Quote){}
 }
 
-service Account {
-    // Tests if your token works.
-    //
-    // Send a header (gRPC metadata) named "Authorization"
-    // with value "Bearer XXX" where XXX is a GitHub Personal Access token
-    // (does not require any permissions).
-    rpc TestAuth(TestAuthRequest) returns (TestAuthResponse) {}
+// QuoteTicker represents a quote request for a coin (e.g. BTC-USD)
+message QuoteTicker {
+    string ticker = 1; // e.g. BTC-USD
 }
 
-// service PaperTrade {
-//     rpc Portfolio(PortfolioRequest) returns (PortfolioResponse) {}
-//     // order history
-//     // trading methods sell/buy
-// }
+// Quote represents a real-time coin price.
+message Quote{
+    google.protobuf.Timestamp t = 10;
+    Amount price = 20;
+}
 
 message Amount {
     // The whole units of the amount.
@@ -59,28 +55,36 @@ message Amount {
     int32 nanos = 2;
 }
 
-message Empty {}
+service Account {
+    // Tests if your token works.
+    //
+    // Send a header (gRPC metadata) named "Authorization"
+    // with value "Bearer XXX" where XXX is a GitHub Personal Access token
+    // (does not require any permissions).
+    rpc TestAuth(TestAuthRequest) returns (TestAuthResponse) {}
+}
+
 message TestAuthRequest {}
 message TestAuthResponse {
     string user_id = 10;
 }
 
-message Ticker {
-    string ticker = 1; // e.g. BTC-USD
+service PaperTrade {
+    rpc Portfolio(PortfolioRequest) returns (PortfolioResponse) {}
 }
 
-message TickerQuote {
-    google.protobuf.Timestamp t = 10;
-    Amount price = 20;
+message PortfolioRequest {}
+
+message PortfolioResponse {
+    repeated PortfolioPosition positions = 1;
 }
 
-// message PortfolioRequest {}
+message PortfolioPosition {
+    message Ticker {
+        string ticker = 1; // e.g. BTC
+    }
+    Ticker ticker = 1;
+    Amount amount = 2;
+}
 
-// message PortfolioResponse {
-//     repeated PortfolioPosition positions = 1;
-// }
-
-// message PortfolioPosition {
-//     Ticker ticker = 1;
-//     Amount amount = 2;
-// }
+message Empty {}

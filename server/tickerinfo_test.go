@@ -47,12 +47,17 @@ func TestWatch(t *testing.T) {
 	ctx, cleanup := context.WithTimeout(context.Background(), time.Second*5)
 	defer cleanup()
 
-	stream, err := client.Watch(ctx, &grpcoin.Ticker{Ticker: "BTC-USD"})
+	_, err = client.Watch(ctx, &grpcoin.QuoteTicker{Ticker: "XXX"})
+	if status.Code(err) != codes.InvalidArgument {
+		t.Fatalf("expected err InvalidArgument; got:%v", err)
+	}
+
+	stream, err := client.Watch(ctx, &grpcoin.QuoteTicker{Ticker: "BTC"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	for {
-		var m grpcoin.TickerQuote
+		var m grpcoin.Quote
 		err = stream.RecvMsg(&m)
 		if err != nil {
 			if e := status.Convert(err); e != nil {
@@ -91,12 +96,12 @@ func TestWatchReconnect(t *testing.T) {
 	ctx, cleanup := context.WithTimeout(context.Background(), time.Second*5)
 	defer cleanup()
 
-	stream, err := client.Watch(ctx, &grpcoin.Ticker{Ticker: "BTC-USD"})
+	stream, err := client.Watch(ctx, &grpcoin.QuoteTicker{Ticker: "BTC-USD"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	for {
-		var m grpcoin.TickerQuote
+		var m grpcoin.Quote
 		err = stream.RecvMsg(&m)
 		if err != nil {
 			if e := status.Convert(err); e != nil {
@@ -112,12 +117,12 @@ func TestWatchReconnect(t *testing.T) {
 	defer cleanup2()
 
 	count := 0
-	stream, err = client.Watch(ctx, &grpcoin.Ticker{Ticker: "BTC-USD"})
+	stream, err = client.Watch(ctx, &grpcoin.QuoteTicker{Ticker: "BTC-USD"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	for {
-		var m grpcoin.TickerQuote
+		var m grpcoin.Quote
 		err = stream.RecvMsg(&m)
 		if err != nil {
 			if e := status.Convert(err); e != nil {
@@ -159,12 +164,12 @@ func TestWatchMulti(t *testing.T) {
 			client := grpcoin.NewTickerInfoClient(cc)
 			ctx, cleanup := context.WithTimeout(context.Background(), time.Second*5)
 			defer cleanup()
-			stream, err := client.Watch(ctx, &grpcoin.Ticker{Ticker: "BTC-USD"})
+			stream, err := client.Watch(ctx, &grpcoin.QuoteTicker{Ticker: "BTC-USD"})
 			if err != nil {
 				t.Fatalf("routine %d: dial: %v", j, err)
 			}
 			for {
-				var m grpcoin.TickerQuote
+				var m grpcoin.Quote
 				err = stream.RecvMsg(&m)
 				if err != nil {
 					if e := status.Convert(err); e != nil {

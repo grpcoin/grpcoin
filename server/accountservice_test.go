@@ -24,6 +24,7 @@ import (
 	"github.com/grpcoin/grpcoin/server/auth"
 	"github.com/grpcoin/grpcoin/server/firestoretestutil"
 	"github.com/grpcoin/grpcoin/server/userdb"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
@@ -39,7 +40,8 @@ func TestTestAuth(t *testing.T) {
 		},
 	}
 	udb := &userdb.UserDB{DB: fs}
-	srv := prepServer(context.TODO(), au, udb, &accountService{cache: &AccountCache{cache: dummyRedis()}}, nil)
+	lg, _ := zap.NewDevelopment()
+	srv := prepServer(context.TODO(), lg, au, udb, &accountService{cache: &AccountCache{cache: dummyRedis()}}, nil)
 	go srv.Serve(l)
 	defer srv.Stop()
 	defer l.Close()

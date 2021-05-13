@@ -23,7 +23,7 @@ import (
 )
 
 func main() {
-	ch, err := gdax.StartWatch(context.Background(), "BTC-USD")
+	ch, err := gdax.StartWatch(context.Background(), "BTC")
 	if err != nil {
 		panic(err)
 	}
