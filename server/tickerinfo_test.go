@@ -47,12 +47,7 @@ func TestWatch(t *testing.T) {
 	ctx, cleanup := context.WithTimeout(context.Background(), time.Second*5)
 	defer cleanup()
 
-	_, err = client.Watch(ctx, &grpcoin.QuoteTicker{Ticker: "XXX"})
-	if status.Code(err) != codes.InvalidArgument {
-		t.Fatalf("expected err InvalidArgument; got:%v", err)
-	}
-
-	stream, err := client.Watch(ctx, &grpcoin.QuoteTicker{Ticker: "BTC"})
+	stream, err := client.Watch(ctx, &grpcoin.QuoteTicker{Ticker: "BTC-USD"})
 	if err != nil {
 		t.Fatal(err)
 	}

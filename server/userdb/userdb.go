@@ -7,6 +7,7 @@ import (
 
 	firestore "cloud.google.com/go/firestore"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
+	"github.com/grpcoin/grpcoin/api/grpcoin"
 	"github.com/grpcoin/grpcoin/server/auth"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -23,7 +24,17 @@ type User struct {
 	DisplayName string
 	ProfileURL  string
 	CreatedAt   time.Time
+
+	CashUSD   Amount
+	Positions map[string]Amount
 }
+
+type Amount struct {
+	Units int64
+	Nanos int32
+}
+
+func (a Amount) V() *grpcoin.Amount { return &grpcoin.Amount{Units: a.Units, Nanos: a.Nanos} }
 
 type UserDB struct {
 	DB *firestore.Client
@@ -35,6 +46,7 @@ func (u *UserDB) Create(ctx context.Context, au auth.AuthenticatedUser) error {
 		ProfileURL:  au.ProfileURL(),
 		CreatedAt:   time.Now(),
 	}
+	setupGamePortfolio(&newUser)
 	_, err := u.DB.Collection(fsUserCol).Doc(au.DBKey()).Create(ctx, newUser)
 	return err
 }
