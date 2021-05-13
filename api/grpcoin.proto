@@ -70,13 +70,22 @@ message TestAuthResponse {
 }
 
 service PaperTrade {
+    // Returns authenticated user's portfolio.
     rpc Portfolio(PortfolioRequest) returns (PortfolioResponse) {}
+
+    // Executes a trade in authenticated user's portfolio.
+    // All trades are executed immediately with the real-time market
+    // price provided on TickerInfo.Watch endpoint.
+    rpc Trade(TradeRequest) returns (TradeResponse) {}
 }
 
 message PortfolioRequest {}
 
 message PortfolioResponse {
+    // User's cash holdings in USD.
     Amount cash_usd = 1;
+
+    // User's cryptocurrency positions.
     repeated PortfolioPosition positions = 2;
 }
 
@@ -86,6 +95,25 @@ message PortfolioPosition {
     }
     Ticker ticker = 1;
     Amount amount = 2;
+}
+
+
+enum TradeAction {
+    UNDEFINED = 0;
+    BUY = 1;  // Buy a cryptocurrency using cash holdings.
+    SELL = 2; // Sell a cryptocurrency for cash holdings.
+}
+
+message TradeRequest{
+    TradeAction action = 1;
+    Amount quantity = 2;
+}
+
+message TradeResponse{
+    google.protobuf.Timestamp t = 1;
+    TradeAction action = 2;
+    Amount quantity = 3;
+    Amount executed_price = 4;
 }
 
 message Empty {}
