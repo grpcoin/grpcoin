@@ -110,7 +110,7 @@ func (u *UserDB) EnsureAccountExistsInterceptor() grpc_auth.AuthFunc {
 		if err != nil {
 			return ctx, status.Errorf(codes.Internal, "failed to ensure user account: %v", err)
 		}
-		return context.WithValue(ctx, ctxUserRecordKey{}, uv), nil
+		return WithUserRecord(ctx, uv), nil
 	}
 }
 
@@ -118,4 +118,8 @@ func UserRecordFromContext(ctx context.Context) (User, bool) {
 	v := ctx.Value(ctxUserRecordKey{})
 	vv, ok := v.(User)
 	return vv, ok
+}
+
+func WithUserRecord(ctx context.Context, u User) context.Context {
+	return context.WithValue(ctx, ctxUserRecordKey{}, u)
 }

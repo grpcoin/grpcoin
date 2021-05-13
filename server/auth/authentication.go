@@ -38,7 +38,7 @@ func AuthenticatingInterceptor(a Authenticator) grpc_auth.AuthFunc {
 		if err != nil {
 			return rpcCtx, err
 		}
-		ctx := context.WithValue(rpcCtx, ctxAuthUserInfo{}, user)
+		ctx := WithUser(rpcCtx, user)
 		return ctx, nil
 	}
 }
@@ -50,6 +50,11 @@ func AuthInfoFromContext(ctx context.Context) AuthenticatedUser {
 		return nil
 	}
 	return v.(AuthenticatedUser)
+}
+
+// WithUser adds authenticated user into to ctx.
+func WithUser(ctx context.Context, a AuthenticatedUser) context.Context {
+	return context.WithValue(ctx, ctxAuthUserInfo{}, a)
 }
 
 type MockAuthenticator struct {
