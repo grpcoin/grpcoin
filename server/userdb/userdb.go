@@ -92,13 +92,21 @@ func (u *UserDB) Get(ctx context.Context, au auth.AuthenticatedUser) (User, bool
 func (u *UserDB) EnsureAccountExists(ctx context.Context, au auth.AuthenticatedUser) (User, error) {
 	ctx, s := u.T.Start(ctx, "ensure acct")
 	defer s.End()
-	err := u.Create(ctx, au)
-	if err != nil && status.Code(err) != codes.AlreadyExists {
+	user, _, err := u.Get(ctx, au)
+	if err == nil {
+		return user, err
+	} else if status.Code(err) != codes.NotFound {
+		return User{}, status.Errorf(codes.Internal, "failed to query user: %v", err)
+	}
+	err = u.Create(ctx, au)
+	if err != nil {
 		return User{}, status.Errorf(codes.Internal, "failed to create user: %v", err)
 	}
-	user, _, err := u.Get(ctx, au)
+	user, _, err = u.Get(ctx, au)
+	if err != nil {
+		return User{}, status.Errorf(codes.Internal, "failed to query new user: %v", err)
+	}
 	return user, err
-
 }
 
 // ensureAccountExistsInterceptor creates an account for the authenticated

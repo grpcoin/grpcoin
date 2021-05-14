@@ -61,18 +61,16 @@ const (
 )
 
 func (t *tradingService) Trade(ctx context.Context, req *grpcoin.TradeRequest) (*grpcoin.TradeResponse, error) {
-	subCtx, s := t.tr.Start(ctx, "userctx")
-	user, ok := userdb.UserRecordFromContext(subCtx)
+	user, ok := userdb.UserRecordFromContext(ctx)
 	if !ok {
 		return nil, status.Error(codes.Internal, "could not find user record in request context")
 	}
-	s.End()
 	if err := validateTradeRequest(req); err != nil {
 		return nil, err
 	}
 
 	// get a real-time market quote
-	subCtx, s = t.tr.Start(ctx, "get quote")
+	subCtx, s := t.tr.Start(ctx, "get quote")
 	quoteCtx, cancel := context.WithTimeout(subCtx, quoteDeadline)
 	defer cancel()
 	quote, err := t.tp.GetQuote(quoteCtx, req.GetTicker().Ticker)
