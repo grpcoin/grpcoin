@@ -104,8 +104,10 @@ func main() {
 	udb := &userdb.UserDB{DB: fs}
 	as := &accountService{cache: ac, udb: udb}
 	au := &github.GitHubAuthenticator{}
+	cb := &coinbaseQuoteProvider{}
+	go cb.sync(ctx, "BTC")
 	ts := &tickerService{}
-	pt := &tradingService{udb: udb}
+	pt := &tradingService{udb: udb, tp: cb}
 	log.Debug("starting to listen", zap.String("addr", addr+":"+port))
 	err = prepServer(ctx, log, au, udb, as, ts, pt).Serve(lis)
 	if err != nil {

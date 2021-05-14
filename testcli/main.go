@@ -78,6 +78,17 @@ func main() {
 		log.Printf("coin position: %s", p.String())
 	}
 
+	// buy 0.05 bitcoin
+	order, err := grpcoin.NewPaperTradeClient(conn).Trade(authCtx, &grpcoin.TradeRequest{
+		Action:   grpcoin.TradeAction_BUY,
+		Ticker:   &grpcoin.TradeRequest_Ticker{Ticker: "BTC"},
+		Quantity: &grpcoin.Amount{Units: 0, Nanos: 50_000_000},
+	})
+	if err != nil {
+		log.Fatalf("buy order failed: %v", err)
+	}
+	log.Printf("ORDER EXECUTED: %s [%s] coins at USD[%s]", order.Action, order.Quantity, order.ExecutedPrice)
+
 	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	for ctx.Err() == nil {
 		log.Printf("connecting to stream real-time BTC quotes, hit Ctrl-C to quit anytime")
