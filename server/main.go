@@ -159,8 +159,9 @@ func prepServer(ctx context.Context, log *zap.Logger, au auth.Authenticator,
 		grpc_auth.UnaryServerInterceptor(auth.AuthenticatingInterceptor(au)),
 		grpc_auth.UnaryServerInterceptor(udb.EnsureAccountExistsInterceptor()),
 	)
+
+	// not adding the otel interceptor here since it's just the TickerInfo.Watch() call for now
 	streamInterceptors := grpc_middleware.WithStreamServerChain(
-		otelgrpc.StreamServerInterceptor(),
 		grpc_ctxtags.StreamServerInterceptor(grpc_ctxtags.WithFieldExtractor(grpc_ctxtags.CodeGenRequestFieldExtractor)),
 		grpc_zap.StreamServerInterceptor(log),
 	)
