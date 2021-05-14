@@ -186,6 +186,9 @@ func Test_validateTradeRequest(t *testing.T) {
 }
 
 func TestTrade(t *testing.T) {
+	if testing.Short() {
+		t.Skip("makes calls to coinbase")
+	}
 	fs := firestoretestutil.StartEmulator(t, context.TODO())
 	udb := &userdb.UserDB{DB: fs}
 

@@ -28,6 +28,9 @@ import (
 )
 
 func TestWatch(t *testing.T) {
+	if testing.Short() {
+		t.Skip("makes calls to coinbase")
+	}
 	l, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		t.Fatal(err)
@@ -72,6 +75,9 @@ func TestWatch(t *testing.T) {
 }
 
 func TestWatchReconnect(t *testing.T) {
+	if testing.Short() {
+		t.Skip("makes calls to coinbase")
+	}
 	l, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		t.Fatal(err)
@@ -136,6 +142,9 @@ func TestWatchReconnect(t *testing.T) {
 }
 
 func TestWatchMulti(t *testing.T) {
+	if testing.Short() {
+		t.Skip("makes calls to coinbase")
+	}
 	l, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		t.Fatal(err)

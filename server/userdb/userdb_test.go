@@ -35,9 +35,6 @@ func (t testUser) DisplayName() string { return t.name }
 func (t testUser) ProfileURL() string  { return "https://" + t.name }
 
 func TestGetUser_notFound(t *testing.T) {
-	if testing.Short() {
-		t.Skip()
-	}
 	ctx := context.Background()
 	udb := &UserDB{DB: firestoretestutil.StartEmulator(t, ctx)}
 	tu := testUser{id: "foo"}
@@ -52,9 +49,6 @@ func TestGetUser_notFound(t *testing.T) {
 }
 
 func TestNewUser(t *testing.T) {
-	if testing.Short() {
-		t.Skip()
-	}
 	ctx := context.Background()
 	udb := &UserDB{DB: firestoretestutil.StartEmulator(t, ctx)}
 	tu := testUser{id: "foobar", name: "ab"}
@@ -88,9 +82,6 @@ func TestNewUser(t *testing.T) {
 }
 
 func TestEnsureAccountExists(t *testing.T) {
-	if testing.Short() {
-		t.Skip()
-	}
 	ctx := context.Background()
 	udb := &UserDB{DB: firestoretestutil.StartEmulator(t, ctx)}
 	tu := testUser{id: "testuser", name: "abc"}

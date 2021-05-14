@@ -24,6 +24,9 @@ import (
 )
 
 func TestStartWatch(t *testing.T) {
+	if testing.Short() {
+		t.Skip("makes calls to coinbase")
+	}
 	ctx, cleanup := context.WithTimeout(context.Background(), time.Second*3)
 	defer cleanup()
 
@@ -47,6 +50,9 @@ func TestStartWatch(t *testing.T) {
 }
 
 func TestRateLimited(t *testing.T) {
+	if testing.Short() {
+		t.Skip("makes calls to coinbase")
+	}
 	ctx, cleanup := context.WithTimeout(context.Background(), time.Second*3)
 	defer cleanup()
 

@@ -16,15 +16,49 @@ package github
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 
-	"github.com/grpcoin/grpcoin/auth/github"
 	"github.com/grpcoin/grpcoin/server/auth"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
+
+type GitHubUser struct {
+	ID       uint64
+	Username string
+}
+
+func (g GitHubUser) DBKey() string       { return fmt.Sprintf("github_%v", g.ID) }
+func (g GitHubUser) DisplayName() string { return g.Username }
+func (g GitHubUser) ProfileURL() string  { return "https://github.com/" + g.Username }
+
+func VerifyUser(token string) (GitHubUser, error) {
+	req, _ := http.NewRequest("GET", "https://api.github.com/user", nil)
+	req.Header.Set("authorization", "Bearer "+token)
+	req.Header.Set("accept", "application/vnd.github.v3+json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return GitHubUser{}, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		var v struct {
+			Message string `json:"message"`
+		}
+		_ = json.NewDecoder(resp.Body).Decode(&v)
+		return GitHubUser{}, fmt.Errorf("github: failed to authenticate (%d): %s", resp.StatusCode, v.Message)
+	}
+	var user struct {
+		Login string `json:"login"`
+		Id    uint64 `json:"id"`
+	}
+	err = json.NewDecoder(resp.Body).Decode(&user)
+	return GitHubUser{ID: user.Id, Username: user.Login}, err
+}
 
 // GitHubAuthenticator authentices with GitHub personal access token in the
 // Authorization header (bearer token format).
@@ -48,7 +82,7 @@ func (a *GitHubAuthenticator) Authenticate(ctx context.Context) (auth.Authentica
 	v = strings.TrimPrefix(v, "Bearer ")
 
 	// TODO make use of the redis cache for the GH API call responses
-	u, err := github.VerifyUser(v)
+	u, err := VerifyUser(v)
 	if err != nil {
 		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("token denied: %s", err))
 	}

@@ -21,6 +21,9 @@ import (
 )
 
 func Test_coinbaseQuoteProvider_GetQuote(t *testing.T) {
+	if testing.Short() {
+		t.Skip("makes calls to coinbase")
+	}
 	cb := &coinbaseQuoteProvider{}
 	ctx, stop := context.WithCancel(context.Background())
 	defer stop()
