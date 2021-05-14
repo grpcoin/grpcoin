@@ -25,6 +25,7 @@ import (
 	"github.com/grpcoin/grpcoin/server/auth/github"
 	"github.com/grpcoin/grpcoin/server/firestoretestutil"
 	"github.com/grpcoin/grpcoin/server/userdb"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -42,7 +43,7 @@ func (m *mockQuoteProvider) GetQuote(ctx context.Context, ticker string) (*grpco
 
 func TestPortfolio(t *testing.T) {
 	fs := firestoretestutil.StartEmulator(t, context.TODO())
-	udb := &userdb.UserDB{DB: fs}
+	udb := &userdb.UserDB{DB: fs, T: trace.NewNoopTracerProvider().Tracer("")}
 
 	au := &github.GitHubUser{ID: 1, Username: "abc"}
 	user, err := udb.EnsureAccountExists(context.TODO(), au)
@@ -82,7 +83,7 @@ func TestPortfolio(t *testing.T) {
 
 func TestTradeQuotePrices(t *testing.T) {
 	fs := firestoretestutil.StartEmulator(t, context.TODO())
-	udb := &userdb.UserDB{DB: fs}
+	udb := &userdb.UserDB{DB: fs, T: trace.NewNoopTracerProvider().Tracer("")}
 
 	faultyQuote := &mockQuoteProvider{err: context.DeadlineExceeded}
 	pt := &tradingService{udb: udb, tp: faultyQuote}
@@ -190,7 +191,7 @@ func TestTrade(t *testing.T) {
 		t.Skip("makes calls to coinbase")
 	}
 	fs := firestoretestutil.StartEmulator(t, context.TODO())
-	udb := &userdb.UserDB{DB: fs}
+	udb := &userdb.UserDB{DB: fs, T: trace.NewNoopTracerProvider().Tracer("")}
 
 	au := &github.GitHubUser{ID: 2, Username: "def"}
 	user, err := udb.EnsureAccountExists(context.TODO(), au)

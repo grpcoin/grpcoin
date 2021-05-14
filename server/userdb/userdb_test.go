@@ -23,6 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/grpcoin/grpcoin/api/grpcoin"
 	"github.com/grpcoin/grpcoin/server/firestoretestutil"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type testUser struct {
@@ -36,7 +37,8 @@ func (t testUser) ProfileURL() string  { return "https://" + t.name }
 
 func TestGetUser_notFound(t *testing.T) {
 	ctx := context.Background()
-	udb := &UserDB{DB: firestoretestutil.StartEmulator(t, ctx)}
+	udb := &UserDB{DB: firestoretestutil.StartEmulator(t, ctx),
+		T: trace.NewNoopTracerProvider().Tracer("")}
 	tu := testUser{id: "foo"}
 
 	u, ok, err := udb.Get(ctx, tu)
@@ -50,7 +52,8 @@ func TestGetUser_notFound(t *testing.T) {
 
 func TestNewUser(t *testing.T) {
 	ctx := context.Background()
-	udb := &UserDB{DB: firestoretestutil.StartEmulator(t, ctx)}
+	udb := &UserDB{DB: firestoretestutil.StartEmulator(t, ctx),
+		T: trace.NewNoopTracerProvider().Tracer("")}
 	tu := testUser{id: "foobar", name: "ab"}
 
 	err := udb.Create(ctx, tu)
@@ -83,7 +86,8 @@ func TestNewUser(t *testing.T) {
 
 func TestEnsureAccountExists(t *testing.T) {
 	ctx := context.Background()
-	udb := &UserDB{DB: firestoretestutil.StartEmulator(t, ctx)}
+	udb := &UserDB{DB: firestoretestutil.StartEmulator(t, ctx),
+		T: trace.NewNoopTracerProvider().Tracer("")}
 	tu := testUser{id: "testuser", name: "abc"}
 
 	u, err := udb.EnsureAccountExists(ctx, tu)

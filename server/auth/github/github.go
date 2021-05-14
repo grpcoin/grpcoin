@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/grpcoin/grpcoin/server/auth"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -63,6 +64,7 @@ func VerifyUser(token string) (GitHubUser, error) {
 // GitHubAuthenticator authentices with GitHub personal access token in the
 // Authorization header (bearer token format).
 type GitHubAuthenticator struct {
+	T trace.Tracer
 }
 
 func (a *GitHubAuthenticator) Authenticate(ctx context.Context) (auth.AuthenticatedUser, error) {
@@ -83,6 +85,8 @@ func (a *GitHubAuthenticator) Authenticate(ctx context.Context) (auth.Authentica
 	v = strings.TrimPrefix(v, "Bearer ")
 
 	// TODO make use of the redis cache for the GH API call responses
+	_, s := a.T.Start(ctx, "github auth")
+	defer s.End()
 	u, err := VerifyUser(v)
 	if err != nil {
 		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("token denied: %s", err))

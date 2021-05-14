@@ -18,13 +18,14 @@ import (
 	"context"
 	"testing"
 
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
 func TestGitHubAuthenticator(t *testing.T) {
-	gh := &GitHubAuthenticator{}
+	gh := &GitHubAuthenticator{T: trace.NewNoopTracerProvider().Tracer("")}
 	ctx := metadata.NewIncomingContext(context.Background(), nil)
 	_, err := gh.Authenticate(ctx)
 	if err == nil {

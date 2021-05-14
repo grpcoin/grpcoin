@@ -24,6 +24,7 @@ import (
 	"github.com/grpcoin/grpcoin/server/auth/github"
 	"github.com/grpcoin/grpcoin/server/firestoretestutil"
 	"github.com/grpcoin/grpcoin/server/userdb"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
@@ -39,7 +40,7 @@ func TestTestAuth(t *testing.T) {
 			return &github.GitHubUser{ID: 1, Username: "abc"}, nil
 		},
 	}
-	udb := &userdb.UserDB{DB: fs}
+	udb := &userdb.UserDB{DB: fs, T: trace.NewNoopTracerProvider().Tracer("")}
 	lg, _ := zap.NewDevelopment()
 	srv := prepServer(context.TODO(), lg, au, udb, &accountService{cache: &AccountCache{cache: dummyRedis()}}, nil, nil)
 	go srv.Serve(l)

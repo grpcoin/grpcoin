@@ -36,6 +36,8 @@ type tradingService struct {
 }
 
 func (t *tradingService) Portfolio(ctx context.Context, req *grpcoin.PortfolioRequest) (*grpcoin.PortfolioResponse, error) {
+	ctx, span := t.tr.Start(ctx, "portfolio read")
+	defer span.End()
 	user, ok := userdb.UserRecordFromContext(ctx)
 	if !ok {
 		return nil, status.Error(codes.Internal, "could not find user record in request context")
@@ -84,6 +86,7 @@ func (t *tradingService) Trade(ctx context.Context, req *grpcoin.TradeRequest) (
 
 	// TODO add a timeout for tx to be executed
 	subCtx, s = t.tr.Start(ctx, "execute trade")
+	defer s.End()
 	tradeCtx, cancel2 := context.WithTimeout(subCtx, tradeExecutionDeadline)
 	defer cancel2()
 	err = t.udb.Trade(tradeCtx, user.ID, req.GetTicker().Ticker, req.Action, quote, req.Quantity)
@@ -92,7 +95,6 @@ func (t *tradingService) Trade(ctx context.Context, req *grpcoin.TradeRequest) (
 	} else if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to execute trade: %v", err)
 	}
-	s.End()
 
 	return &grpcoin.TradeResponse{
 		T:             timestamppb.Now(), // TODO read from tx
