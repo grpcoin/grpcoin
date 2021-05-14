@@ -21,6 +21,7 @@ import (
 
 	"github.com/grpcoin/grpcoin/api/grpcoin"
 	"github.com/grpcoin/grpcoin/server/userdb"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -29,6 +30,7 @@ import (
 type tradingService struct {
 	udb *userdb.UserDB
 	tp  QuoteProvider
+	tr  trace.Tracer
 
 	grpcoin.UnimplementedPaperTradeServer
 }
@@ -57,16 +59,19 @@ const (
 )
 
 func (t *tradingService) Trade(ctx context.Context, req *grpcoin.TradeRequest) (*grpcoin.TradeResponse, error) {
-	user, ok := userdb.UserRecordFromContext(ctx)
+	subCtx, s := t.tr.Start(ctx, "userctx")
+	user, ok := userdb.UserRecordFromContext(subCtx)
 	if !ok {
 		return nil, status.Error(codes.Internal, "could not find user record in request context")
 	}
+	s.End()
 	if err := validateTradeRequest(req); err != nil {
 		return nil, err
 	}
 
 	// get a real-time market quote
-	quoteCtx, cancel := context.WithTimeout(ctx, quoteDeadline)
+	subCtx, s = t.tr.Start(ctx, "get quote")
+	quoteCtx, cancel := context.WithTimeout(subCtx, quoteDeadline)
 	defer cancel()
 	quote, err := t.tp.GetQuote(quoteCtx, req.GetTicker().Ticker)
 	if errors.Is(err, context.DeadlineExceeded) {
@@ -75,9 +80,11 @@ func (t *tradingService) Trade(ctx context.Context, req *grpcoin.TradeRequest) (
 	} else if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to retrieve a quote: %v", err)
 	}
+	s.End()
 
 	// TODO add a timeout for tx to be executed
-	tradeCtx, cancel2 := context.WithTimeout(ctx, tradeExecutionDeadline)
+	subCtx, s = t.tr.Start(ctx, "execute trade")
+	tradeCtx, cancel2 := context.WithTimeout(subCtx, tradeExecutionDeadline)
 	defer cancel2()
 	err = t.udb.Trade(tradeCtx, user.ID, req.GetTicker().Ticker, req.Action, quote, req.Quantity)
 	if errors.Is(err, context.DeadlineExceeded) {
@@ -85,6 +92,7 @@ func (t *tradingService) Trade(ctx context.Context, req *grpcoin.TradeRequest) (
 	} else if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to execute trade: %v", err)
 	}
+	s.End()
 
 	return &grpcoin.TradeResponse{
 		T:             timestamppb.Now(), // TODO read from tx

@@ -87,10 +87,15 @@ func main() {
 	tracer := trace.NewTracerProvider(trace.WithSyncer(traceExporter),
 		trace.WithSampler(trace.AlwaysSample()))
 	otel.SetTracerProvider(tracer)
+	tp := otel.GetTracerProvider().Tracer("main")
 	defer func() {
 		log.Debug("force flushing trace spans")
-		traceExporter.Shutdown(ctx)
-		tracer.ForceFlush(ctx)
+		if err := traceExporter.Shutdown(ctx); err != nil {
+			log.Warn("failed to shutdown trace exporter", zap.Error(err))
+		}
+		if err := tracer.ForceFlush(ctx); err != nil {
+			log.Warn("failed to flush tracer", zap.Error(err))
+		}
 	}()
 
 	port := os.Getenv("PORT")
@@ -125,7 +130,7 @@ func main() {
 	}
 
 	ac := &AccountCache{cache: rc}
-	udb := &userdb.UserDB{DB: fs}
+	udb := &userdb.UserDB{DB: fs, T: tp}
 	as := &accountService{cache: ac, udb: udb}
 	au := &github.GitHubAuthenticator{}
 	cb := &coinbaseQuoteProvider{}

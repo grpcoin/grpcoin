@@ -62,7 +62,8 @@ func VerifyUser(token string) (GitHubUser, error) {
 
 // GitHubAuthenticator authentices with GitHub personal access token in the
 // Authorization header (bearer token format).
-type GitHubAuthenticator struct{}
+type GitHubAuthenticator struct {
+}
 
 func (a *GitHubAuthenticator) Authenticate(ctx context.Context) (auth.AuthenticatedUser, error) {
 	m, ok := metadata.FromIncomingContext(ctx)

@@ -23,6 +23,7 @@ import (
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	"github.com/grpcoin/grpcoin/api/grpcoin"
 	"github.com/grpcoin/grpcoin/server/auth"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -55,9 +56,12 @@ func (a Amount) V() *grpcoin.Amount { return &grpcoin.Amount{Units: a.Units, Nan
 
 type UserDB struct {
 	DB *firestore.Client
+	T  trace.Tracer
 }
 
 func (u *UserDB) Create(ctx context.Context, au auth.AuthenticatedUser) error {
+	ctx, s := u.T.Start(ctx, "firestore.create")
+	defer s.End()
 	newUser := User{ID: au.DBKey(),
 		DisplayName: au.DisplayName(),
 		ProfileURL:  au.ProfileURL(),
@@ -69,6 +73,8 @@ func (u *UserDB) Create(ctx context.Context, au auth.AuthenticatedUser) error {
 }
 
 func (u *UserDB) Get(ctx context.Context, au auth.AuthenticatedUser) (User, bool, error) {
+	ctx, s := u.T.Start(ctx, "firestore.get")
+	defer s.End()
 	doc, err := u.DB.Collection(fsUserCol).Doc(au.DBKey()).Get(ctx)
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
@@ -84,7 +90,8 @@ func (u *UserDB) Get(ctx context.Context, au auth.AuthenticatedUser) (User, bool
 }
 
 func (u *UserDB) EnsureAccountExists(ctx context.Context, au auth.AuthenticatedUser) (User, error) {
-	// TODO could use lots of caching here
+	ctx, s := u.T.Start(ctx, "ensure acct")
+	defer s.End()
 	err := u.Create(ctx, au)
 	if err != nil && status.Code(err) != codes.AlreadyExists {
 		return User{}, status.Errorf(codes.Internal, "failed to create user: %v", err)
