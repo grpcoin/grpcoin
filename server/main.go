@@ -20,6 +20,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"cloud.google.com/go/firestore"
 	texporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
@@ -84,8 +85,11 @@ func main() {
 	} else {
 		traceExporter = dummyTraceExporter{}
 	}
-	tracer := trace.NewTracerProvider(trace.WithSyncer(traceExporter),
-		trace.WithSampler(trace.AlwaysSample()))
+	tracer := trace.NewTracerProvider(trace.WithBatcher(traceExporter,
+		trace.WithBatchTimeout(time.Millisecond*100),
+		trace.WithMaxExportBatchSize(10)),
+		trace.WithSampler(trace.AlwaysSample()),
+	)
 	otel.SetTracerProvider(tracer)
 	tp := otel.GetTracerProvider().Tracer("main")
 	defer func() {
