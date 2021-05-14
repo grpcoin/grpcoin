@@ -20,8 +20,8 @@ import (
 	"testing"
 
 	"github.com/grpcoin/grpcoin/api/grpcoin"
-	"github.com/grpcoin/grpcoin/auth/github"
 	"github.com/grpcoin/grpcoin/server/auth"
+	"github.com/grpcoin/grpcoin/server/auth/github"
 	"github.com/grpcoin/grpcoin/server/firestoretestutil"
 	"github.com/grpcoin/grpcoin/server/userdb"
 	"go.uber.org/zap"

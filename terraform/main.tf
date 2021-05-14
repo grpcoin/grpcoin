@@ -106,6 +106,15 @@ resource "google_project_iam_binding" "firestore-access" {
   ]
 }
 
+resource "google_project_iam_binding" "tracing-access" {
+  project = var.project
+  role    = "roles/cloudtrace.agent"
+
+  members = [
+    "serviceAccount:${google_service_account.sa.email}",
+  ]
+}
+
 resource "google_vpc_access_connector" "default" {
   depends_on = [
     google_project_service.vpcaccess

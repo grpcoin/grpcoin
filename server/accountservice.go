@@ -17,9 +17,11 @@ package main
 import (
 	"context"
 
+	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"github.com/grpcoin/grpcoin/api/grpcoin"
 	"github.com/grpcoin/grpcoin/server/auth"
 	"github.com/grpcoin/grpcoin/server/userdb"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -40,10 +42,12 @@ func (s *accountService) createAccount(ctx context.Context) {
 }
 
 func (s *accountService) TestAuth(ctx context.Context, req *grpcoin.TestAuthRequest) (*grpcoin.TestAuthResponse, error) {
+	log := ctxzap.Extract(ctx)
 	v := auth.AuthInfoFromContext(ctx)
 	if v == nil {
 		return nil, status.Error(codes.Internal, "request arrived without a token")
 	}
+	log.Debug("authenticated user", zap.String("name", v.DisplayName()))
 	u, ok := userdb.UserRecordFromContext(ctx)
 	if !ok {
 		return nil, status.Error(codes.Internal, "no user record in request context")

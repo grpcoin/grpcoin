@@ -22,6 +22,7 @@ import (
 	"syscall"
 
 	"cloud.google.com/go/firestore"
+	texporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
 	"github.com/go-redis/redis/v8"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
@@ -32,6 +33,9 @@ import (
 	"github.com/grpcoin/grpcoin/server/auth/github"
 	"github.com/grpcoin/grpcoin/server/userdb"
 	stackdriver "github.com/tommy351/zap-stackdriver"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
@@ -40,8 +44,9 @@ import (
 func main() {
 	ctx := context.Background()
 	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
-	var log *zap.Logger
 	onCloudRun := os.Getenv("K_SERVICE") != ""
+
+	var log *zap.Logger
 	if onCloudRun {
 		c := zap.NewProductionConfig()
 		c.EncoderConfig = stackdriver.EncoderConfig
@@ -68,6 +73,25 @@ func main() {
 		z = z.With(zap.String("env", "dev"))
 		log = z
 	}
+
+	var traceExporter trace.SpanExporter
+	if onCloudRun {
+		gcp, err := texporter.NewExporter()
+		if err != nil {
+			log.Fatal("failed to initialize gcp trace exporter", zap.Error(err))
+		}
+		traceExporter = gcp
+	} else {
+		traceExporter = dummyTraceExporter{}
+	}
+	tracer := trace.NewTracerProvider(trace.WithSyncer(traceExporter),
+		trace.WithSampler(trace.AlwaysSample()))
+	otel.SetTracerProvider(tracer)
+	defer func() {
+		log.Debug("force flushing trace spans")
+		traceExporter.Shutdown(ctx)
+		tracer.ForceFlush(ctx)
+	}()
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -120,12 +144,14 @@ func prepServer(ctx context.Context, log *zap.Logger, au auth.Authenticator,
 	udb *userdb.UserDB, as *accountService, ts *tickerService,
 	pt *tradingService) *grpc.Server {
 	unaryInterceptors := grpc_middleware.WithUnaryServerChain(
+		otelgrpc.UnaryServerInterceptor(),
 		grpc_ctxtags.UnaryServerInterceptor(grpc_ctxtags.WithFieldExtractor(grpc_ctxtags.CodeGenRequestFieldExtractor)),
 		grpc_zap.UnaryServerInterceptor(log),
 		grpc_auth.UnaryServerInterceptor(auth.AuthenticatingInterceptor(au)),
 		grpc_auth.UnaryServerInterceptor(udb.EnsureAccountExistsInterceptor()),
 	)
 	streamInterceptors := grpc_middleware.WithStreamServerChain(
+		otelgrpc.StreamServerInterceptor(),
 		grpc_ctxtags.StreamServerInterceptor(grpc_ctxtags.WithFieldExtractor(grpc_ctxtags.CodeGenRequestFieldExtractor)),
 		grpc_zap.StreamServerInterceptor(log),
 	)

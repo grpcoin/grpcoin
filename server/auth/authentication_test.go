@@ -18,9 +18,16 @@ import (
 	"context"
 	"fmt"
 	"testing"
-
-	"github.com/grpcoin/grpcoin/auth/github"
 )
+
+type testUser struct {
+	id   string
+	name string
+}
+
+func (t testUser) DBKey() string       { return t.id }
+func (t testUser) DisplayName() string { return t.name }
+func (t testUser) ProfileURL() string  { return "https://" + t.name }
 
 func TestAuthInfoFromContext(t *testing.T) {
 	ctx := context.Background()
@@ -29,7 +36,7 @@ func TestAuthInfoFromContext(t *testing.T) {
 		t.Fatal("expected nil")
 	}
 
-	ctx = context.WithValue(ctx, ctxAuthUserInfo{}, github.GitHubUser{})
+	ctx = context.WithValue(ctx, ctxAuthUserInfo{}, testUser{})
 	v := AuthInfoFromContext(ctx)
 	if v == nil {
 		t.Fatal("not expected nil")
@@ -38,7 +45,7 @@ func TestAuthInfoFromContext(t *testing.T) {
 
 func TestAuthenticatingInterceptor(t *testing.T) {
 	got, err := AuthenticatingInterceptor(MockAuthenticator{
-		func(c context.Context) (AuthenticatedUser, error) { return &github.GitHubUser{}, nil },
+		func(c context.Context) (AuthenticatedUser, error) { return testUser{}, nil },
 	})(context.Background())
 	if err != nil {
 		t.Fatal(err)
