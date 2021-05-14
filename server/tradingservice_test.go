@@ -212,7 +212,7 @@ func TestTrade(t *testing.T) {
 	resp, err := pt.Trade(ctx, &grpcoin.TradeRequest{
 		Action:   grpcoin.TradeAction_BUY,
 		Ticker:   &grpcoin.TradeRequest_Ticker{Ticker: "BTC"},
-		Quantity: &grpcoin.Amount{Units: 10, Nanos: 500_000_000},
+		Quantity: &grpcoin.Amount{Units: 1, Nanos: 500_000_000},
 	})
 	if err != nil {
 		t.Fatal(err)

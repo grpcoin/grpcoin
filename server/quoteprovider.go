@@ -40,7 +40,7 @@ type coinbaseQuoteProvider struct {
 
 const staleQuotePeriod = time.Second
 
-func (cb *coinbaseQuoteProvider) GetQuote(ctx context.Context, ticker string) (*grpcoin.Amount, error) {
+func (cb *coinbaseQuoteProvider) GetQuote(ctx context.Context, _ string) (*grpcoin.Amount, error) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -66,7 +66,7 @@ func (cb *coinbaseQuoteProvider) sync(ctx context.Context, ticker string) {
 		if ctx.Err() != nil {
 			return
 		}
-		ch, err := gdax.StartWatch(ctx, cb.ticker)
+		ch, err := gdax.StartWatch(ctx, ticker+"-USD")
 		if err != nil {
 			// TODO plumb logger here
 			log.Printf("warning: failed to connected to coinbase: %v", err)

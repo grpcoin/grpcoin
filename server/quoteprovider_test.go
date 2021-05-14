@@ -16,20 +16,31 @@ package main
 
 import (
 	"context"
-	"log"
+	"testing"
 	"time"
-
-	"github.com/grpcoin/grpcoin/gdax"
 )
 
-func main() {
-	ch, err := gdax.StartWatch(context.Background(), "BTC-USD")
+func Test_coinbaseQuoteProvider_GetQuote(t *testing.T) {
+	cb := &coinbaseQuoteProvider{}
+	ctx, stop := context.WithCancel(context.Background())
+	defer stop()
+	go cb.sync(ctx, "BTC")
+
+	q1, err := cb.GetQuote(ctx, "BTC")
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
-	ch = gdax.RateLimited(ch, time.Millisecond*5)
-	log.SetFlags(log.Lmicroseconds)
-	for v := range ch {
-		log.Printf("[%s] %s: %v", v.Time, v.Product, v.Price)
+
+	time.Sleep(time.Second)
+
+	ctx2, done := context.WithTimeout(ctx, time.Second)
+	defer done()
+	q2, err := cb.GetQuote(ctx2, "BTC")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if q1.String() == q2.String() {
+		t.Fatal("identical quotes")
 	}
 }
