@@ -43,15 +43,15 @@ func (m *mockQuoteProvider) GetQuote(ctx context.Context, ticker string) (*grpco
 
 func TestPortfolio(t *testing.T) {
 	fs := firestoretestutil.StartEmulator(t, context.TODO())
-	udb := &userdb.UserDB{DB: fs, T: trace.NewNoopTracerProvider().Tracer("")}
+	tp := trace.NewNoopTracerProvider().Tracer("")
+	udb := &userdb.UserDB{DB: fs, T: tp}
 
 	au := &github.GitHubUser{ID: 1, Username: "abc"}
 	user, err := udb.EnsureAccountExists(context.TODO(), au)
 	if err != nil {
 		t.Fatal(err)
 	}
-	pt := &tradingService{udb: udb}
-
+	pt := &tradingService{udb: udb, tr: tp}
 	ctx := auth.WithUser(context.Background(), au)
 	ctx = userdb.WithUserRecord(ctx, user)
 
@@ -83,10 +83,11 @@ func TestPortfolio(t *testing.T) {
 
 func TestTradeQuotePrices(t *testing.T) {
 	fs := firestoretestutil.StartEmulator(t, context.TODO())
-	udb := &userdb.UserDB{DB: fs, T: trace.NewNoopTracerProvider().Tracer("")}
+	tr := trace.NewNoopTracerProvider().Tracer("")
+	udb := &userdb.UserDB{DB: fs, T: tr}
 
 	faultyQuote := &mockQuoteProvider{err: context.DeadlineExceeded}
-	pt := &tradingService{udb: udb, tp: faultyQuote}
+	pt := &tradingService{udb: udb, tp: faultyQuote, tr: tr}
 	au := &github.GitHubUser{ID: 1, Username: "abc"}
 	user, err := udb.EnsureAccountExists(context.TODO(), au)
 	if err != nil {
@@ -190,8 +191,9 @@ func TestTrade(t *testing.T) {
 	if testing.Short() {
 		t.Skip("makes calls to coinbase")
 	}
+	tp := trace.NewNoopTracerProvider().Tracer("")
 	fs := firestoretestutil.StartEmulator(t, context.TODO())
-	udb := &userdb.UserDB{DB: fs, T: trace.NewNoopTracerProvider().Tracer("")}
+	udb := &userdb.UserDB{DB: fs, T: tp}
 
 	au := &github.GitHubUser{ID: 2, Username: "def"}
 	user, err := udb.EnsureAccountExists(context.TODO(), au)
@@ -202,7 +204,7 @@ func TestTrade(t *testing.T) {
 	t.Cleanup(func() { stop() })
 	cb := &coinbaseQuoteProvider{}
 	go cb.sync(ctx, "BTC")
-	pt := &tradingService{udb: udb, tp: cb}
+	pt := &tradingService{udb: udb, tp: cb, tr: tp}
 
 	ctx = auth.WithUser(ctx, au)
 	ctx = userdb.WithUserRecord(ctx, user)

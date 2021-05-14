@@ -136,7 +136,7 @@ func main() {
 	ac := &AccountCache{cache: rc}
 	udb := &userdb.UserDB{DB: fs, T: tp}
 	as := &accountService{cache: ac, udb: udb}
-	au := &github.GitHubAuthenticator{T: tp}
+	au := &github.GitHubAuthenticator{T: tp, Cache: rc}
 	cb := &coinbaseQuoteProvider{}
 	go cb.sync(ctx, "BTC")
 	ts := &tickerService{}

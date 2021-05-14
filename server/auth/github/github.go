@@ -16,13 +16,17 @@ package github
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
 
+	"github.com/go-redis/redis/v8"
+	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"github.com/grpcoin/grpcoin/server/auth"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -64,7 +68,8 @@ func VerifyUser(token string) (GitHubUser, error) {
 // GitHubAuthenticator authentices with GitHub personal access token in the
 // Authorization header (bearer token format).
 type GitHubAuthenticator struct {
-	T trace.Tracer
+	T     trace.Tracer
+	Cache *redis.Client
 }
 
 func (a *GitHubAuthenticator) Authenticate(ctx context.Context) (auth.AuthenticatedUser, error) {
@@ -85,11 +90,52 @@ func (a *GitHubAuthenticator) Authenticate(ctx context.Context) (auth.Authentica
 	v = strings.TrimPrefix(v, "Bearer ")
 
 	// TODO make use of the redis cache for the GH API call responses
-	_, s := a.T.Start(ctx, "github auth")
-	defer s.End()
-	u, err := VerifyUser(v)
+	_, s := a.T.Start(ctx, "token cache read")
+	u, ok, err := a.tokenCached(ctx, v)
+	if ok {
+		return u, nil
+	} else if err != nil {
+		ctxzap.Extract(ctx).Warn("redis read fail", zap.Error(err))
+	}
+	s.End()
+
+	_, s = a.T.Start(ctx, "github auth")
+	u, err = VerifyUser(v)
 	if err != nil {
+		s.End()
 		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("token denied: %s", err))
 	}
+	s.End()
+
+	_, s = a.T.Start(ctx, "cache gh token")
+	defer s.End()
+	err = a.cacheToken(ctx, v, u)
+	if err != nil {
+		ctxzap.Extract(ctx).Warn("redis set fail", zap.Error(err))
+	}
 	return u, nil
+}
+
+func (g *GitHubAuthenticator) tokenCached(ctx context.Context, tok string) (GitHubUser, bool, error) {
+	b, err := g.Cache.Get(ctx, tokenCacheHash(tok)).Bytes()
+	if err != nil {
+		if err == redis.Nil {
+			return GitHubUser{}, false, nil
+		}
+		return GitHubUser{}, false, err
+	}
+	var v GitHubUser
+	err = json.Unmarshal(b, &v)
+	return v, true, nil
+}
+
+func (g *GitHubAuthenticator) cacheToken(ctx context.Context, tok string, v GitHubUser) error {
+	b, _ := json.Marshal(v)
+	return g.Cache.Set(ctx, tokenCacheHash(tok), b, 0).Err()
+}
+
+func tokenCacheHash(tok string) string {
+	h := sha256.New()
+	h.Write([]byte(tok))
+	return fmt.Sprintf("ghtoken_%x", h.Sum(nil))
 }

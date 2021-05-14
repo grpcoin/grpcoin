@@ -92,10 +92,10 @@ func (u *UserDB) Get(ctx context.Context, au auth.AuthenticatedUser) (User, bool
 func (u *UserDB) EnsureAccountExists(ctx context.Context, au auth.AuthenticatedUser) (User, error) {
 	ctx, s := u.T.Start(ctx, "ensure acct")
 	defer s.End()
-	user, _, err := u.Get(ctx, au)
-	if err == nil {
-		return user, err
-	} else if status.Code(err) != codes.NotFound {
+	user, exists, err := u.Get(ctx, au)
+	if exists {
+		return user, nil
+	} else if err != nil {
 		return User{}, status.Errorf(codes.Internal, "failed to query user: %v", err)
 	}
 	err = u.Create(ctx, au)

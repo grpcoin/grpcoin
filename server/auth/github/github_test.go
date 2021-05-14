@@ -18,6 +18,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/go-redis/redismock/v8"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -25,7 +26,10 @@ import (
 )
 
 func TestGitHubAuthenticator(t *testing.T) {
-	gh := &GitHubAuthenticator{T: trace.NewNoopTracerProvider().Tracer("")}
+	rc, rm := redismock.NewClientMock()
+
+	gh := &GitHubAuthenticator{Cache: rc,
+		T: trace.NewNoopTracerProvider().Tracer("")}
 	ctx := metadata.NewIncomingContext(context.Background(), nil)
 	_, err := gh.Authenticate(ctx)
 	if err == nil {
@@ -53,6 +57,7 @@ func TestGitHubAuthenticator(t *testing.T) {
 		t.Fatalf("got code: %v; expected InvalidArgument", s.Code())
 	}
 
+	rm.ExpectGet(tokenCacheHash("123"))
 	md = metadata.New(map[string]string{"authorization": "Bearer 123"})
 	ctx = metadata.NewIncomingContext(context.Background(), md)
 	_, err = gh.Authenticate(ctx)
@@ -65,5 +70,8 @@ func TestGitHubAuthenticator(t *testing.T) {
 	}
 	if s.Code() != codes.PermissionDenied {
 		t.Fatalf("got code: %v; expected PermissionDenied: %v", s.Code(), err)
+	}
+	if err := rm.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
 	}
 }
