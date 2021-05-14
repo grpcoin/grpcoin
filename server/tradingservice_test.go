@@ -170,3 +170,38 @@ func Test_validateTradeRequest(t *testing.T) {
 		})
 	}
 }
+
+func TestTrade(t *testing.T) {
+	fs := firestoretestutil.StartEmulator(t, context.TODO())
+	udb := &userdb.UserDB{DB: fs}
+
+	au := &github.GitHubUser{ID: 2, Username: "def"}
+	user, err := udb.EnsureAccountExists(context.TODO(), au)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, stop := context.WithCancel(context.Background())
+	t.Cleanup(func() { stop() })
+	cb := &coinbaseQuoteProvider{}
+	go cb.sync(ctx, "BTC")
+	pt := &tradingService{udb: udb, tp: cb}
+
+	ctx = auth.WithUser(ctx, au)
+	ctx = userdb.WithUserRecord(ctx, user)
+
+	// wait until we get a quote (it can take several seconds)
+	_, err = cb.GetQuote(context.TODO(), "BTC")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resp, err := pt.Trade(ctx, &grpcoin.TradeRequest{
+		Action:   grpcoin.TradeAction_BUY,
+		Ticker:   &grpcoin.TradeRequest_Ticker{Ticker: "BTC"},
+		Quantity: &grpcoin.Amount{Units: 10, Nanos: 500_000_000},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = resp
+}

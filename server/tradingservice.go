@@ -66,9 +66,12 @@ func (cb *coinbaseQuoteProvider) GetQuote(ctx context.Context, ticker string) (*
 
 // sync continually maintains a channel to Coinbase realtime prices.
 // meant to be invoked in a goroutine
-func (cb *coinbaseQuoteProvider) sync() {
+func (cb *coinbaseQuoteProvider) sync(ctx context.Context, ticker string) {
 	for {
-		ch, err := gdax.StartWatch(context.Background(), cb.ticker)
+		if ctx.Err() != nil {
+			return
+		}
+		ch, err := gdax.StartWatch(ctx, cb.ticker)
 		if err != nil {
 			// TODO plumb logger here
 			log.Printf("warning: failed to connected to coinbase: %v", err)
@@ -110,6 +113,11 @@ func (t *tradingService) Portfolio(ctx context.Context, req *grpcoin.PortfolioRe
 	}, nil
 }
 
+const (
+	quoteDeadline          = time.Second * 2
+	tradeExecutionDeadline = time.Second * 1
+)
+
 func (t *tradingService) Trade(ctx context.Context, req *grpcoin.TradeRequest) (*grpcoin.TradeResponse, error) {
 	user, ok := userdb.UserRecordFromContext(ctx)
 	if !ok {
@@ -120,7 +128,6 @@ func (t *tradingService) Trade(ctx context.Context, req *grpcoin.TradeRequest) (
 	}
 
 	// get a real-time market quote
-	quoteDeadline := time.Second
 	quoteCtx, cancel := context.WithTimeout(ctx, quoteDeadline)
 	defer cancel()
 	quote, err := t.tp.GetQuote(quoteCtx, req.GetTicker().Ticker)
@@ -131,8 +138,16 @@ func (t *tradingService) Trade(ctx context.Context, req *grpcoin.TradeRequest) (
 		return nil, status.Errorf(codes.Internal, "failed to retrieve a quote: %v", err)
 	}
 
-	// TODO execute trade on UserDB.
-	_ = user
+	// TODO add a timeout for tx to be executed
+	tradeCtx, cancel2 := context.WithTimeout(ctx, tradeExecutionDeadline)
+	defer cancel2()
+	err = t.udb.Trade(tradeCtx, user.ID, req.GetTicker().Ticker, req.Action, quote, req.Quantity)
+	if errors.Is(err, context.DeadlineExceeded) {
+		return nil, status.Error(codes.Unavailable, "could not execute trade in a timely manner: %v")
+	} else if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to execute trade: %v", err)
+	}
+
 	return &grpcoin.TradeResponse{
 		T:             timestamppb.Now(), // TODO read from tx
 		Action:        req.Action,

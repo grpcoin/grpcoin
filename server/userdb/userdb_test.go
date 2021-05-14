@@ -18,8 +18,10 @@ import (
 	"context"
 	"testing"
 
+	firestore "cloud.google.com/go/firestore"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/grpcoin/grpcoin/api/grpcoin"
 	"github.com/grpcoin/grpcoin/server/firestoretestutil"
 )
 
@@ -106,5 +108,37 @@ func TestEnsureAccountExists(t *testing.T) {
 	}
 	if diff := cmp.Diff(u, u2); diff != "" {
 		t.Fatal(diff)
+	}
+}
+
+func TestUserDB_Trade(t *testing.T) {
+	type fields struct {
+		DB *firestore.Client
+	}
+	type args struct {
+		ctx      context.Context
+		uid      string
+		ticker   string
+		action   grpcoin.TradeAction
+		quote    *grpcoin.Amount
+		quantity *grpcoin.Amount
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			u := &UserDB{
+				DB: tt.fields.DB,
+			}
+			if err := u.Trade(tt.args.ctx, tt.args.uid, tt.args.ticker, tt.args.action, tt.args.quote, tt.args.quantity); (err != nil) != tt.wantErr {
+				t.Errorf("UserDB.Trade() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
 	}
 }

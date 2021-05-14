@@ -114,6 +114,25 @@ func (u *UserDB) EnsureAccountExistsInterceptor() grpc_auth.AuthFunc {
 	}
 }
 
+func (u *UserDB) Trade(ctx context.Context, uid string, ticker string, action grpcoin.TradeAction, quote, quantity *grpcoin.Amount) error {
+	ref := u.DB.Collection("users").Doc(uid)
+	err := u.DB.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
+		doc, err := tx.Get(ref)
+		if err != nil {
+			return fmt.Errorf("failed to read user record for tx: %w", err)
+		}
+		var u User
+		if err := doc.DataTo(&u); err != nil {
+			return fmt.Errorf("failed to unpack user record into struct: %w", err)
+		}
+		if err := makeTrade(&u.Portfolio, action, ticker, quote, quantity); err != nil {
+			return err
+		}
+		return tx.Set(ref, u)
+	}, firestore.MaxAttempts(1))
+	return err
+}
+
 func UserRecordFromContext(ctx context.Context) (User, bool) {
 	v := ctx.Value(ctxUserRecordKey{})
 	vv, ok := v.(User)
