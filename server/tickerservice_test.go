@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"sync"
 	"testing"
@@ -163,14 +164,14 @@ func TestWatchMulti(t *testing.T) {
 			defer wg.Done()
 			cc, err := grpc.Dial(l.Addr().String(), grpc.WithInsecure())
 			if err != nil {
-				t.Fatal(err)
+				panic(err)
 			}
 			client := grpcoin.NewTickerInfoClient(cc)
 			ctx, cleanup := context.WithTimeout(context.Background(), time.Second*5)
 			defer cleanup()
 			stream, err := client.Watch(ctx, &grpcoin.QuoteTicker{Ticker: "BTC-USD"})
 			if err != nil {
-				t.Fatalf("routine %d: dial: %v", j, err)
+				panic(fmt.Sprintf("routine %d: dial: %v", j, err))
 			}
 			for {
 				var m grpcoin.Quote
@@ -181,7 +182,7 @@ func TestWatchMulti(t *testing.T) {
 							break
 						}
 					}
-					t.Fatalf("routine %d: recv: %v", j, err)
+					panic(fmt.Sprintf("routine %d: recv: %v", j, err))
 				}
 				c[j]++
 			}

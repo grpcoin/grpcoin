@@ -20,11 +20,15 @@ import (
 	"github.com/go-redis/redismock/v8"
 )
 
+type mockToken string
+
+func (g mockToken) V() string { return string(g) }
+
 func TestAccountCache(t *testing.T) {
 	rc, mock := redismock.NewClientMock()
 	c := &AccountCache{cache: rc}
 
-	tok := GitHubAccessToken("123")
+	tok := mockToken("123")
 	tokHash := "token_a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3"
 
 	// cache miss
@@ -51,7 +55,7 @@ func TestAccountCache(t *testing.T) {
 	}
 
 	// set
-	tok2 := GitHubAccessToken("345")
+	tok2 := mockToken("345")
 	tok2key := c.cacheKey(tok2)
 	mock.ExpectSet(tok2key, "cde", 0).SetVal("cde")
 	err = c.Set(tok2, "cde")
@@ -66,7 +70,7 @@ func TestAccountCache(t *testing.T) {
 
 func TestAccountCache_cacheKey(t *testing.T) {
 	tok := "123"
-	got := (&AccountCache{}).cacheKey(GitHubAccessToken(tok))
+	got := (&AccountCache{}).cacheKey(mockToken(tok))
 	expected := "token_a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3"
 	if got != expected {
 		t.Fatalf("got:%s expected:%s", got, expected)

@@ -26,10 +26,6 @@ type AuthToken interface {
 	V() string
 }
 
-type GitHubAccessToken string
-
-func (g GitHubAccessToken) V() string { return string(g) }
-
 type AccountCache struct {
 	cache *redis.Client
 }

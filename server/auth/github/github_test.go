@@ -57,7 +57,7 @@ func TestGitHubAuthenticator(t *testing.T) {
 		t.Fatalf("got code: %v; expected InvalidArgument", s.Code())
 	}
 
-	rm.ExpectGet(tokenCacheHash("123"))
+	rm.ExpectGet("ghtoken_v1_a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3")
 	md = metadata.New(map[string]string{"authorization": "Bearer 123"})
 	ctx = metadata.NewIncomingContext(context.Background(), md)
 	_, err = gh.Authenticate(ctx)

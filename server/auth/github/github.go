@@ -137,5 +137,5 @@ func (g *GitHubAuthenticator) cacheToken(ctx context.Context, tok string, v GitH
 func tokenCacheHash(tok string) string {
 	h := sha256.New()
 	h.Write([]byte(tok))
-	return fmt.Sprintf("ghtoken_%x", h.Sum(nil))
+	return fmt.Sprintf("ghtoken_v1_%x", h.Sum(nil))
 }
