@@ -16,9 +16,13 @@ package main
 
 import (
 	"context"
+	"errors"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
+	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -33,6 +37,7 @@ import (
 	"github.com/grpcoin/grpcoin/server/auth"
 	"github.com/grpcoin/grpcoin/server/auth/github"
 	"github.com/grpcoin/grpcoin/server/userdb"
+	"github.com/soheilhy/cmux"
 	stackdriver "github.com/tommy351/zap-stackdriver"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
@@ -94,10 +99,8 @@ func main() {
 	tp := otel.GetTracerProvider().Tracer("main")
 	defer func() {
 		log.Debug("force flushing trace spans")
-		if err := traceExporter.Shutdown(ctx); err != nil {
-			log.Warn("failed to shutdown trace exporter", zap.Error(err))
-		}
-		if err := tracer.ForceFlush(ctx); err != nil {
+		// we don't use the main ctx here as it'll be cancelled by the time this is executed
+		if err := tracer.ForceFlush(context.TODO()); err != nil {
 			log.Warn("failed to flush tracer", zap.Error(err))
 		}
 	}()
@@ -105,12 +108,6 @@ func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
-	}
-	addr := os.Getenv("LISTEN_ADDR")
-
-	lis, err := net.Listen("tcp", addr+":"+port)
-	if err != nil {
-		log.Fatal("tcp listen failed", zap.Error(err))
 	}
 	var rc *redis.Client
 	if r := os.Getenv("REDIS_IP"); r == "" {
@@ -141,12 +138,53 @@ func main() {
 	go cb.sync(ctx, "BTC")
 	ts := &tickerService{}
 	pt := &tradingService{udb: udb, tp: cb, tr: tp}
-	log.Debug("starting to listen", zap.String("addr", addr+":"+port))
-	err = prepServer(ctx, log, au, udb, as, ts, pt).Serve(lis)
+	grpcServer := prepServer(ctx, log, au, udb, as, ts, pt)
+	httpServer := &http.Server{
+		Handler: (&webHandler{tp: tp, udb: udb, qp: cb}).handler()}
+
+	addr := os.Getenv("LISTEN_ADDR")
+	lis, err := net.Listen("tcp", addr+":"+port)
 	if err != nil {
-		log.Fatal("server failed", zap.Error(err))
+		log.Fatal("tcp listen failed", zap.Error(err))
 	}
-	log.Debug("gracefully shut down the server")
+	mux := cmux.New(lis)
+	grpcLis := mux.MatchWithWriters(cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc"))
+	httpLis := mux.Match(cmux.HTTP1(), cmux.HTTP2())
+
+	log.Debug("starting to listen", zap.String("addr", addr+":"+port))
+	var wg sync.WaitGroup
+	wg.Add(3)
+	go func() {
+		defer wg.Done()
+		// TODO have to check error by string here because
+		// https://github.com/soheilhy/cmux/issues/85
+		if err := grpcServer.Serve(grpcLis); err != nil && !strings.Contains(err.Error(), "mux: server closed") {
+			log.Fatal("grpc: server failed", zap.Error(err))
+		}
+		log.Debug("grpc: server closed without error")
+	}()
+	go func() {
+		defer wg.Done()
+		<-ctx.Done()
+		log.Debug("shutdown signal received")
+		httpServer.Shutdown(ctx)
+		grpcServer.GracefulStop()
+		mux.Close()
+		log.Debug("graceful shutdown calls complete")
+	}()
+	go func() {
+		defer wg.Done()
+		if err := httpServer.Serve(httpLis); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatal("http: server failed", zap.Error(err))
+		}
+		log.Debug("http: gracefully shut down the server")
+	}()
+	if err := mux.Serve(); err != nil && !errors.Is(err, net.ErrClosed) {
+		log.Warn("mux: server failed", zap.Error(err))
+	} else if errors.Is(err, net.ErrClosed) || err == nil {
+		log.Debug("mux: server successfully closed")
+	}
+	wg.Wait()
 }
 
 func prepServer(ctx context.Context, log *zap.Logger, au auth.Authenticator,
@@ -170,10 +208,5 @@ func prepServer(ctx context.Context, log *zap.Logger, au auth.Authenticator,
 	pb.RegisterAccountServer(srv, as)
 	pb.RegisterTickerInfoServer(srv, ts) // this one is not authenticated (since it's stream-only, no unary)
 	pb.RegisterPaperTradeServer(srv, pt)
-	go func() {
-		<-ctx.Done()
-		log.Debug("shutdown signal received")
-		srv.GracefulStop()
-	}()
 	return srv
 }
