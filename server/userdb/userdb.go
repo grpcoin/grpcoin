@@ -24,6 +24,7 @@ import (
 	"github.com/grpcoin/grpcoin/api/grpcoin"
 	"github.com/grpcoin/grpcoin/server/auth"
 	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/api/iterator"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -45,6 +46,15 @@ type User struct {
 type Portfolio struct {
 	CashUSD   Amount
 	Positions map[string]Amount
+}
+
+func (p Portfolio) Valuation(quotes map[string]Amount) Amount {
+	total := toFixed(p.CashUSD.V())
+	for curr, amt := range p.Positions {
+		// TODO we are not returning an error if quotes don't list the held currency
+		total = total.Add(toFixed(amt.V()).Mul(toFixed(quotes[curr].V())))
+	}
+	return fromFixed(total)
 }
 
 type Amount struct {
@@ -87,6 +97,28 @@ func (u *UserDB) Get(ctx context.Context, au auth.AuthenticatedUser) (User, bool
 		return User{}, false, fmt.Errorf("failed to unpack user record %q: %w", au.DBKey(), err)
 	}
 	return uv, true, nil
+}
+
+func (u *UserDB) GetAll(ctx context.Context) ([]User, error) {
+	ctx, s := u.T.Start(ctx, "firestore.get_all")
+	defer s.End()
+	var out []User
+	iter := u.DB.Collection(fsUserCol).Documents(ctx)
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		var u User
+		if err := doc.DataTo(&u); err != nil {
+			return nil, err
+		}
+		out = append(out, u)
+	}
+	return out, nil
 }
 
 func (u *UserDB) EnsureAccountExists(ctx context.Context, au auth.AuthenticatedUser) (User, error) {

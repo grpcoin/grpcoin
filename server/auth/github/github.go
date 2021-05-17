@@ -80,7 +80,8 @@ func (a *GitHubAuthenticator) Authenticate(ctx context.Context) (auth.Authentica
 	vs, ok := m["authorization"]
 	if !ok || len(vs) == 0 {
 		return nil, status.Error(codes.Unauthenticated, "you need to provide a GitHub personal access token "+
-			"by setting the grpc metadata (header) named 'authorization'")
+			"from https://github.com/settings/tokens and by setting it on the grpc metadata (header) named 'authorization' "+
+			"e.g. authorization: Bearer TOKEN")
 	}
 	v := vs[0]
 	if !strings.HasPrefix(v, "Bearer ") {

@@ -41,7 +41,7 @@ func main() {
 	log.SetFlags(log.Lmicroseconds | log.Ltime)
 	token := os.Getenv("TOKEN")
 	if token == "" {
-		log.Fatal("create a permissionless Personal Access Token on GitHub and set it to TOKEN environment variable")
+		log.Fatal("create a permissionless Personal Access Token on GitHub https://github.com/settings/tokens and set it to TOKEN environment variable")
 	}
 	ctx := context.Background()
 

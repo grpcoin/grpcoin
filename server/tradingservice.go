@@ -70,6 +70,7 @@ func (t *tradingService) Trade(ctx context.Context, req *grpcoin.TradeRequest) (
 	}
 
 	// get a real-time market quote
+	// TODO use oteltrace.WithAttributes for sub-spans
 	subCtx, s := t.tr.Start(ctx, "get quote")
 	quoteCtx, cancel := context.WithTimeout(subCtx, quoteDeadline)
 	defer cancel()

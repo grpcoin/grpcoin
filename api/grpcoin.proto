@@ -60,7 +60,7 @@ service Account {
     //
     // Send a header (gRPC metadata) named "Authorization"
     // with value "Bearer XXX" where XXX is a GitHub Personal Access token
-    // (does not require any permissions).
+    // from https://github.com/settings/tokens (no permissions needed).
     rpc TestAuth(TestAuthRequest) returns (TestAuthResponse) {}
 }
 
