@@ -22,7 +22,6 @@ import (
 	"os"
 	"os/signal"
 	"strings"
-	"sync"
 	"syscall"
 	"time"
 
@@ -37,13 +36,14 @@ import (
 	"github.com/grpcoin/grpcoin/server/auth"
 	"github.com/grpcoin/grpcoin/server/auth/github"
 	"github.com/grpcoin/grpcoin/server/userdb"
-	"github.com/soheilhy/cmux"
 	stackdriver "github.com/tommy351/zap-stackdriver"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
 )
 
@@ -139,52 +139,37 @@ func main() {
 	ts := &tickerService{}
 	pt := &tradingService{udb: udb, tp: cb, tr: tp}
 	grpcServer := prepServer(ctx, log, au, udb, as, ts, pt)
-	httpServer := &http.Server{
-		Handler: (&webHandler{tp: tp, udb: udb, qp: cb}).handler()}
+
+	// implement mux here
+	frontendHandler := (&webHandler{tp: tp, udb: udb, qp: cb}).handler()
+	mux := newHTTPandGRPCMux(frontendHandler, grpcServer)
+	http2Server := &http2.Server{}
+	http1Server := &http.Server{Handler: h2c.NewHandler(mux, http2Server)}
+
+	// listener --> h2c converter
+	//				--> grpc: grpc.ServeHTTP
+	//				--> h1
 
 	addr := os.Getenv("LISTEN_ADDR")
 	lis, err := net.Listen("tcp", addr+":"+port)
 	if err != nil {
 		log.Fatal("tcp listen failed", zap.Error(err))
 	}
-	mux := cmux.New(lis)
-	grpcLis := mux.MatchWithWriters(cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc"))
-	httpLis := mux.Match(cmux.HTTP1(), cmux.HTTP2())
 
 	log.Debug("starting to listen", zap.String("addr", addr+":"+port))
-	var wg sync.WaitGroup
-	wg.Add(3)
 	go func() {
-		defer wg.Done()
-		// TODO have to check error by string here because
-		// https://github.com/soheilhy/cmux/issues/85
-		if err := grpcServer.Serve(grpcLis); err != nil && !strings.Contains(err.Error(), "mux: server closed") {
-			log.Fatal("grpc: server failed", zap.Error(err))
-		}
-		log.Debug("grpc: server closed without error")
-	}()
-	go func() {
-		defer wg.Done()
 		<-ctx.Done()
 		log.Debug("shutdown signal received")
-		httpServer.Shutdown(ctx)
-		grpcServer.GracefulStop()
-		mux.Close()
-		log.Debug("graceful shutdown calls complete")
+		// TODO using grpcServer.ServeHTTP above does not make use of grpc-go's
+		// http2 server, and here Shutdown() does not keep track of hijacked
+		// connections. so this is not really a graceful termination.
+		// Find a way to fix that.
+		http1Server.Shutdown(ctx)
 	}()
-	go func() {
-		defer wg.Done()
-		if err := httpServer.Serve(httpLis); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatal("http: server failed", zap.Error(err))
-		}
-		log.Debug("http: gracefully shut down the server")
-	}()
-	if err := mux.Serve(); err != nil && !errors.Is(err, net.ErrClosed) {
-		log.Warn("mux: server failed", zap.Error(err))
-	} else if errors.Is(err, net.ErrClosed) || err == nil {
-		log.Debug("mux: server successfully closed")
+	if err := http1Server.Serve(lis); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		log.Fatal("http: server failed", zap.Error(err))
 	}
-	wg.Wait()
+	log.Debug("http: shut down the server")
 }
 
 func prepServer(ctx context.Context, log *zap.Logger, au auth.Authenticator,
@@ -209,4 +194,14 @@ func prepServer(ctx context.Context, log *zap.Logger, au auth.Authenticator,
 	pb.RegisterTickerInfoServer(srv, ts) // this one is not authenticated (since it's stream-only, no unary)
 	pb.RegisterPaperTradeServer(srv, pt)
 	return srv
+}
+
+func newHTTPandGRPCMux(httpHand http.Handler, grpcHandler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.ProtoMajor == 2 && strings.HasPrefix(r.Header.Get("content-type"), "application/grpc") {
+			grpcHandler.ServeHTTP(w, r)
+			return
+		}
+		httpHand.ServeHTTP(w, r)
+	})
 }
