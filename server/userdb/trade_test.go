@@ -26,7 +26,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func Test_toFixed(t *testing.T) {
+func Test_toDecimal(t *testing.T) {
 	tests := []struct {
 		a    *grpcoin.Amount
 		want string
@@ -46,8 +46,8 @@ func Test_toFixed(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.a.String(), func(t *testing.T) {
-			if got := toFixed(tt.a).StringFixed(9); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("toFixed(%s) = %v, want %v", tt.a, got, tt.want)
+			if got := toDecimal(tt.a).StringFixed(9); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("toDecimal(%s) = %v, want %v", tt.a, got, tt.want)
 			}
 		})
 	}

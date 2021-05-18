@@ -26,17 +26,17 @@ import (
 )
 
 func makeTrade(p *Portfolio, action grpcoin.TradeAction, ticker string, quote, quantity *grpcoin.Amount) error {
-	inCash := toFixed(p.CashUSD.V())
+	inCash := toDecimal(p.CashUSD.V())
 	pos, ok := p.Positions[ticker]
 	if !ok {
 		return status.Errorf(codes.InvalidArgument, "don't have a %s position in portfolio", ticker)
 	}
-	posN := toFixed(pos.V())
+	posN := toDecimal(pos.V())
 	// TODO support non-existing currencies by adding zero to positions map in the future
 
-	cost := toFixed(quantity).Mul(toFixed(quote))
+	cost := toDecimal(quantity).Mul(toDecimal(quote))
 
-	posDelta := toFixed(quantity)
+	posDelta := toDecimal(quantity)
 
 	if action == grpcoin.TradeAction_SELL {
 		posDelta = posDelta.Neg()
@@ -60,7 +60,7 @@ func makeTrade(p *Portfolio, action grpcoin.TradeAction, ticker string, quote, q
 	return nil
 }
 
-func toFixed(a *grpcoin.Amount) decimal.Decimal {
+func toDecimal(a *grpcoin.Amount) decimal.Decimal {
 	u, n := a.Units, a.Nanos
 	if a.Units < 0 {
 		u = -u

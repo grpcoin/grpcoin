@@ -96,26 +96,40 @@ func clearDB(t *testing.T, ctx context.Context, cl *firestore.Client) {
 		t.Fatal(err)
 	}
 	for _, c := range cs {
-		it := c.Limit(1000).Documents(ctx)
+		deleteCol(t, ctx, cl, c)
+	}
+}
+
+func deleteCol(t *testing.T, ctx context.Context, cl *firestore.Client, c *firestore.CollectionRef) {
+	t.Helper()
+	it := c.Limit(1000).Documents(ctx)
+	for {
+		deleted := 0
+		batch := cl.Batch()
 		for {
-			deleted := 0
-			batch := cl.Batch()
-			for {
-				doc, err := it.Next()
-				if err == iterator.Done {
-					break
-				} else if err != nil {
-					t.Fatal(err)
-				}
-				batch.Delete(doc.Ref)
-				deleted++
-			}
-			if deleted == 0 {
-				return
-			}
-			if _, err := batch.Commit(ctx); err != nil {
+			doc, err := it.Next()
+			if err == iterator.Done {
+				break
+			} else if err != nil {
 				t.Fatal(err)
 			}
+
+			subCols, err := doc.Ref.Collections(ctx).GetAll()
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, sc := range subCols {
+				deleteCol(t, ctx, cl, sc)
+			}
+
+			batch.Delete(doc.Ref)
+			deleted++
+		}
+		if deleted == 0 {
+			return
+		}
+		if _, err := batch.Commit(ctx); err != nil {
+			t.Fatal(err)
 		}
 	}
 }

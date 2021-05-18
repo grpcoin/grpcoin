@@ -18,12 +18,13 @@ import (
 	"context"
 	"testing"
 
-	firestore "cloud.google.com/go/firestore"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/grpcoin/grpcoin/api/grpcoin"
 	"github.com/grpcoin/grpcoin/server/firestoretestutil"
 	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type testUser struct {
@@ -106,34 +107,56 @@ func TestEnsureAccountExists(t *testing.T) {
 	}
 }
 
-func TestUserDB_Trade(t *testing.T) {
-	type fields struct {
-		DB *firestore.Client
+func TestUserDB_Trade_OrderHistory(t *testing.T) {
+	ctx := context.Background()
+	udb := &UserDB{DB: firestoretestutil.StartEmulator(t, ctx),
+		T: trace.NewNoopTracerProvider().Tracer("")}
+	tu := testUser{id: "testuser", name: "abc"}
+	if _, err := udb.EnsureAccountExists(ctx, tu); err != nil {
+		t.Fatal(err)
 	}
-	type args struct {
-		ctx      context.Context
-		uid      string
-		ticker   string
-		action   grpcoin.TradeAction
-		quote    *grpcoin.Amount
-		quantity *grpcoin.Amount
+
+	// bad order
+	if err := udb.Trade(ctx, tu.DBKey(), "BTC",
+		grpcoin.TradeAction_SELL,
+		&grpcoin.Amount{Units: 100},
+		&grpcoin.Amount{Units: 100}); status.Code(err) != codes.InvalidArgument {
+		t.Fatalf("expected invalidargument error: %v", err)
 	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
+
+	// several good orders
+	if err := udb.Trade(ctx, tu.DBKey(), "BTC",
+		grpcoin.TradeAction_BUY,
+		&grpcoin.Amount{Units: 100},
+		&grpcoin.Amount{Units: 25}); err != nil {
+		t.Fatal(err)
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			u := &UserDB{
-				DB: tt.fields.DB,
-			}
-			if err := u.Trade(tt.args.ctx, tt.args.uid, tt.args.ticker, tt.args.action, tt.args.quote, tt.args.quantity); (err != nil) != tt.wantErr {
-				t.Errorf("UserDB.Trade() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
+	if err := udb.Trade(ctx, tu.DBKey(), "BTC",
+		grpcoin.TradeAction_SELL,
+		&grpcoin.Amount{Units: 150},
+		&grpcoin.Amount{Units: 10}); err != nil {
+		t.Fatal(err)
+	}
+	if err := udb.Trade(ctx, tu.DBKey(), "BTC",
+		grpcoin.TradeAction_SELL,
+		&grpcoin.Amount{Units: 80},
+		&grpcoin.Amount{Units: 10}); err != nil {
+		t.Fatal(err)
+	}
+
+	// validate order history
+	expectedOrders := []Order{
+		{Ticker: "BTC", Action: grpcoin.TradeAction_BUY, Size: Amount{25, 0}, Price: Amount{100, 0}},
+		{Ticker: "BTC", Action: grpcoin.TradeAction_SELL, Size: Amount{10, 0}, Price: Amount{150, 0}},
+		{Ticker: "BTC", Action: grpcoin.TradeAction_SELL, Size: Amount{10, 0}, Price: Amount{80, 0}},
+	}
+	got, err := udb.UserOrderHistory(ctx, tu)
+	if err != nil {
+		t.Fatal(err)
+	}
+	diff := cmp.Diff(got, expectedOrders,
+		cmpopts.IgnoreFields(Order{}, "Date"))
+	if diff != "" {
+		t.Fatal(diff)
 	}
 }

@@ -32,7 +32,8 @@ import (
 type ctxUserRecordKey struct{}
 
 const (
-	fsUserCol = "users"
+	fsUserCol   = "users"  // users collection
+	fsOrdersCol = "orders" // sub-collection for user
 )
 
 type User struct {
@@ -53,8 +54,16 @@ type Amount struct {
 	Nanos int32
 }
 
+type Order struct {
+	Date   time.Time           `firestore:"date"`
+	Ticker string              `firestore:"ticker"`
+	Action grpcoin.TradeAction `firestore:"action"`
+	Size   Amount              `firestore:"size"`
+	Price  Amount              `firestore:"price"`
+}
+
 func (a Amount) V() *grpcoin.Amount { return &grpcoin.Amount{Units: a.Units, Nanos: a.Nanos} }
-func (a Amount) F() decimal.Decimal { return toFixed(a.V()) }
+func (a Amount) F() decimal.Decimal { return toDecimal(a.V()) }
 
 type UserDB struct {
 	DB *firestore.Client
@@ -102,10 +111,12 @@ func (u *UserDB) GetAll(ctx context.Context) ([]User, error) {
 			break
 		}
 		if err != nil {
+			s.RecordError(err)
 			return nil, err
 		}
 		var u User
 		if err := doc.DataTo(&u); err != nil {
+			s.RecordError(err)
 			return nil, err
 		}
 		out = append(out, u)
@@ -154,8 +165,9 @@ func (u *UserDB) EnsureAccountExistsInterceptor() grpc_auth.AuthFunc {
 }
 
 func (u *UserDB) Trade(ctx context.Context, uid string, ticker string, action grpcoin.TradeAction, quote, quantity *grpcoin.Amount) error {
+	subCtx, s := u.T.Start(ctx, "txn")
 	ref := u.DB.Collection("users").Doc(uid)
-	err := u.DB.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
+	err := u.DB.RunTransaction(subCtx, func(ctx context.Context, tx *firestore.Transaction) error {
 		doc, err := tx.Get(ref)
 		if err != nil {
 			return fmt.Errorf("failed to read user record for tx: %w", err)
@@ -169,7 +181,46 @@ func (u *UserDB) Trade(ctx context.Context, uid string, ticker string, action gr
 		}
 		return tx.Set(ref, u)
 	}, firestore.MaxAttempts(1))
-	return err
+	s.End()
+
+	if err != nil {
+		return err
+	}
+
+	subCtx, s = u.T.Start(ctx, "log order")
+	defer s.End()
+	_, _, err = u.DB.Collection(fsUserCol).Doc(uid).Collection(fsOrdersCol).Add(subCtx, Order{
+		Date:   time.Now(),
+		Ticker: ticker,
+		Action: action,
+		Size:   ToAmount(toDecimal(quantity)),
+		Price:  ToAmount(toDecimal(quote)),
+	})
+	return nil
+}
+
+func (u *UserDB) UserOrderHistory(ctx context.Context, au auth.AuthenticatedUser) ([]Order, error) {
+	ctx, s := u.T.Start(ctx, "order history")
+	defer s.End()
+	var out []Order
+	iter := u.DB.Collection(fsUserCol).Doc(au.DBKey()).Collection(fsOrdersCol).Documents(ctx)
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			s.RecordError(err)
+			return nil, err
+		}
+		var v Order
+		if err := doc.DataTo(&v); err != nil {
+			s.RecordError(err)
+			return nil, err
+		}
+		out = append(out, v)
+	}
+	return out, nil
 }
 
 func UserRecordFromContext(ctx context.Context) (User, bool) {
