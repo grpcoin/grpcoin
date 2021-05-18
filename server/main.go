@@ -91,12 +91,17 @@ func main() {
 		traceExporter = dummyTraceExporter{}
 	}
 	tracer := trace.NewTracerProvider(trace.WithBatcher(traceExporter,
-		trace.WithBatchTimeout(time.Millisecond*100),
+		trace.WithBatchTimeout(time.Millisecond*200),
 		trace.WithMaxExportBatchSize(10)),
-		trace.WithSampler(trace.AlwaysSample()),
-	)
+		trace.WithSampler(trace.AlwaysSample()))
+
 	otel.SetTracerProvider(tracer)
-	tp := otel.GetTracerProvider().Tracer("main")
+	tp := otel.GetTracerProvider().Tracer("grpcoin-server")
+
+	// TODO cannot enable the OpenCensus bridge (which would tap into builtin
+	// traces from GCP client libraries) because Batch exporter's own RPCs are
+	// also traced and causes an infinite loop.
+	// octrace.DefaultTracer = opencensus.NewTracer(tp)
 	defer func() {
 		log.Debug("force flushing trace spans")
 		// we don't use the main ctx here as it'll be cancelled by the time this is executed
