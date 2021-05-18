@@ -35,6 +35,7 @@ import (
 	pb "github.com/grpcoin/grpcoin/api/grpcoin"
 	"github.com/grpcoin/grpcoin/server/auth"
 	"github.com/grpcoin/grpcoin/server/auth/github"
+	"github.com/grpcoin/grpcoin/server/frontend"
 	"github.com/grpcoin/grpcoin/server/userdb"
 	stackdriver "github.com/tommy351/zap-stackdriver"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -145,16 +146,17 @@ func main() {
 	pt := &tradingService{udb: udb, tp: cb, tr: tp}
 	grpcServer := prepServer(ctx, log, au, udb, as, ts, pt)
 
-	// implement mux here
-	frontendHandler := (&webHandler{tp: tp, udb: udb, qp: cb}).handler()
+	frontendHandler := (&frontend.Frontend{
+		Trace:         tp,
+		DB:            udb,
+		QuoteProvider: cb,
+		QuoteDeadline: time.Millisecond * 1200,
+	}).Handler()
+
+	// serve both http frontend and gRPC server on the same port.
 	mux := newHTTPandGRPCMux(frontendHandler, grpcServer)
 	http2Server := &http2.Server{}
 	http1Server := &http.Server{Handler: h2c.NewHandler(mux, http2Server)}
-
-	// listener --> h2c converter
-	//				--> grpc: grpc.ServeHTTP
-	//				--> h1
-
 	addr := os.Getenv("LISTEN_ADDR")
 	lis, err := net.Listen("tcp", addr+":"+port)
 	if err != nil {

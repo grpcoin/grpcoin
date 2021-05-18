@@ -24,12 +24,6 @@ import (
 	"github.com/grpcoin/grpcoin/gdax"
 )
 
-type QuoteProvider interface {
-	// GetQuote provides real-time quote for ticker.
-	// Can quit early if ctx is cancelled.
-	GetQuote(ctx context.Context, ticker string) (*grpcoin.Amount, error)
-}
-
 type coinbaseQuoteProvider struct {
 	ticker string
 

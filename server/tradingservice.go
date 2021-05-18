@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/grpcoin/grpcoin/api/grpcoin"
+	"github.com/grpcoin/grpcoin/server/realtimequote"
 	"github.com/grpcoin/grpcoin/server/userdb"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
@@ -29,7 +30,7 @@ import (
 
 type tradingService struct {
 	udb *userdb.UserDB
-	tp  QuoteProvider
+	tp  realtimequote.QuoteProvider
 	tr  trace.Tracer
 
 	grpcoin.UnimplementedPaperTradeServer

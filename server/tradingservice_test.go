@@ -24,13 +24,14 @@ import (
 	"github.com/grpcoin/grpcoin/server/auth"
 	"github.com/grpcoin/grpcoin/server/auth/github"
 	"github.com/grpcoin/grpcoin/server/firestoretestutil"
+	"github.com/grpcoin/grpcoin/server/realtimequote"
 	"github.com/grpcoin/grpcoin/server/userdb"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-var _ QuoteProvider = &coinbaseQuoteProvider{}
+var _ realtimequote.QuoteProvider = &coinbaseQuoteProvider{}
 
 type mockQuoteProvider struct {
 	a   *grpcoin.Amount
