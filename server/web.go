@@ -30,7 +30,7 @@ func (_ *webHandler) health(w http.ResponseWriter, r *http.Request) {
 }
 
 type leaderboardUser struct {
-	U         userdb.User
+	User      userdb.User
 	Valuation userdb.Amount
 }
 
@@ -61,56 +61,43 @@ func (wh *webHandler) leaderboard(w http.ResponseWriter, r *http.Request) error 
 	}
 	s.End()
 
-	// get all users (+portfolio)
 	quotes := map[string]userdb.Amount{
-		"BTC": {Units: btcQuote.GetUnits(), Nanos: btcQuote.GetNanos()},
-	}
+		"BTC": {Units: btcQuote.GetUnits(), Nanos: btcQuote.GetNanos()}}
 	users, err := wh.udb.GetAll(r.Context())
 	if err != nil {
 		return err
 	}
 	var resp leaderboardResp
 	for _, u := range users {
-		resp = append(resp, leaderboardUser{U: u, Valuation: u.Portfolio.Valuation(quotes)})
+		resp = append(resp, leaderboardUser{
+			User:      u,
+			Valuation: valuation(u.Portfolio, quotes)})
 	}
 	sort.Sort(sort.Reverse(resp))
 	tpl := `LEADERBOARD:
 {{ range $i,$v := .users }}
-{{ $i }}. {{$v.U.DisplayName}} (Valuation: USD {{rp $v.Valuation}}) (Cash: USD {{rp $v.U.Portfolio.CashUSD }})
+{{ $i }}. {{$v.User.DisplayName}} (Valuation: USD {{rp $v.Valuation}}) (Cash: USD {{rp $v.User.Portfolio.CashUSD }})
 {{- end }}`
+
 	// TODO do not parse on every request
 	t, err := template.New("").Funcs(template.FuncMap{
-		"rp": func(a userdb.Amount) string {
-			return fmt.Sprintf("%d,%02d", a.Units, a.Nanos/10000000)
-		}}).Parse(tpl)
+		"rp": renderPrice}).Parse(tpl)
 	if err != nil {
 		return err
 	}
 	return t.Execute(w, map[string]interface{}{
 		"users": resp})
-	// calculate valuation
-	// sort
-	// optional: 24h change, 7d change
+}
 
-	/*
-		   terraform --> cloud scheduler (cron trigger)
-		   --> /_cron/recalculate-portfolio-value
-		       --> foreach user:
-		   	      {
-		   			  id: asdfasdf
-		   			  portfolio:{
-		   				cash: xx.yy
-		   				positions: [{btc, x.y}, {eth, z.j}]
-		   			  }
-		   			  daily: {
-		   				[t1, x],
-		   				[t2, x],
-		   				[t3, x],
-		   			  } 30d
-					  hourly: 96h
-		   		  }
+func renderPrice(a userdb.Amount) string { return fmt.Sprintf("%d,%02d", a.Units, a.Nanos/10000000) }
 
-	*/
+func valuation(p userdb.Portfolio, quotes map[string]userdb.Amount) userdb.Amount {
+	total := p.CashUSD.F()
+	for curr, amt := range p.Positions {
+		// TODO we are not returning an error if quotes don't list the held currency
+		total = total.Add(amt.F().Mul(quotes[curr].F()))
+	}
+	return userdb.ToAmount(total)
 }
 
 func (w *webHandler) handler() http.Handler {

@@ -55,8 +55,8 @@ func makeTrade(p *Portfolio, action grpcoin.TradeAction, ticker string, quote, q
 			"insufficient %s positions (%s) after transaction (current: %s)", ticker, finalPos, posN)
 	}
 
-	p.CashUSD = fromFixed(finalCash)
-	p.Positions[ticker] = fromFixed(finalPos)
+	p.CashUSD = ToAmount(finalCash)
+	p.Positions[ticker] = ToAmount(finalPos)
 	return nil
 }
 
@@ -76,7 +76,7 @@ func toFixed(a *grpcoin.Amount) decimal.Decimal {
 	return decimal.RequireFromString(s)
 }
 
-func fromFixed(i decimal.Decimal) Amount {
+func ToAmount(i decimal.Decimal) Amount {
 	s := i.Abs().StringFixed(9)
 	p := strings.SplitN(s, ".", 2)
 	ds := p[0]

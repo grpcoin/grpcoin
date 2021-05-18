@@ -53,7 +53,7 @@ func Test_toFixed(t *testing.T) {
 	}
 }
 
-func Test_fromFixed(t *testing.T) {
+func TestToAmount(t *testing.T) {
 	tests := []struct {
 		i    decimal.Decimal
 		want Amount
@@ -69,8 +69,8 @@ func Test_fromFixed(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.i.String(), func(t *testing.T) {
-			if got := fromFixed(tt.i); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("fromFixed(%s) = %v, want %v", tt.i, got, tt.want)
+			if got := ToAmount(tt.i); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ToAmount(%s) = %v, want %v", tt.i, got, tt.want)
 			}
 		})
 	}

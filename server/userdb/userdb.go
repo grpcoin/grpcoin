@@ -1,4 +1,3 @@
-// Copyright 2021 Ahmet Alp Balkan
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +22,7 @@ import (
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	"github.com/grpcoin/grpcoin/api/grpcoin"
 	"github.com/grpcoin/grpcoin/server/auth"
+	"github.com/shopspring/decimal"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/api/iterator"
 	"google.golang.org/grpc/codes"
@@ -48,21 +48,13 @@ type Portfolio struct {
 	Positions map[string]Amount
 }
 
-func (p Portfolio) Valuation(quotes map[string]Amount) Amount {
-	total := toFixed(p.CashUSD.V())
-	for curr, amt := range p.Positions {
-		// TODO we are not returning an error if quotes don't list the held currency
-		total = total.Add(toFixed(amt.V()).Mul(toFixed(quotes[curr].V())))
-	}
-	return fromFixed(total)
-}
-
 type Amount struct {
 	Units int64
 	Nanos int32
 }
 
 func (a Amount) V() *grpcoin.Amount { return &grpcoin.Amount{Units: a.Units, Nanos: a.Nanos} }
+func (a Amount) F() decimal.Decimal { return toFixed(a.V()) }
 
 type UserDB struct {
 	DB *firestore.Client
