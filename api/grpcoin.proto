@@ -15,6 +15,7 @@
 syntax = "proto3";
 package grpcoin;
 option go_package = "api/grpcoin";
+option csharp_namespace = "GrpCoin";
 
 import "google/protobuf/timestamp.proto";
 
