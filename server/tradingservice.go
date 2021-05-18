@@ -91,6 +91,8 @@ func (t *tradingService) Trade(ctx context.Context, req *grpcoin.TradeRequest) (
 	err = t.udb.Trade(tradeCtx, user.ID, req.GetTicker().Ticker, req.Action, quote, req.Quantity)
 	if errors.Is(err, context.DeadlineExceeded) {
 		return nil, status.Error(codes.Unavailable, "could not execute trade in a timely manner: %v")
+	} else if status.Code(err) == codes.InvalidArgument {
+		return nil, err
 	} else if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to execute trade: %v", err)
 	}

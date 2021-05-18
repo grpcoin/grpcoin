@@ -40,9 +40,8 @@ func TestGetUser_notFound(t *testing.T) {
 	ctx := context.Background()
 	udb := &UserDB{DB: firestoretestutil.StartEmulator(t, ctx),
 		T: trace.NewNoopTracerProvider().Tracer("")}
-	tu := testUser{id: "foo"}
 
-	u, ok, err := udb.Get(ctx, tu)
+	u, ok, err := udb.Get(ctx, "foo")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -62,7 +61,7 @@ func TestNewUser(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	uv, ok, err := udb.Get(ctx, tu)
+	uv, ok, err := udb.Get(ctx, "foobar")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -150,7 +149,7 @@ func TestUserDB_Trade_OrderHistory(t *testing.T) {
 		{Ticker: "BTC", Action: grpcoin.TradeAction_SELL, Size: Amount{10, 0}, Price: Amount{150, 0}},
 		{Ticker: "BTC", Action: grpcoin.TradeAction_SELL, Size: Amount{10, 0}, Price: Amount{80, 0}},
 	}
-	got, err := udb.UserOrderHistory(ctx, tu)
+	got, err := udb.UserOrderHistory(ctx, "testuser")
 	if err != nil {
 		t.Fatal(err)
 	}

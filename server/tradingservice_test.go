@@ -224,4 +224,13 @@ func TestTrade(t *testing.T) {
 		t.Fatal(err)
 	}
 	_ = resp
+
+	_, err = pt.Trade(ctx, &grpcoin.TradeRequest{
+		Action:   grpcoin.TradeAction_BUY,
+		Ticker:   &grpcoin.TradeRequest_Ticker{Ticker: "BTC"},
+		Quantity: &grpcoin.Amount{Units: 100_000_000},
+	})
+	if status.Code(err) != codes.InvalidArgument {
+		t.Fatalf("expected InvalidArgument for wrong trade request (insufficient funds): %v", err)
+	}
 }

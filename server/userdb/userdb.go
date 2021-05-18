@@ -83,10 +83,10 @@ func (u *UserDB) Create(ctx context.Context, au auth.AuthenticatedUser) error {
 	return err
 }
 
-func (u *UserDB) Get(ctx context.Context, au auth.AuthenticatedUser) (User, bool, error) {
+func (u *UserDB) Get(ctx context.Context, userID string) (User, bool, error) {
 	ctx, s := u.T.Start(ctx, "firestore.get")
 	defer s.End()
-	doc, err := u.DB.Collection(fsUserCol).Doc(au.DBKey()).Get(ctx)
+	doc, err := u.DB.Collection(fsUserCol).Doc(userID).Get(ctx)
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
 			return User{}, false, nil
@@ -95,7 +95,7 @@ func (u *UserDB) Get(ctx context.Context, au auth.AuthenticatedUser) (User, bool
 	}
 	var uv User
 	if err := doc.DataTo(&uv); err != nil {
-		return User{}, false, fmt.Errorf("failed to unpack user record %q: %w", au.DBKey(), err)
+		return User{}, false, fmt.Errorf("failed to unpack user record %q: %w", userID, err)
 	}
 	return uv, true, nil
 }
@@ -127,7 +127,7 @@ func (u *UserDB) GetAll(ctx context.Context) ([]User, error) {
 func (u *UserDB) EnsureAccountExists(ctx context.Context, au auth.AuthenticatedUser) (User, error) {
 	ctx, s := u.T.Start(ctx, "ensure acct")
 	defer s.End()
-	user, exists, err := u.Get(ctx, au)
+	user, exists, err := u.Get(ctx, au.DBKey())
 	if exists {
 		return user, nil
 	} else if err != nil {
@@ -137,14 +137,14 @@ func (u *UserDB) EnsureAccountExists(ctx context.Context, au auth.AuthenticatedU
 	if err != nil {
 		return User{}, status.Errorf(codes.Internal, "failed to create user: %v", err)
 	}
-	user, _, err = u.Get(ctx, au)
+	user, _, err = u.Get(ctx, au.DBKey())
 	if err != nil {
 		return User{}, status.Errorf(codes.Internal, "failed to query new user: %v", err)
 	}
 	return user, err
 }
 
-// ensureAccountExistsInterceptor creates an account for the authenticated
+// EnsureAccountExistsInterceptor creates an account for the authenticated
 // client (or retrieves it) and augments the ctx with the user's db record.
 func (u *UserDB) EnsureAccountExistsInterceptor() grpc_auth.AuthFunc {
 	return func(ctx context.Context) (context.Context, error) {
@@ -201,11 +201,11 @@ func (u *UserDB) Trade(ctx context.Context, uid string, ticker string, action gr
 	return nil
 }
 
-func (u *UserDB) UserOrderHistory(ctx context.Context, au auth.AuthenticatedUser) ([]Order, error) {
+func (u *UserDB) UserOrderHistory(ctx context.Context, uid string) ([]Order, error) {
 	ctx, s := u.T.Start(ctx, "order history")
 	defer s.End()
 	var out []Order
-	iter := u.DB.Collection(fsUserCol).Doc(au.DBKey()).Collection(fsOrdersCol).Documents(ctx)
+	iter := u.DB.Collection(fsUserCol).Doc(uid).Collection(fsOrdersCol).Documents(ctx)
 	for {
 		doc, err := iter.Next()
 		if err == iterator.Done {

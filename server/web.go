@@ -104,8 +104,53 @@ func (w *webHandler) handler() http.Handler {
 	m := mux.NewRouter()
 	m.Use(otelmux.Middleware("grpcoin-frontend"))
 	m.HandleFunc("/health", w.health)
+	m.HandleFunc("/user/{id}", toHandler(w.userProfile))
 	m.HandleFunc("/", toHandler(w.leaderboard))
 	return m
+}
+
+func (wh *webHandler) userProfile(w http.ResponseWriter, r *http.Request) error {
+	uid := mux.Vars(r)["id"]
+	if uid == "" {
+		return status.Error(codes.InvalidArgument, "url does not have user id")
+	}
+	u, ok, err := wh.udb.Get(r.Context(), uid)
+	if err != nil {
+		return err
+	} else if !ok {
+		return status.Error(codes.NotFound, "user not found")
+	}
+
+	orders, err := wh.udb.UserOrderHistory(r.Context(), uid)
+	if err != nil {
+		return err
+	}
+	for i := 0; i < len(orders)/2; i++ {
+		orders[i], orders[len(orders)-1-i] = orders[len(orders)-1-i], orders[i]
+	}
+
+	tpl := `ID: {{.u.ID}}
+Profile {{.u.ProfileURL}}
+Sign up date {{.u.CreatedAt}}
+
+{{ with .orders }}
+ORDER HISTORY ({{ len .}})
+=============
+{{- range . }}
+{{ .Date }} -- {{ .Action }} '{{ .Ticker }}' -- {{ rp .Size }} @ ${{ rp .Price }}
+{{- end }}
+{{ end }}
+`
+
+	t, err := template.New("").Funcs(template.FuncMap{
+		"rp": renderPrice}).Parse(tpl)
+	if err != nil {
+		return err
+	}
+	return t.Execute(w, map[string]interface{}{
+		"u":      u,
+		"orders": orders,
+	})
 }
 
 func toHandler(f func(http.ResponseWriter, *http.Request) error) http.HandlerFunc {
