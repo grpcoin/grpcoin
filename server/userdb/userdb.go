@@ -189,8 +189,10 @@ func (u *UserDB) Trade(ctx context.Context, uid string, ticker string, action gr
 
 	subCtx, s = u.T.Start(ctx, "log order")
 	defer s.End()
-	_, _, err = u.DB.Collection(fsUserCol).Doc(uid).Collection(fsOrdersCol).Add(subCtx, Order{
-		Date:   time.Now(),
+	t := time.Now().UTC()
+	id := t.Format(time.RFC3339Nano)
+	_, err = u.DB.Collection(fsUserCol).Doc(uid).Collection(fsOrdersCol).Doc(id).Create(ctx, Order{
+		Date:   t,
 		Ticker: ticker,
 		Action: action,
 		Size:   ToAmount(toDecimal(quantity)),

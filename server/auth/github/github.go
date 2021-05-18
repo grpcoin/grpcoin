@@ -33,8 +33,8 @@ import (
 )
 
 type GitHubUser struct {
-	ID       uint64
-	Username string
+	ID       uint64 // github user ID
+	Username string // github username (can be changed by the user on GitHub)
 }
 
 func (g GitHubUser) DBKey() string       { return fmt.Sprintf("github_%v", g.ID) }
@@ -119,7 +119,7 @@ func (a *GitHubAuthenticator) Authenticate(ctx context.Context) (auth.Authentica
 
 func (g *GitHubAuthenticator) tokenCached(ctx context.Context, tok string) (GitHubUser, bool, error) {
 	b, err := g.Cache.Get(ctx, tokenCacheHash(tok)).Bytes()
-	if err != nil {
+	if err != nil || b == nil { // added b==nil because of local dummyCache always returning success&empty
 		if err == redis.Nil {
 			return GitHubUser{}, false, nil
 		}
