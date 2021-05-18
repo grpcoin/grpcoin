@@ -19,7 +19,6 @@ variable "project" {
   default = "grpcoin"
 }
 
-
 variable "domain" {
   default = "grpcoin.ahmet.dev"
 }

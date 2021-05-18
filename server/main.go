@@ -128,8 +128,13 @@ func main() {
 	var proj string
 	if onCloudRun {
 		proj = firestore.DetectProjectID
+		log.Debug("detecting project id from environment")
 	} else {
-		proj = "grpcoin" // TODO do not hardcode this for local testing, maybe start fs emulator
+		proj = os.Getenv("GOOGLE_CLOUD_PROJECT")
+		if proj == "" {
+			log.Fatal("please set GOOGLE_CLOUD_PROJECT environment variable")
+		}
+		log.Debug("project id is explicitly set", zap.String("project", proj))
 	}
 	fs, err := firestore.NewClient(ctx, proj)
 	if err != nil {
