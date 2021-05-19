@@ -2,7 +2,10 @@ package frontend
 
 import (
 	"bytes"
+	"embed"
+	_ "embed"
 	"fmt"
+	"html/template"
 	"io"
 	"net/http"
 	"time"
@@ -14,6 +17,17 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/status"
+)
+
+var (
+	//go:embed templates/*
+	templateFS embed.FS
+	tpl        = template.Must(template.New("").Funcs(funcs).ParseFS(templateFS,
+		"templates/profile.tpl",
+		"templates/leaderboard.tpl",
+		"templates/header.tpl",
+		"templates/footer.tpl",
+	))
 )
 
 type Frontend struct {

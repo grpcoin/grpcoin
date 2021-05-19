@@ -18,6 +18,8 @@ import (
 	"context"
 
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type ctxAuthUserInfo struct{} // stores authenticated user info (e.g. github profile)
@@ -37,6 +39,10 @@ func AuthenticatingInterceptor(a Authenticator) grpc_auth.AuthFunc {
 		user, err := a.Authenticate(rpcCtx)
 		if err != nil {
 			return rpcCtx, err
+		}
+
+		if span := trace.SpanFromContext(rpcCtx); span != nil {
+			span.SetAttributes(attribute.String("user.id", user.DBKey()))
 		}
 		ctx := WithUser(rpcCtx, user)
 		return ctx, nil

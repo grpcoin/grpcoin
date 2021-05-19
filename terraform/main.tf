@@ -19,10 +19,6 @@ variable "project" {
   default = "grpcoin"
 }
 
-variable "domain" {
-  default = "grpcoin.ahmet.dev"
-}
-
 variable "billing_account" {
   default = "0050EC-505932-A9F334"
 }

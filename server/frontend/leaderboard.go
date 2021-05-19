@@ -2,10 +2,10 @@ package frontend
 
 import (
 	"context"
+	_ "embed"
 	"errors"
 	"net/http"
 	"sort"
-	"text/template"
 
 	"github.com/grpcoin/grpcoin/server/userdb"
 	"google.golang.org/grpc/codes"
@@ -63,16 +63,8 @@ func (fe *Frontend) leaderboard(w http.ResponseWriter, r *http.Request) error {
 			Valuation: valuation(u.Portfolio, quotes)})
 	}
 	sort.Sort(sort.Reverse(resp))
-	tpl := `LEADERBOARD:
-{{ range $i,$v := .users }}
-{{ $i }}. {{$v.User.DisplayName}} (value: USD {{fmtPrice $v.Valuation}})
-{{- end }}`
 
 	// TODO do not parse on every request
-	t, err := template.New("").Funcs(funcs).Parse(tpl)
-	if err != nil {
-		return err
-	}
-	return t.Execute(w, map[string]interface{}{
+	return tpl.ExecuteTemplate(w, "leaderboard.tpl", map[string]interface{}{
 		"users": resp})
 }

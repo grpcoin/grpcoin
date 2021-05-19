@@ -2,8 +2,8 @@ package frontend
 
 import (
 	"fmt"
+	"html/template"
 	"strings"
-	"text/template"
 	"time"
 
 	"github.com/grpcoin/grpcoin/server/userdb"
@@ -18,14 +18,20 @@ var (
 		"fmtDuration": fmtDuration,
 		"pv":          valuation,
 		"since":       since,
+		"mul":         mul,
 	}
 )
 
 func fmtAmount(a userdb.Amount) string {
-	return strings.TrimRight(fmt.Sprintf("%d,%09d", a.Units, a.Nanos), "0")
+	v := fmt.Sprintf("%d,%09d", a.Units, a.Nanos)
+	vv := strings.TrimRight(v, "0")
+	if strings.HasSuffix(vv, ",") {
+		vv += "0"
+	}
+	return vv
 }
 
-func fmtPrice(a userdb.Amount) string { return fmt.Sprintf("%d,%02d", a.Units, a.Nanos/10000000) }
+func fmtPrice(a userdb.Amount) string { return fmt.Sprintf("$%d,%02d", a.Units, a.Nanos/10000000) }
 
 func valuation(p userdb.Portfolio, quotes map[string]userdb.Amount) userdb.Amount {
 	total := p.CashUSD.F()
@@ -34,6 +40,10 @@ func valuation(p userdb.Portfolio, quotes map[string]userdb.Amount) userdb.Amoun
 		total = total.Add(amt.F().Mul(quotes[curr].F()))
 	}
 	return userdb.ToAmount(total)
+}
+
+func mul(a, b userdb.Amount) userdb.Amount {
+	return userdb.ToAmount(a.F().Mul(b.F()))
 }
 
 func fmtDate(t time.Time) string { return t.Truncate(time.Hour * 24).Format("2 January 2006") }
