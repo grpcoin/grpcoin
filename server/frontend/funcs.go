@@ -19,6 +19,7 @@ var (
 		"pv":          valuation,
 		"since":       since,
 		"mul":         mul,
+		"profilePic":  profilePic,
 	}
 )
 
@@ -52,4 +53,11 @@ func since(t time.Time) time.Duration { return time.Since(t) }
 
 func fmtDuration(t time.Duration, maxUnits int) string {
 	return durafmt.Parse(t).LimitFirstN(maxUnits).String()
+}
+
+func profilePic(profileURL string) string {
+	if strings.HasPrefix(profileURL, "https://github.com/") {
+		return profileURL + ".png?s=512"
+	}
+	return ""
 }

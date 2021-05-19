@@ -1,12 +1,17 @@
 {{ template "header.tpl" (printf "User: %s" .u.DisplayName) }}
 
+<h1>
+    {{ with (profilePic .u.ProfileURL) }}
+    <img src="{{.}}" width=24 height=auto />
+    {{ end }}
     <a href="{{.u.ProfileURL}}" rel="nofollow">
-        <h1>{{.u.DisplayName}}</h1>
+        {{.u.DisplayName}}
     </a>
+</h1>
 
-    <small>
-        Joined on: {{fmtDate .u.CreatedAt}} ({{ fmtDuration (since .u.CreatedAt) 2 }} ago)
-    </small>
+<small>
+    Joined on: {{fmtDate .u.CreatedAt}} ({{ fmtDuration (since .u.CreatedAt) 2 }} ago)
+</small>
 
 <h2>Positions</h2>
 
@@ -34,7 +39,7 @@
             <td>{{ fmtPrice (mul $amount (index $.quotes $tick )) }} </td>
         </tr>
         {{ end }}
-         <tr>
+        <tr>
             <td></td>
             <td></td>
             <td>TOTAL:</td>
@@ -72,7 +77,7 @@
 </table>
 {{ end }}
 
-<hr/>
+<hr />
 <p>
     <a href="/">&larr; Back to leaderboard</a>
 </p>
