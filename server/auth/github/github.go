@@ -73,6 +73,8 @@ type GitHubAuthenticator struct {
 }
 
 func (a *GitHubAuthenticator) Authenticate(ctx context.Context) (auth.AuthenticatedUser, error) {
+	ctx, s := a.T.Start(ctx, "github auth")
+	defer s.End()
 	m, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return nil, status.Error(codes.Internal, "cannot parse grpc metadata")
@@ -90,28 +92,19 @@ func (a *GitHubAuthenticator) Authenticate(ctx context.Context) (auth.Authentica
 	v = strings.TrimPrefix(v, "bearer ")
 	v = strings.TrimPrefix(v, "Bearer ")
 
-	// TODO make use of the redis cache for the GH API call responses
-	_, s := a.T.Start(ctx, "token cache read")
 	u, ok, err := a.tokenCached(ctx, v)
 	if ok {
 		return u, nil
 	} else if err != nil {
 		ctxzap.Extract(ctx).Warn("redis read fail", zap.Error(err))
 	}
-	s.End()
 
-	_, s = a.T.Start(ctx, "github auth")
 	u, err = VerifyUser(v)
 	if err != nil {
 		s.End()
 		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("token denied: %s", err))
 	}
-	s.End()
-
-	_, s = a.T.Start(ctx, "cache gh token")
-	defer s.End()
-	err = a.cacheToken(ctx, v, u)
-	if err != nil {
+	if err := a.cacheToken(ctx, v, u); err != nil {
 		ctxzap.Extract(ctx).Warn("redis set fail", zap.Error(err))
 	}
 	return u, nil

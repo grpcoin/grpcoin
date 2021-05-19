@@ -38,13 +38,16 @@ import (
 	"github.com/grpcoin/grpcoin/server/frontend"
 	"github.com/grpcoin/grpcoin/server/userdb"
 	stackdriver "github.com/tommy351/zap-stackdriver"
+	octrace "go.opencensus.io/trace"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/bridge/opencensus"
 	"go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
+	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 )
 
@@ -83,7 +86,8 @@ func main() {
 
 	var traceExporter trace.SpanExporter
 	if onCloudRun {
-		gcp, err := texporter.NewExporter()
+		gcp, err := texporter.NewExporter(
+			texporter.WithTraceClientOptions([]option.ClientOption{option.WithTelemetryDisabled()})) // don't trace the trace client itself
 		if err != nil {
 			log.Fatal("failed to initialize gcp trace exporter", zap.Error(err))
 		}
@@ -102,7 +106,7 @@ func main() {
 	// TODO cannot enable the OpenCensus bridge (which would tap into builtin
 	// traces from GCP client libraries) because Batch exporter's own RPCs are
 	// also traced and causes an infinite loop.
-	// octrace.DefaultTracer = opencensus.NewTracer(tp)
+	octrace.DefaultTracer = opencensus.NewTracer(tp)
 	defer func() {
 		log.Debug("force flushing trace spans")
 		// we don't use the main ctx here as it'll be cancelled by the time this is executed

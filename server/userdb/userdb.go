@@ -71,8 +71,6 @@ type UserDB struct {
 }
 
 func (u *UserDB) Create(ctx context.Context, au auth.AuthenticatedUser) error {
-	ctx, s := u.T.Start(ctx, "firestore.create")
-	defer s.End()
 	newUser := User{ID: au.DBKey(),
 		DisplayName: au.DisplayName(),
 		ProfileURL:  au.ProfileURL(),
@@ -84,8 +82,6 @@ func (u *UserDB) Create(ctx context.Context, au auth.AuthenticatedUser) error {
 }
 
 func (u *UserDB) Get(ctx context.Context, userID string) (User, bool, error) {
-	ctx, s := u.T.Start(ctx, "firestore.get")
-	defer s.End()
 	doc, err := u.DB.Collection(fsUserCol).Doc(userID).Get(ctx)
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
@@ -101,8 +97,6 @@ func (u *UserDB) Get(ctx context.Context, userID string) (User, bool, error) {
 }
 
 func (u *UserDB) GetAll(ctx context.Context) ([]User, error) {
-	ctx, s := u.T.Start(ctx, "firestore.get_all")
-	defer s.End()
 	var out []User
 	iter := u.DB.Collection(fsUserCol).Documents(ctx)
 	for {
@@ -111,12 +105,10 @@ func (u *UserDB) GetAll(ctx context.Context) ([]User, error) {
 			break
 		}
 		if err != nil {
-			s.RecordError(err)
 			return nil, err
 		}
 		var u User
 		if err := doc.DataTo(&u); err != nil {
-			s.RecordError(err)
 			return nil, err
 		}
 		out = append(out, u)
@@ -125,7 +117,7 @@ func (u *UserDB) GetAll(ctx context.Context) ([]User, error) {
 }
 
 func (u *UserDB) EnsureAccountExists(ctx context.Context, au auth.AuthenticatedUser) (User, error) {
-	ctx, s := u.T.Start(ctx, "ensure acct")
+	ctx, s := u.T.Start(ctx, "ensure user account")
 	defer s.End()
 	user, exists, err := u.Get(ctx, au.DBKey())
 	if exists {
@@ -165,7 +157,7 @@ func (u *UserDB) EnsureAccountExistsInterceptor() grpc_auth.AuthFunc {
 }
 
 func (u *UserDB) Trade(ctx context.Context, uid string, ticker string, action grpcoin.TradeAction, quote, quantity *grpcoin.Amount) error {
-	subCtx, s := u.T.Start(ctx, "txn")
+	subCtx, s := u.T.Start(ctx, "trade tx")
 	ref := u.DB.Collection("users").Doc(uid)
 	err := u.DB.RunTransaction(subCtx, func(ctx context.Context, tx *firestore.Transaction) error {
 		doc, err := tx.Get(ref)
