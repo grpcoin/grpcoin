@@ -28,15 +28,30 @@ func (fe *Frontend) userProfile(w http.ResponseWriter, r *http.Request) error {
 	for i := 0; i < len(orders)/2; i++ {
 		orders[i], orders[len(orders)-1-i] = orders[len(orders)-1-i], orders[i]
 	}
-	tpl := `ID: {{.u.ID}}
-Profile {{.u.ProfileURL}}
-Sign up date {{.u.CreatedAt}}
+	quotes, err := fe.getQuotes(r.Context())
+	if err != nil {
+		return err
+	}
+	tpl := `USER PROFILE
+Name:      {{.u.DisplayName}}
+Profile:   {{.u.ProfileURL}}
+User ID:   {{.u.ID}}
+Joined on: {{fmtDate .u.CreatedAt}} ({{ fmtDuration (since .u.CreatedAt) 2 }} ago)
+
+POSITIONS
+=========
+    USD {{fmtAmount .u.Portfolio.CashUSD -}}
+{{ range $tick, $amount := .u.Portfolio.Positions }}
+    {{$tick}} {{fmtAmount $amount}}
+{{- end }}
+  +_____________
+  VALUE: ${{ fmtPrice (pv .u.Portfolio .quotes) }}
 
 {{ with .orders }}
 ORDER HISTORY ({{ len .}})
 =============
 {{- range . }}
-{{ .Date }} -- {{ .Action }} '{{ .Ticker }}' -- {{ rp .Size }} @ ${{ rp .Price }}
+{{ .Action }} '{{ .Ticker }}' -- {{ fmtAmount .Size }} @ ${{ fmtPrice .Price }} -- {{fmtDuration (since .Date) 2}} ago
 {{- end }}
 {{ end }}
 `
@@ -48,5 +63,6 @@ ORDER HISTORY ({{ len .}})
 	return t.Execute(w, map[string]interface{}{
 		"u":      u,
 		"orders": orders,
+		"quotes": quotes,
 	})
 }

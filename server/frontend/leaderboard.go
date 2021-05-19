@@ -30,22 +30,28 @@ func (l leaderboardResp) Less(i int, j int) bool {
 	return false
 }
 
-func (fe *Frontend) leaderboard(w http.ResponseWriter, r *http.Request) error {
-	// get real-time BTC quote
-	subCtx, s := fe.Trace.Start(r.Context(), "get quote")
+func (fe *Frontend) getQuotes(ctx context.Context) (map[string]userdb.Amount, error) {
+	subCtx, s := fe.Trace.Start(ctx, "realtime quote")
+	defer s.End()
 	quoteCtx, cancel := context.WithTimeout(subCtx, fe.QuoteDeadline)
 	defer cancel()
-	ticker := "BTC"
-	btcQuote, err := fe.QuoteProvider.GetQuote(quoteCtx, ticker)
-	if errors.Is(err, context.DeadlineExceeded) {
-		return status.Errorf(codes.Unavailable, "could not get real-time market quote for %s in %v", ticker, fe.QuoteDeadline)
-	} else if err != nil {
-		return status.Errorf(codes.Internal, "failed to retrieve a quote: %v", err)
-	}
-	s.End()
 
-	quotes := map[string]userdb.Amount{
-		"BTC": {Units: btcQuote.GetUnits(), Nanos: btcQuote.GetNanos()}}
+	btcQuote, err := fe.QuoteProvider.GetQuote(quoteCtx, "BTC")
+	if errors.Is(err, context.DeadlineExceeded) {
+		return nil, status.Errorf(codes.Unavailable, "could not get real-time market quote for %s in %v", "BTC", fe.QuoteDeadline)
+	} else if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to retrieve a quote: %v", err)
+	}
+
+	return map[string]userdb.Amount{
+		"BTC": {Units: btcQuote.GetUnits(), Nanos: btcQuote.GetNanos()}}, nil
+}
+
+func (fe *Frontend) leaderboard(w http.ResponseWriter, r *http.Request) error {
+	quotes, err := fe.getQuotes(r.Context())
+	if err != nil {
+		return err
+	}
 	users, err := fe.DB.GetAll(r.Context())
 	if err != nil {
 		return err
