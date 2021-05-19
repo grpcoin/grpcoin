@@ -42,7 +42,7 @@ POSITIONS
 =========
     USD {{fmtAmount .u.Portfolio.CashUSD -}}
 {{ range $tick, $amount := .u.Portfolio.Positions }}
-    {{$tick}} {{fmtAmount $amount}}
+    {{$tick}} {{fmtAmount $amount}}   @ (${{ fmtPrice (index $.quotes $tick) }})
 {{- end }}
   +_____________
   VALUE: ${{ fmtPrice (pv .u.Portfolio .quotes) }}
@@ -53,8 +53,7 @@ ORDER HISTORY ({{ len .}})
 {{- range . }}
 {{ .Action }} '{{ .Ticker }}' -- {{ fmtAmount .Size }} @ ${{ fmtPrice .Price }} -- {{fmtDuration (since .Date) 2}} ago
 {{- end }}
-{{ end }}
-`
+{{ end }}`
 
 	t, err := template.New("").Funcs(funcs).Parse(tpl)
 	if err != nil {

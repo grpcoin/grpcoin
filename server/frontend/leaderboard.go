@@ -65,7 +65,7 @@ func (fe *Frontend) leaderboard(w http.ResponseWriter, r *http.Request) error {
 	sort.Sort(sort.Reverse(resp))
 	tpl := `LEADERBOARD:
 {{ range $i,$v := .users }}
-{{ $i }}. {{$v.User.DisplayName}} (Valuation: USD {{rp $v.Valuation}}) (Cash: USD {{rp $v.User.Portfolio.CashUSD }})
+{{ $i }}. {{$v.User.DisplayName}} (value: USD {{fmtPrice $v.Valuation}})
 {{- end }}`
 
 	// TODO do not parse on every request
