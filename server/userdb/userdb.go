@@ -96,6 +96,7 @@ func (u *UserDB) Create(ctx context.Context, au auth.AuthenticatedUser) error {
 		CreatedAt:   time.Now(),
 	}
 	setupGamePortfolio(&newUser)
+	// TODO: add an initial portfolio value to user's valuation history
 	_, err := u.DB.Collection(fsUserCol).Doc(au.DBKey()).Create(ctx, newUser)
 	return err
 }

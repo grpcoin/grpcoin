@@ -13,6 +13,7 @@
     Joined on: {{fmtDate .u.CreatedAt}} ({{ fmtDuration (since .u.CreatedAt) 2 }} ago)
 </small>
 
+
 <h2>Positions</h2>
 
 <table>
@@ -45,6 +46,19 @@
             <td>TOTAL:</td>
             <td>{{ fmtPrice (pv .u.Portfolio .quotes ) }} </td>
         </tr>
+    </tbody>
+</table>
+
+<h2>Returns</h2>
+
+<table>
+    <tbody>
+        {{ range $key, $val := .returns }}
+        <tr>
+            <td>{{ $key }}</td>
+            <td>{{ fmtPercent $val }}</td>
+        </tr>
+        {{ end }}
     </tbody>
 </table>
 

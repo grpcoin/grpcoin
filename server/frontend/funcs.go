@@ -17,7 +17,9 @@ var (
 		"fmtPrice":    fmtPrice,
 		"fmtDate":     fmtDate,
 		"fmtDuration": fmtDuration,
+		"fmtPercent":  fmtPercent,
 		"pv":          valuation,
+		"isNegative":  isNegative,
 		"since":       since,
 		"mul":         mul,
 		"profilePic":  profilePic,
@@ -35,6 +37,24 @@ func fmtAmount(a userdb.Amount) string {
 
 func fmtPrice(a userdb.Amount) string {
 	return fmt.Sprintf("$%s.%02d", humanize.Comma(a.Units), a.Nanos/10000000)
+}
+
+func fmtPercent(a userdb.Amount) string {
+	sign := 1
+	if isNegative(a) {
+		sign = -1
+		a.Units = -a.Units
+		a.Nanos = -a.Nanos
+	}
+	v := fmt.Sprintf("%%%d.%02d", a.Units, a.Nanos/10000000)
+	if sign < 0 {
+		v = "-" + v
+	}
+	return v
+}
+
+func isNegative(a userdb.Amount) bool {
+	return a.Units < 0 || a.Nanos < 0
 }
 
 func valuation(p userdb.Portfolio, quotes map[string]userdb.Amount) userdb.Amount {

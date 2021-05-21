@@ -3,8 +3,11 @@ package frontend
 import (
 	_ "embed"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/grpcoin/grpcoin/server/userdb"
+	"github.com/shopspring/decimal"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
@@ -37,9 +40,42 @@ func (fe *Frontend) userProfile(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
+
+	hist, err := fe.DB.UserValuationHistory(r.Context(), u.ID)
+	if err != nil {
+		return err
+	}
+	pv := valuation(u.Portfolio, quotes)
+	returnPercentages := map[string]userdb.Amount{
+		"1-hour":  findReturns(hist, pv, time.Hour),
+		"6-hour":  findReturns(hist, pv, time.Hour*6),
+		"24-hour": findReturns(hist, pv, time.Hour*24),
+		"1-week":  findReturns(hist, pv, time.Hour*24*7),
+		"30-day":  findReturns(hist, pv, time.Hour*24*30),
+	}
 	return tpl.Funcs(funcs).ExecuteTemplate(w, "profile.tpl", map[string]interface{}{
-		"u":      u,
-		"orders": orders,
-		"quotes": quotes,
-	})
+		"u":       u,
+		"orders":  orders,
+		"returns": returnPercentages,
+		"quotes":  quotes})
+}
+
+func findReturns(history []userdb.ValuationHistory, currentValue userdb.Amount, ago time.Duration) userdb.Amount {
+	// TODO decide whether to truncate here or not
+	h := portfolioSnapshotAt(history, ago, time.Now())
+	if h == nil {
+		return userdb.Amount{}
+	}
+	return userdb.ToAmount(currentValue.F().Sub(h.Value.F()).Div(h.Value.F().Abs()).Mul(decimal.NewFromInt(100)))
+}
+
+func portfolioSnapshotAt(arr []userdb.ValuationHistory, ago time.Duration, now time.Time) *userdb.ValuationHistory {
+	var last *userdb.ValuationHistory
+	for j := len(arr) - 1; j >= 0; j-- {
+		if now.Sub(arr[j].Date) > ago {
+			break
+		}
+		last = &arr[j]
+	}
+	return last
 }
