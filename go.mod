@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go/firestore v1.5.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v0.20.0
 	github.com/alicebob/miniredis/v2 v2.14.4
+	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/go-redis/redis/v8 v8.8.2
 	github.com/go-redis/redismock/v8 v8.0.6
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
@@ -31,6 +32,7 @@ require (
 	golang.org/x/net v0.0.0-20210510120150-4163338589ed
 	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c // indirect
 	golang.org/x/sys v0.0.0-20210514084401-e8d321eab015 // indirect
+	golang.org/x/text v0.3.6 // indirect
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba
 	golang.org/x/tools v0.1.1 // indirect
 	google.golang.org/api v0.46.0

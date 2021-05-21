@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/grpcoin/grpcoin/server/userdb"
 	"github.com/hako/durafmt"
 )
@@ -24,15 +25,17 @@ var (
 )
 
 func fmtAmount(a userdb.Amount) string {
-	v := fmt.Sprintf("%d,%09d", a.Units, a.Nanos)
+	v := fmt.Sprintf("%s.%09d", humanize.Comma(a.Units), a.Nanos)
 	vv := strings.TrimRight(v, "0")
-	if strings.HasSuffix(vv, ",") {
-		vv += "0"
+	if strings.HasSuffix(vv, ".") {
+		vv += "00"
 	}
 	return vv
 }
 
-func fmtPrice(a userdb.Amount) string { return fmt.Sprintf("$%d,%02d", a.Units, a.Nanos/10000000) }
+func fmtPrice(a userdb.Amount) string {
+	return fmt.Sprintf("$%s.%02d", humanize.Comma(a.Units), a.Nanos/10000000)
+}
 
 func valuation(p userdb.Portfolio, quotes map[string]userdb.Amount) userdb.Amount {
 	total := p.CashUSD.F()
