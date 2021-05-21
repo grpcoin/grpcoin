@@ -19,6 +19,8 @@ import (
 	"net"
 	"testing"
 
+	"github.com/alicebob/miniredis/v2"
+	"github.com/go-redis/redis/v8"
 	"github.com/grpcoin/grpcoin/api/grpcoin"
 	"github.com/grpcoin/grpcoin/server/auth"
 	"github.com/grpcoin/grpcoin/server/auth/github"
@@ -42,7 +44,8 @@ func TestTestAuth(t *testing.T) {
 	}
 	udb := &userdb.UserDB{DB: fs, T: trace.NewNoopTracerProvider().Tracer("")}
 	lg, _ := zap.NewDevelopment()
-	srv := prepServer(context.TODO(), lg, au, udb, &accountService{cache: &AccountCache{cache: dummyRedis()}}, nil, nil)
+	r := redisTestInstance(t)
+	srv := prepServer(context.TODO(), lg, au, udb, &accountService{cache: &AccountCache{cache: r}}, nil, nil)
 	go srv.Serve(l)
 	defer srv.Stop()
 	defer l.Close()
@@ -64,4 +67,14 @@ func TestTestAuth(t *testing.T) {
 	if resp.GetUserId() != expected {
 		t.Fatalf("uid expected=%q got=%q", expected, resp.GetUserId())
 	}
+}
+
+func redisTestInstance(t *testing.T) *redis.Client {
+	t.Helper()
+	s, err := miniredis.Run()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { s.Close() })
+	return redis.NewClient(&redis.Options{Addr: s.Addr()})
 }

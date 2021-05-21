@@ -27,6 +27,7 @@ import (
 
 	"cloud.google.com/go/firestore"
 	texporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
+	"github.com/alicebob/miniredis/v2"
 	"github.com/go-redis/redis/v8"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
@@ -118,7 +119,11 @@ func main() {
 	}
 	var rc *redis.Client
 	if r := os.Getenv("REDIS_IP"); r == "" {
-		rc = dummyRedis()
+		s, err := miniredis.Run()
+		if err != nil {
+			log.Fatal("failed to start miniredis", zap.Error(err))
+		}
+		rc = redis.NewClient(&redis.Options{Addr: s.Addr()})
 	} else {
 		rc = redis.NewClient(&redis.Options{Addr: r + ":6379"})
 	}

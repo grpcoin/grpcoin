@@ -5,24 +5,24 @@ go 1.16
 require (
 	cloud.google.com/go/firestore v1.5.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v0.20.0
+	github.com/alicebob/miniredis/v2 v2.14.4
 	github.com/go-redis/redis/v8 v8.8.2
 	github.com/go-redis/redismock/v8 v8.0.6
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/go-cmp v0.5.5
-	github.com/gorilla/mux v1.8.0 // indirect
+	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
-	github.com/hako/durafmt v0.0.0-20210316092057-3a2c319c1acd // indirect
+	github.com/hako/durafmt v0.0.0-20210316092057-3a2c319c1acd
 	github.com/preichenberger/go-coinbasepro/v2 v2.0.5
 	github.com/shopspring/decimal v1.2.0
 	github.com/tommy351/zap-stackdriver v0.1.4
-	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux v0.20.0 // indirect
+	go.opencensus.io v0.23.0
+	go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux v0.20.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.20.0
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.20.0
 	go.opentelemetry.io/otel v0.20.0
-	go.opentelemetry.io/otel/bridge/opencensus v0.20.0 // indirect
+	go.opentelemetry.io/otel/bridge/opencensus v0.20.0
 	go.opentelemetry.io/otel/sdk v0.20.0
 	go.opentelemetry.io/otel/trace v0.20.0
 	go.uber.org/multierr v1.7.0 // indirect

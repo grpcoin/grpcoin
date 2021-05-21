@@ -112,7 +112,7 @@ func (a *GitHubAuthenticator) Authenticate(ctx context.Context) (auth.Authentica
 
 func (g *GitHubAuthenticator) tokenCached(ctx context.Context, tok string) (GitHubUser, bool, error) {
 	b, err := g.Cache.Get(ctx, tokenCacheHash(tok)).Bytes()
-	if err != nil || b == nil { // added b==nil because of local dummyCache always returning success&empty
+	if err != nil {
 		if err == redis.Nil {
 			return GitHubUser{}, false, nil
 		}
