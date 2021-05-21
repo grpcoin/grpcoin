@@ -32,8 +32,9 @@ import (
 type ctxUserRecordKey struct{}
 
 const (
-	fsUserCol   = "users"  // users collection
-	fsOrdersCol = "orders" // sub-collection for user
+	fsUserCol      = "users"      // users collection
+	fsOrdersCol    = "orders"     // sub-collection for user
+	fsValueHistCol = "valuations" // sub-collection for user's portolio value over time
 )
 
 type User struct {
@@ -61,6 +62,24 @@ type Order struct {
 	Size   Amount              `firestore:"size"`
 	Price  Amount              `firestore:"price"`
 }
+
+type ValuationHistory struct {
+	Date  time.Time `firestore:"date"`
+	Value Amount    `firestore:"value"`
+}
+
+/*
+	- user
+	    - MAIN RECORD
+		  - id
+		  - signup date
+		  - portfolio {cash, coin pos}
+		  - valuation summary {1h:?? 24h:?? 7d:?? 30d:??}
+		- valuations
+		  - t1: v1
+		  - t2: v1
+		- /user/1/orders
+*/
 
 func (a Amount) V() *grpcoin.Amount { return &grpcoin.Amount{Units: a.Units, Nanos: a.Nanos} }
 func (a Amount) F() decimal.Decimal { return toDecimal(a.V()) }
@@ -215,6 +234,67 @@ func (u *UserDB) UserOrderHistory(ctx context.Context, uid string) ([]Order, err
 		out = append(out, v)
 	}
 	return out, nil
+}
+
+func (u *UserDB) UserValuationHistory(ctx context.Context, uid string) ([]ValuationHistory, error) {
+	ctx, s := u.T.Start(ctx, "user valuation history")
+	defer s.End()
+	var out []ValuationHistory
+	iter := u.DB.Collection(fsUserCol).Doc(uid).Collection(fsValueHistCol).Documents(ctx)
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			s.RecordError(err)
+			return nil, err
+		}
+		var v ValuationHistory
+		if err := doc.DataTo(&v); err != nil {
+			s.RecordError(err)
+			return nil, err
+		}
+		out = append(out, v)
+	}
+	return out, nil
+}
+
+func canonicalizeValuationHistoryDBKey(t time.Time) string {
+	return t.UTC().Format(time.RFC3339)
+}
+
+func (u *UserDB) SetUserValuationHistory(ctx context.Context, uid string, v ValuationHistory) error {
+	_, err := u.DB.Collection(fsUserCol).Doc(uid).Collection(fsValueHistCol).
+		Doc(canonicalizeValuationHistoryDBKey(v.Date)).Create(ctx, v)
+	if err != nil && status.Code(err) != codes.AlreadyExists {
+		return err
+	}
+	return nil
+}
+
+func (u *UserDB) RotateUserValuationHistory(ctx context.Context, uid string, deleteBefore time.Time) error {
+	// TODO create an index for users/*/date ASC
+	it := u.DB.Collection(fsUserCol).Doc(uid).Collection(fsValueHistCol).
+		Where("date", "<", deleteBefore).Documents(ctx)
+	wb := u.DB.Batch()
+	var deleted int
+	for {
+		doc, err := it.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		wb.Delete(doc.Ref)
+		deleted++
+	}
+	if deleted == 0 {
+		return nil
+	}
+	_, err := wb.Commit(ctx)
+	return err
 }
 
 func UserRecordFromContext(ctx context.Context) (User, bool) {

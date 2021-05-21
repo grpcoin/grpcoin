@@ -16,6 +16,7 @@ import (
 	"github.com/grpcoin/grpcoin/server/userdb"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/status"
 )
 
@@ -30,6 +31,8 @@ type Frontend struct {
 	QuoteProvider realtimequote.QuoteProvider
 	QuoteDeadline time.Duration
 
+	CronSAEmail string // email for the SA allowed to run cron endpoints
+
 	Trace trace.Tracer
 	DB    *userdb.UserDB
 }
@@ -37,10 +40,12 @@ type Frontend struct {
 func (_ *Frontend) health(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "ok")
 }
-func (fe *Frontend) Handler() http.Handler {
+func (fe *Frontend) Handler(log *zap.Logger) http.Handler {
 	m := mux.NewRouter()
 	m.Use(otelmux.Middleware("grpcoin-frontend"))
+	m.Use(withLogging(log))
 	m.HandleFunc("/health", fe.health)
+	m.HandleFunc("/_cron/pv", toHandler(fe.calcPortfolioHistory))
 	m.HandleFunc("/user/{id}", toHandler(fe.userProfile))
 	m.HandleFunc("/", toHandler(fe.leaderboard))
 	return m

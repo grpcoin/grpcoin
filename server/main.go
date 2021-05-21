@@ -160,9 +160,10 @@ func main() {
 	frontendHandler := (&frontend.Frontend{
 		Trace:         tp,
 		DB:            udb,
+		CronSAEmail:   os.Getenv("CRON_SERVICE_ACCOUNT"),
 		QuoteProvider: cb,
 		QuoteDeadline: time.Millisecond * 1200,
-	}).Handler()
+	}).Handler(log)
 
 	// serve both http frontend and gRPC server on the same port.
 	mux := newHTTPandGRPCMux(frontendHandler, grpcServer)

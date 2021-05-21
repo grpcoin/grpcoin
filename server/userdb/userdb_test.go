@@ -17,6 +17,7 @@ package userdb
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -102,6 +103,79 @@ func TestEnsureAccountExists(t *testing.T) {
 		t.Fatal(err)
 	}
 	if diff := cmp.Diff(u, u2); diff != "" {
+		t.Fatal(diff)
+	}
+}
+
+func TestValuationHistory(t *testing.T) {
+	ctx := context.Background()
+	udb := &UserDB{DB: firestoretestutil.StartEmulator(t, ctx),
+		T: trace.NewNoopTracerProvider().Tracer("")}
+	tu := testUser{id: "testuser", name: "abc"}
+	u, err := udb.EnsureAccountExists(ctx, tu)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ti := time.Now().UTC().Truncate(time.Hour)
+	v1 := ValuationHistory{Date: ti, Value: Amount{Units: 5555}}
+	v2 := ValuationHistory{Date: ti, Value: Amount{Units: 6666}}
+	if err := udb.SetUserValuationHistory(ctx, u.ID, v1); err != nil {
+		t.Fatal(err)
+	}
+	if err := udb.SetUserValuationHistory(ctx, u.ID, v2); err != nil {
+		t.Fatal(err)
+	}
+
+	v, err := udb.UserValuationHistory(ctx, u.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := []ValuationHistory{v1}
+	diff := cmp.Diff(expected, v)
+	if diff != "" {
+		t.Fatal(diff)
+	}
+}
+
+func TestRotateUserValuationHistory(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+	ctx := context.Background()
+	udb := &UserDB{DB: firestoretestutil.StartEmulator(t, ctx),
+		T: trace.NewNoopTracerProvider().Tracer("")}
+	tu := testUser{id: "testuser", name: "abc"}
+	u, err := udb.EnsureAccountExists(ctx, tu)
+	if err != nil {
+		t.Fatal(err)
+	}
+	d := time.Date(2020, time.April, 23, 0, 0, 0, 0, time.UTC)
+	for i := 1; i <= 20; i++ {
+		dv := d.Add(time.Hour * time.Duration(i))
+		if err := udb.SetUserValuationHistory(ctx, u.ID,
+			ValuationHistory{Date: dv}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if err := udb.RotateUserValuationHistory(ctx, u.ID, d.Add(time.Hour*15)); err != nil {
+		t.Fatal(err)
+	}
+
+	v, err := udb.UserValuationHistory(ctx, u.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := []ValuationHistory{
+		{Date: d.Add(time.Hour * 15)},
+		{Date: d.Add(time.Hour * 16)},
+		{Date: d.Add(time.Hour * 17)},
+		{Date: d.Add(time.Hour * 18)},
+		{Date: d.Add(time.Hour * 19)},
+		{Date: d.Add(time.Hour * 20)},
+	}
+	diff := cmp.Diff(expected, v)
+	if diff != "" {
 		t.Fatal(diff)
 	}
 }
