@@ -53,10 +53,10 @@
 
 <table>
     <tbody>
-        {{ range $key, $val := .returns }}
+        {{ range .returns }}
         <tr>
-            <td>{{ $key }}</td>
-            <td>{{ fmtPercent $val }}</td>
+            <td>{{ .Label }}</td>
+            <td>{{ fmtPercent .Percent }}</td>
         </tr>
         {{ end }}
     </tbody>

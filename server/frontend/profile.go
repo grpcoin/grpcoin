@@ -46,12 +46,16 @@ func (fe *Frontend) userProfile(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 	pv := valuation(u.Portfolio, quotes)
-	returnPercentages := map[string]userdb.Amount{
-		"1-hour":  findReturns(hist, pv, time.Hour),
-		"6-hour":  findReturns(hist, pv, time.Hour*6),
-		"24-hour": findReturns(hist, pv, time.Hour*24),
-		"1-week":  findReturns(hist, pv, time.Hour*24*7),
-		"30-day":  findReturns(hist, pv, time.Hour*24*30),
+	type returns struct {
+		Label   string
+		Percent userdb.Amount
+	}
+	returnPercentages := []returns{
+		{"1 hour", findReturns(hist, pv, time.Hour)},
+		{"6 hours", findReturns(hist, pv, time.Hour*6)},
+		{"24 hours", findReturns(hist, pv, time.Hour*24)},
+		{"1 week", findReturns(hist, pv, time.Hour*24*7)},
+		{"30 days", findReturns(hist, pv, time.Hour*24*30)},
 	}
 	return tpl.Funcs(funcs).ExecuteTemplate(w, "profile.tpl", map[string]interface{}{
 		"u":       u,
