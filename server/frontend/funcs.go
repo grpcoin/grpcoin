@@ -40,17 +40,10 @@ func fmtPrice(a userdb.Amount) string {
 }
 
 func fmtPercent(a userdb.Amount) string {
-	sign := 1
 	if isNegative(a) {
-		sign = -1
-		a.Units = -a.Units
 		a.Nanos = -a.Nanos
 	}
-	v := fmt.Sprintf("%%%d.%02d", a.Units, a.Nanos/10000000)
-	if sign < 0 {
-		v = "-" + v
-	}
-	return v
+	return fmt.Sprintf("%d.%02d%%", a.Units, a.Nanos/10000000)
 }
 
 func isNegative(a userdb.Amount) bool {
