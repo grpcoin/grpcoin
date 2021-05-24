@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+terraform {
+    backend "gcs" {
+        bucket = "grpcoin-tfstate"
+    }
+}
 
 variable "project" {
   default = "grpcoin"
