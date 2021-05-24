@@ -23,6 +23,7 @@ import (
 
 	"github.com/grpcoin/grpcoin/server/userdb"
 	"go.uber.org/zap"
+	"golang.org/x/sync/semaphore"
 	"google.golang.org/api/idtoken"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -55,25 +56,31 @@ func (fe *Frontend) calcPortfolioHistory(w http.ResponseWriter, r *http.Request)
 		return err
 	}
 
+	var batchSize int64 = 10
+	sem := semaphore.NewWeighted(batchSize)
+
 	// TODO process in parallel in batches
 	for _, u := range users {
-		pv := valuation(u.Portfolio, quotes)
-		if err := fe.DB.SetUserValuationHistory(r.Context(), u.ID, userdb.ValuationHistory{
-			Date:  t,
-			Value: pv,
-		}); err != nil {
-			// TODO warning
-			log.Warn("failed to process user", zap.String("id", u.ID), zap.Error(err))
-			continue
-		}
-		if err := fe.DB.RotateUserValuationHistory(r.Context(), u.ID,
-			t.Add(-maxPortfolioHistory)); err != nil {
-			log.Warn("rotation history failed", zap.String("id", u.ID), zap.Error(err))
-			continue
-		}
-		log.Debug("processed user", zap.String("id", u.ID))
+		sem.Acquire(context.TODO(), 1)
+		go func(u userdb.User) {
+			defer sem.Release(1)
+			pv := valuation(u.Portfolio, quotes)
+			if err := fe.DB.SetUserValuationHistory(r.Context(), u.ID, userdb.ValuationHistory{
+				Date:  t,
+				Value: pv,
+			}); err != nil {
+				log.Warn("failed to process user", zap.String("id", u.ID), zap.Error(err))
+				return
+			}
+			if err := fe.DB.RotateUserValuationHistory(r.Context(), u.ID,
+				t.Add(-maxPortfolioHistory)); err != nil {
+				log.Warn("rotation history failed", zap.String("id", u.ID), zap.Error(err))
+				return
+			}
+			log.Debug("processed user", zap.String("id", u.ID))
+		}(u)
 	}
-	return nil
+	return sem.Acquire(r.Context(), batchSize)
 }
 
 func verifyJWT(ctx context.Context, expectedSAEmail, token string) error {
