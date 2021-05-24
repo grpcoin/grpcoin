@@ -12,6 +12,7 @@ using 100,000$ cash assigned to your account when you sign up.
 ## Get started
 
 1. Create a [GitHub personal access token](https://github.com/settings/tokens).
+   You don't need to give any permissions.
 
 1. Learn about API types and endpoints in [grpcoin.proto][api].
 
