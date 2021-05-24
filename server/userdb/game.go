@@ -14,8 +14,10 @@
 
 package userdb
 
+var defaultStartingCash = Amount{Units: 100_000}
+
 func setupGamePortfolio(u *User) {
-	u.Portfolio = Portfolio{CashUSD: Amount{Units: 100_000},
+	u.Portfolio = Portfolio{CashUSD: defaultStartingCash,
 		Positions: map[string]Amount{
 			"BTC": {Units: 0, Nanos: 0},
 		}}

@@ -94,10 +94,9 @@ func StartEmulator(t *testing.T, ctx context.Context) *firestore.Client {
 
 func truncateDB(t *testing.T, addr string) {
 	t.Helper()
-	// technique adopted from
-	req, _ := http.NewRequest(http.MethodDelete,
-		fmt.Sprintf("http://%s/emulator/v1/projects/%s/databases/(default)/documents",
-			addr, firestoreEmulatorProj), nil)
+	// technique adopted from https://stackoverflow.com/a/58866194/54929
+	req, _ := http.NewRequest(http.MethodDelete, fmt.Sprintf("http://%s/emulator/v1/projects/%s/databases/(default)/documents",
+		addr, firestoreEmulatorProj), nil)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatal(err)

@@ -83,6 +83,11 @@ func TestNewUser(t *testing.T) {
 		cmpopts.IgnoreFields(User{}, "CreatedAt")); diff != "" {
 		t.Fatal(diff)
 	}
+
+	vals, err := udb.UserValuationHistory(ctx, "foobar")
+	if len(vals) != 1 {
+		t.Fatalf("new user should have 1 valuation record: %#v", vals)
+	}
 }
 
 func TestEnsureAccountExists(t *testing.T) {

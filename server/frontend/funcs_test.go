@@ -88,7 +88,7 @@ func TestPortfolioSnaphotAt(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := portfolioSnaphotAt(tt.args.arr, tt.args.ago, tt.args.now); !reflect.DeepEqual(got, tt.want) {
+			if got := portfolioSnapshotAt(tt.args.arr, tt.args.ago, tt.args.now); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("portfolioSnaphotAt() = %v, want %v", got, tt.want)
 			}
 		})
