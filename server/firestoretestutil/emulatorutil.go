@@ -19,7 +19,9 @@ package firestoretestutil
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"sync"
@@ -27,8 +29,9 @@ import (
 	"time"
 
 	firestore "cloud.google.com/go/firestore"
-	"google.golang.org/api/iterator"
 )
+
+const firestoreEmulatorProj = "dummy-emulator-firestore-project"
 
 // cBuffer is a buffer safe for concurrent use.
 type cBuffer struct {
@@ -80,56 +83,26 @@ func StartEmulator(t *testing.T, ctx context.Context) *firestore.Client {
 		}
 	}
 	os.Setenv("FIRESTORE_EMULATOR_HOST", addr)
-	cl, err := firestore.NewClient(ctx, firestore.DetectProjectID)
+	cl, err := firestore.NewClient(ctx, firestoreEmulatorProj)
 	if err != nil {
 		t.Fatal(err)
 	}
 	os.Unsetenv("FIRESTORE_EMULATOR_HOST")
-	clearDB(t, ctx, cl)
+	truncateDB(t, addr)
 	return cl
 }
 
-func clearDB(t *testing.T, ctx context.Context, cl *firestore.Client) {
+func truncateDB(t *testing.T, addr string) {
 	t.Helper()
-	cs, err := cl.Collections(ctx).GetAll()
+	// technique adopted from
+	req, _ := http.NewRequest(http.MethodDelete,
+		fmt.Sprintf("http://%s/emulator/v1/projects/%s/databases/(default)/documents",
+			addr, firestoreEmulatorProj), nil)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, c := range cs {
-		deleteCol(t, ctx, cl, c)
-	}
-}
-
-func deleteCol(t *testing.T, ctx context.Context, cl *firestore.Client, c *firestore.CollectionRef) {
-	t.Helper()
-	it := c.Limit(1000).Documents(ctx)
-	for {
-		deleted := 0
-		batch := cl.Batch()
-		for {
-			doc, err := it.Next()
-			if err == iterator.Done {
-				break
-			} else if err != nil {
-				t.Fatal(err)
-			}
-
-			subCols, err := doc.Ref.Collections(ctx).GetAll()
-			if err != nil {
-				t.Fatal(err)
-			}
-			for _, sc := range subCols {
-				deleteCol(t, ctx, cl, sc)
-			}
-
-			batch.Delete(doc.Ref)
-			deleted++
-		}
-		if deleted == 0 {
-			return
-		}
-		if _, err := batch.Commit(ctx); err != nil {
-			t.Fatal(err)
-		}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("failed to clear db: %v", resp.Status)
 	}
 }

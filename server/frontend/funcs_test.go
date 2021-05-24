@@ -22,7 +22,7 @@ import (
 	"github.com/grpcoin/grpcoin/server/userdb"
 )
 
-func Test_findPortfolioHistory(t *testing.T) {
+func TestPortfolioSnaphotAt(t *testing.T) {
 	now := time.Date(2020, time.March, 31, 23, 00, 00, 00, time.UTC)
 	type args struct {
 		arr []userdb.ValuationHistory
@@ -88,8 +88,8 @@ func Test_findPortfolioHistory(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := findPortfolioHistory(tt.args.arr, tt.args.ago, tt.args.now); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("findPortfolioHistory() = %v, want %v", got, tt.want)
+			if got := portfolioSnaphotAt(tt.args.arr, tt.args.ago, tt.args.now); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("portfolioSnaphotAt() = %v, want %v", got, tt.want)
 			}
 		})
 	}
