@@ -1,8 +1,8 @@
 # gRPCoin: Programmatic paper trading platform using gRPC and Protobuf
 
-This is an educational server project that allows you to trade
-cryptocurrencies in a competitive setting using a gRPC API with
-real-time prices.
+This is an educational project that allows you to trade cryptocurrencies
+competitively by writing a bot on top of a [gRPC](https://grpc.io)-based API
+with real-time prices.
 
 Using the [gRPCoin API][api], you can **write a bot** and **start trading**
 using 100,000$ cash assigned to your account when you sign up.
@@ -14,7 +14,8 @@ using 100,000$ cash assigned to your account when you sign up.
 1. Create a [GitHub personal access token](https://github.com/settings/tokens).
    You don't need to give any permissions.
 
-1. Learn about API types and endpoints in [grpcoin.proto][api].
+1. Learn about API types and trading/portfolio endpoints in
+   [grpcoin.proto][api].
 
 1. Choose a programming language, and compile the `.proto` file ([learn
    how](https://grpc.io/docs/languages/)) or you can fork an
