@@ -27,30 +27,39 @@ import (
 
 var (
 	funcs = template.FuncMap{
-		"fmtAmount":   fmtAmount,
-		"fmtPrice":    fmtPrice,
-		"fmtDate":     fmtDate,
-		"fmtDuration": fmtDuration,
-		"fmtPercent":  fmtPercent,
-		"pv":          valuation,
-		"isNegative":  isNegative,
-		"since":       since,
-		"mul":         mul,
-		"profilePic":  profilePic,
+		"fmtAmount":    fmtAmount,
+		"fmtPrice":     fmtPrice,
+		"fmtPriceFull": fmtPriceFull,
+		"fmtDate":      fmtDate,
+		"fmtDuration":  fmtDuration,
+		"fmtPercent":   fmtPercent,
+		"pv":           valuation,
+		"isNegative":   isNegative,
+		"since":        since,
+		"mul":          mul,
+		"profilePic":   profilePic,
 	}
 )
 
 func fmtAmount(a userdb.Amount) string {
 	v := fmt.Sprintf("%s.%09d", humanize.Comma(a.Units), a.Nanos)
-	vv := strings.TrimRight(v, "0")
-	if strings.HasSuffix(vv, ".") {
-		vv += "00"
+	return trimTrailingZeros(v)
+}
+
+func trimTrailingZeros(v string) string {
+	v = strings.TrimRight(v, "0")
+	if strings.HasSuffix(v, ".") {
+		v += "00"
 	}
-	return vv
+	return v
 }
 
 func fmtPrice(a userdb.Amount) string {
-	return fmt.Sprintf("$%s.%02d", humanize.Comma(a.Units), a.Nanos/10000000)
+	return fmt.Sprintf("$%s.%02d", humanize.Comma(a.Units), a.Nanos/1_000_000_0)
+}
+
+func fmtPriceFull(a userdb.Amount) string {
+	return trimTrailingZeros(fmt.Sprintf("$%s.%09d", humanize.Comma(a.Units), a.Nanos))
 }
 
 func fmtPercent(a userdb.Amount) string {
@@ -58,7 +67,7 @@ func fmtPercent(a userdb.Amount) string {
 	if isNegative(a) {
 		nanos = -nanos
 	}
-	v := fmt.Sprintf("%d.%02d%%", a.Units, nanos/10000000)
+	v := fmt.Sprintf("%d.%02d%%", a.Units, nanos/1_000_000_0)
 	if isNegative(a) && v[0] != '-' {
 		v = "-" + v
 	}

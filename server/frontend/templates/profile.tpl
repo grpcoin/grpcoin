@@ -83,7 +83,7 @@
             <td>{{.Ticker}}</td>
             <td>{{fmtAmount .Size}}</td>
             <td>{{fmtPrice .Price}}</td>
-            <td>{{fmtPrice (mul .Price .Size)}}</td>
+            <td>{{fmtPriceFull (mul .Price .Size)}}</td>
             <td>{{fmtDuration (since .Date) 2}}</td>
         </tr>
         {{ end }}
