@@ -226,6 +226,40 @@ resource "google_cloud_scheduler_job" "pv-job" {
   }
 }
 
+resource "google_firestore_index" "orders-date-asc" {
+  depends_on = [
+    google_project_service.firestore
+  ]
+  project = var.project
+  collection = "orders"
+
+  fields {
+    field_path = "date"
+    order = "ASCENDING"
+  }
+  fields {
+    field_path = "__name__"
+    order = "ASCENDING"
+  }
+}
+
+resource "google_firestore_index" "orders-date-desc" {
+  depends_on = [
+    google_project_service.firestore
+  ]
+  project = var.project
+  collection = "orders"
+
+  fields {
+    field_path = "date"
+    order = "DESCENDING"
+  }
+  fields {
+    field_path = "__name__"
+    order = "DESCENDING"
+  }
+}
+
 output "cloud_run_url" {
   value = element(google_cloud_run_service.default.status, 0).url
 }

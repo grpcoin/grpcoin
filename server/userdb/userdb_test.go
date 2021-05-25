@@ -121,7 +121,7 @@ func TestValuationHistory(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ti := time.Now().UTC().Truncate(time.Hour)
+	ti := time.Date(2050, 03, 12, 0, 0, 0, 0, time.UTC)
 	v1 := ValuationHistory{Date: ti, Value: Amount{Units: 5555}}
 	v2 := ValuationHistory{Date: ti, Value: Amount{Units: 6666}}
 	if err := udb.SetUserValuationHistory(ctx, u.ID, v1); err != nil {
@@ -135,6 +135,9 @@ func TestValuationHistory(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if len(v) > 1 {
+		v = v[1:] // remove signup record
+	}
 	expected := []ValuationHistory{v1}
 	diff := cmp.Diff(expected, v)
 	if diff != "" {
@@ -143,9 +146,6 @@ func TestValuationHistory(t *testing.T) {
 }
 
 func TestRotateUserValuationHistory(t *testing.T) {
-	if testing.Short() {
-		t.Skip()
-	}
 	ctx := context.Background()
 	udb := &UserDB{DB: firestoretestutil.StartEmulator(t, ctx),
 		T: trace.NewNoopTracerProvider().Tracer("")}
@@ -154,7 +154,7 @@ func TestRotateUserValuationHistory(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	d := time.Date(2020, time.April, 23, 0, 0, 0, 0, time.UTC)
+	d := time.Date(2050, time.April, 23, 0, 0, 0, 0, time.UTC)
 	for i := 1; i <= 20; i++ {
 		dv := d.Add(time.Hour * time.Duration(i))
 		if err := udb.SetUserValuationHistory(ctx, u.ID,
@@ -235,6 +235,45 @@ func TestUserDB_Trade_OrderHistory(t *testing.T) {
 	diff := cmp.Diff(got, expectedOrders,
 		cmpopts.IgnoreFields(Order{}, "Date"))
 	if diff != "" {
+		t.Fatal(diff)
+	}
+}
+
+func TestRotateOrderHistory(t *testing.T) {
+	ctx := context.Background()
+	udb := &UserDB{DB: firestoretestutil.StartEmulator(t, ctx),
+		T: trace.NewNoopTracerProvider().Tracer("")}
+	tu := testUser{id: "testuser", name: "abc"}
+	if _, err := udb.EnsureAccountExists(ctx, tu); err != nil {
+		t.Fatal(err)
+	}
+
+	// empty order history
+	if err := udb.RotateOrderHistory(ctx, "testuser", 5); err != nil {
+		t.Fatal(err)
+	}
+
+	// retain last orders
+	ti := time.Date(2020, 04, 15, 0, 0, 0, 0, time.UTC)
+	for i := 0; i < 20; i++ {
+		if err := udb.recordOrderHistory(ctx, "testuser",
+			ti.Add(time.Second*time.Duration(i)), "", grpcoin.TradeAction_UNDEFINED, Amount{Units: int64(i)}, Amount{}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := udb.RotateOrderHistory(ctx, "testuser", 3); err != nil {
+		t.Fatal(err)
+	}
+	hist, err := udb.UserOrderHistory(ctx, "testuser")
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := []Order{
+		{Date: ti.Add(17 * time.Second), Size: Amount{Units: 17}},
+		{Date: ti.Add(18 * time.Second), Size: Amount{Units: 18}},
+		{Date: ti.Add(19 * time.Second), Size: Amount{Units: 19}},
+	}
+	if diff := cmp.Diff(expected, hist); diff != "" {
 		t.Fatal(diff)
 	}
 }

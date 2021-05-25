@@ -30,14 +30,17 @@ package userdb
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"time"
 
 	firestore "cloud.google.com/go/firestore"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
+	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"github.com/grpcoin/grpcoin/api/grpcoin"
 	"github.com/grpcoin/grpcoin/server/auth"
 	"github.com/shopspring/decimal"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 	"google.golang.org/api/iterator"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -49,6 +52,14 @@ const (
 	fsUserCol      = "users"      // users collection
 	fsOrdersCol    = "orders"     // sub-collection for user
 	fsValueHistCol = "valuations" // sub-collection for user's portolio value over time
+
+	maxOrderHistoryRecords  = 1000 // keep latest N order history records
+	orderHistoryRotateCheck = 0.3  // probability of checking & purging excess order history records
+)
+
+var (
+	// r is for probabilistic actions
+	r = rand.New(rand.NewSource(time.Now().UnixNano()))
 )
 
 type User struct {
@@ -81,19 +92,6 @@ type ValuationHistory struct {
 	Date  time.Time `firestore:"date"`
 	Value Amount    `firestore:"value"`
 }
-
-/*
-	- user
-	    - MAIN RECORD
-		  - id
-		  - signup date
-		  - portfolio {cash, coin pos}
-		  - valuation summary {1h:?? 24h:?? 7d:?? 30d:??}
-		- valuations
-		  - t1: v1
-		  - t2: v1
-		- /user/1/orders
-*/
 
 func (a Amount) V() *grpcoin.Amount { return &grpcoin.Amount{Units: a.Units, Nanos: a.Nanos} }
 func (a Amount) F() decimal.Decimal { return toDecimal(a.V()) }
@@ -219,17 +217,37 @@ func (u *UserDB) Trade(ctx context.Context, uid string, ticker string, action gr
 	}
 
 	subCtx, s = u.T.Start(ctx, "log order")
-	defer s.End()
-	t := time.Now().UTC()
+	err = u.recordOrderHistory(subCtx, uid, time.Now().UTC(), ticker, action,
+		ToAmount(toDecimal(quantity)), ToAmount(toDecimal(quote)))
+	if err != nil {
+		s.RecordError(err)
+		ctxzap.Extract(ctx).Warn("failed to record order history", zap.Error(err))
+	}
+	s.End()
+
+	// probabilistically delete unnecessary order history records
+	if r.Float64() < orderHistoryRotateCheck {
+		subCtx, s := u.T.Start(ctx, "rotate order history")
+		defer s.End()
+		if err := u.RotateOrderHistory(subCtx, uid, maxOrderHistoryRecords); err != nil {
+			s.RecordError(err)
+			ctxzap.Extract(ctx).Warn("failed to rotate order history", zap.Error(err))
+		}
+	}
+	return nil // do not block trades on order history bookkeeping
+}
+
+func (u *UserDB) recordOrderHistory(ctx context.Context, uid string,
+	t time.Time, ticker string, action grpcoin.TradeAction, size, price Amount) error {
 	id := t.Format(time.RFC3339Nano)
-	_, err = u.DB.Collection(fsUserCol).Doc(uid).Collection(fsOrdersCol).Doc(id).Create(ctx, Order{
+	_, err := u.DB.Collection(fsUserCol).Doc(uid).Collection(fsOrdersCol).Doc(id).Create(ctx, Order{
 		Date:   t,
 		Ticker: ticker,
 		Action: action,
-		Size:   ToAmount(toDecimal(quantity)),
-		Price:  ToAmount(toDecimal(quote)),
+		Size:   size,
+		Price:  price,
 	})
-	return nil
+	return err
 }
 
 func (u *UserDB) UserOrderHistory(ctx context.Context, uid string) ([]Order, error) {
@@ -254,6 +272,29 @@ func (u *UserDB) UserOrderHistory(ctx context.Context, uid string) ([]Order, err
 		out = append(out, v)
 	}
 	return out, nil
+}
+
+func (u *UserDB) RotateOrderHistory(ctx context.Context, uid string, maxHist int) error {
+	it := u.DB.Collection(fsUserCol).Doc(uid).Collection(fsOrdersCol).
+		OrderBy("date", firestore.Desc).Offset(maxHist).Documents(ctx)
+	wb := u.DB.Batch()
+	var deleted int
+	for {
+		doc, err := it.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		wb.Delete(doc.Ref)
+		deleted++
+	}
+	if deleted == 0 {
+		return nil
+	}
+	_, err := wb.Commit(ctx)
+	return err
 }
 
 func (u *UserDB) UserValuationHistory(ctx context.Context, uid string) ([]ValuationHistory, error) {
