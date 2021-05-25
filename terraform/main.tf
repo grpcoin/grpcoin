@@ -15,9 +15,9 @@
  */
 
 terraform {
-    backend "gcs" {
-        bucket = "grpcoin-tfstate"
-    }
+  backend "gcs" {
+    bucket = "grpcoin-tfstate"
+  }
 }
 
 variable "project" {
@@ -148,6 +148,7 @@ resource "google_cloud_run_service" "default" {
     metadata {
       annotations = {
         "run.googleapis.com/vpc-access-connector" : google_vpc_access_connector.default.name
+        "autoscaling.knative.dev/maxScale" : "10",
       }
     }
     spec {
@@ -172,7 +173,7 @@ resource "google_cloud_run_service" "default" {
           value = google_redis_instance.cache.host
         }
         env {
-          name = "CRON_SERVICE_ACCOUNT"
+          name  = "CRON_SERVICE_ACCOUNT"
           value = google_service_account.cron.email
         }
       }
@@ -223,40 +224,6 @@ resource "google_cloud_scheduler_job" "pv-job" {
       service_account_email = google_service_account.cron.email
       audience              = "${element(google_cloud_run_service.default.status, 0).url}/_cron/pv"
     }
-  }
-}
-
-resource "google_firestore_index" "orders-date-asc" {
-  depends_on = [
-    google_project_service.firestore
-  ]
-  project = var.project
-  collection = "orders"
-
-  fields {
-    field_path = "date"
-    order = "ASCENDING"
-  }
-  fields {
-    field_path = "__name__"
-    order = "ASCENDING"
-  }
-}
-
-resource "google_firestore_index" "orders-date-desc" {
-  depends_on = [
-    google_project_service.firestore
-  ]
-  project = var.project
-  collection = "orders"
-
-  fields {
-    field_path = "date"
-    order = "DESCENDING"
-  }
-  fields {
-    field_path = "__name__"
-    order = "DESCENDING"
   }
 }
 
