@@ -80,6 +80,11 @@ type Amount struct {
 	Nanos int32
 }
 
+func (a Amount) IsNegative() bool   { return a.Units < 0 || a.Nanos < 0 }
+func (a Amount) IsZero() bool       { return a == Amount{} }
+func (a Amount) V() *grpcoin.Amount { return &grpcoin.Amount{Units: a.Units, Nanos: a.Nanos} }
+func (a Amount) F() decimal.Decimal { return toDecimal(a.V()) }
+
 type Order struct {
 	Date   time.Time           `firestore:"date"`
 	Ticker string              `firestore:"ticker"`
@@ -92,9 +97,6 @@ type ValuationHistory struct {
 	Date  time.Time `firestore:"date"`
 	Value Amount    `firestore:"value"`
 }
-
-func (a Amount) V() *grpcoin.Amount { return &grpcoin.Amount{Units: a.Units, Nanos: a.Nanos} }
-func (a Amount) F() decimal.Decimal { return toDecimal(a.V()) }
 
 type UserDB struct {
 	DB *firestore.Client

@@ -277,3 +277,63 @@ func TestRotateOrderHistory(t *testing.T) {
 		t.Fatal(diff)
 	}
 }
+
+func TestAmount_IsNegative(t *testing.T) {
+	tests := []struct {
+		name   string
+		fields Amount
+		want   bool
+	}{
+		{name: "zero",
+			want: false},
+		{name: "zero part, neg nanos",
+			fields: Amount{Nanos: -1},
+			want:   true},
+		{name: "zero part, pos nanos",
+			fields: Amount{Nanos: 1},
+			want:   false},
+		{name: "zero nanos, neg units",
+			fields: Amount{Units: -1},
+			want:   true},
+		{name: "zero nanos, pos units",
+			fields: Amount{Units: 1},
+			want:   false},
+		{name: "pos both",
+			fields: Amount{Units: 1, Nanos: 1},
+			want:   false},
+		{name: "neg both",
+			fields: Amount{Units: -1, Nanos: -1},
+			want:   true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.fields.IsNegative(); got != tt.want {
+				t.Errorf("Amount.IsNegative(%#v) = %v, want %v", tt.fields, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestAmount_IsZero(t *testing.T) {
+	tests := []struct {
+		name string
+		in   Amount
+		want bool
+	}{
+		{name: "zero",
+			in:   Amount{0, 0},
+			want: true},
+		{name: "pos",
+			in:   Amount{1, 1},
+			want: false},
+		{name: "neg",
+			in:   Amount{-1, -1},
+			want: false}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.in.IsZero(); got != tt.want {
+				t.Errorf("Amount.IsZero() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

@@ -15,6 +15,7 @@
 
 
 <h2>Positions</h2>
+{{ $tv := pv .u.Portfolio .quotes }}
 
 <table>
     <thead>
@@ -23,6 +24,7 @@
             <th>Amount</th>
             <th>Price</th>
             <th>Value</th>
+            <th>Allocation</th>
         </tr>
     </thead>
     <tbody>
@@ -31,6 +33,7 @@
             <td>{{fmtAmount .u.Portfolio.CashUSD -}}</td>
             <td>$1.00</td>
             <td>${{fmtAmount .u.Portfolio.CashUSD -}}</td>
+            <td>{{ fmtPercent (toPercent ( div .u.Portfolio.CashUSD $tv ) ) }}</td>
         </tr>
         {{ range $tick, $amount := .u.Portfolio.Positions }}
         <tr>
@@ -38,13 +41,14 @@
             <td>{{fmtAmount $amount -}}</td>
             <td>{{ fmtPrice (index $.quotes $tick ) }} </td>
             <td>{{ fmtPrice (mul $amount (index $.quotes $tick )) }} </td>
+            <td>{{ fmtPercent ( toPercent (div (mul $amount (index $.quotes $tick )) $tv )) }} </td>
         </tr>
         {{ end }}
         <tr>
             <td></td>
             <td></td>
             <td>TOTAL:</td>
-            <td>{{ fmtPrice (pv .u.Portfolio .quotes ) }} </td>
+            <td>{{ fmtPrice $tv }} </td>
         </tr>
     </tbody>
 </table>

@@ -33,10 +33,11 @@ var (
 		"fmtDate":      fmtDate,
 		"fmtDuration":  fmtDuration,
 		"fmtPercent":   fmtPercent,
+		"toPercent":    toPercent,
 		"pv":           valuation,
-		"isNegative":   isNegative,
 		"since":        since,
 		"mul":          mul,
+		"div":          div,
 		"profilePic":   profilePic,
 	}
 )
@@ -64,18 +65,14 @@ func fmtPriceFull(a userdb.Amount) string {
 
 func fmtPercent(a userdb.Amount) string {
 	nanos := a.Nanos
-	if isNegative(a) {
+	if a.IsNegative() {
 		nanos = -nanos
 	}
 	v := fmt.Sprintf("%d.%02d%%", a.Units, nanos/1_000_000_0)
-	if isNegative(a) && v[0] != '-' {
+	if a.IsNegative() && v[0] != '-' {
 		v = "-" + v
 	}
 	return v
-}
-
-func isNegative(a userdb.Amount) bool {
-	return a.Units < 0 || a.Nanos < 0
 }
 
 func valuation(p userdb.Portfolio, quotes map[string]userdb.Amount) userdb.Amount {
@@ -87,9 +84,9 @@ func valuation(p userdb.Portfolio, quotes map[string]userdb.Amount) userdb.Amoun
 	return userdb.ToAmount(total)
 }
 
-func mul(a, b userdb.Amount) userdb.Amount {
-	return userdb.ToAmount(a.F().Mul(b.F()))
-}
+func mul(a, b userdb.Amount) userdb.Amount    { return userdb.ToAmount(a.F().Mul(b.F())) }
+func div(a, b userdb.Amount) userdb.Amount    { return userdb.ToAmount(a.F().Div(b.F())) }
+func toPercent(a userdb.Amount) userdb.Amount { return mul(a, userdb.Amount{Units: 100}) }
 
 func fmtDate(t time.Time) string { return t.Truncate(time.Hour * 24).Format("2 January 2006") }
 

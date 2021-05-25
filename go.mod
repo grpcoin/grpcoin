@@ -6,8 +6,7 @@ require (
 	cloud.google.com/go/firestore v1.5.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v0.20.0
 	github.com/alicebob/miniredis/v2 v2.14.4
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
-	github.com/dustin/go-humanize v1.0.0 // indirect
+	github.com/dustin/go-humanize v1.0.0
 	github.com/go-redis/redis/v8 v8.8.2
 	github.com/go-redis/redismock/v8 v8.0.6
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
@@ -17,11 +16,8 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/hako/durafmt v0.0.0-20210316092057-3a2c319c1acd
-	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
-	github.com/pquerna/cachecontrol v0.1.0 // indirect
 	github.com/preichenberger/go-coinbasepro/v2 v2.0.5
 	github.com/shopspring/decimal v1.2.0
-	github.com/someone1/gcp-jwt-go v2.0.1+incompatible // indirect
 	github.com/tommy351/zap-stackdriver v0.1.4
 	go.opencensus.io v0.23.0
 	go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux v0.20.0
@@ -35,9 +31,8 @@ require (
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
 	golang.org/x/net v0.0.0-20210510120150-4163338589ed
 	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c // indirect
-	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20210514084401-e8d321eab015 // indirect
-	golang.org/x/text v0.3.6 // indirect
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba
 	golang.org/x/tools v0.1.1 // indirect
 	google.golang.org/api v0.46.0
