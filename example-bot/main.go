@@ -79,17 +79,15 @@ func main() {
 	}
 
 	// buy 0.05 bitcoin
-	for {
-		order, err := grpcoin.NewPaperTradeClient(conn).Trade(authCtx, &grpcoin.TradeRequest{
-			Action:   grpcoin.TradeAction_BUY,
-			Ticker:   &grpcoin.TradeRequest_Ticker{Ticker: "BTC"},
-			Quantity: &grpcoin.Amount{Units: 0, Nanos: 5},
-		})
-		if err != nil {
-			log.Fatalf("sell order failed: %v", err)
-		}
-		log.Printf("ORDER EXECUTED: %s [%s] coins at USD[%s]", order.Action, order.Quantity, order.ExecutedPrice)
+	order, err := grpcoin.NewPaperTradeClient(conn).Trade(authCtx, &grpcoin.TradeRequest{
+		Action:   grpcoin.TradeAction_BUY,
+		Ticker:   &grpcoin.TradeRequest_Ticker{Ticker: "BTC"},
+		Quantity: &grpcoin.Amount{Units: 0, Nanos: 5},
+	})
+	if err != nil {
+		log.Fatalf("sell order failed: %v", err)
 	}
+	log.Printf("ORDER EXECUTED: %s [%s] coins at USD[%s]", order.Action, order.Quantity, order.ExecutedPrice)
 
 	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	for ctx.Err() == nil {

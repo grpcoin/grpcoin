@@ -54,7 +54,7 @@ const (
 	fsValueHistCol = "valuations" // sub-collection for user's portolio value over time
 
 	maxOrderHistoryRecords  = 1000 // keep latest N order history records
-	orderHistoryRotateCheck = 0.1  // probability of checking & purging excess order history records
+	orderHistoryRotateCheck = 0.01 // probability of checking & purging excess order history records
 )
 
 var (
