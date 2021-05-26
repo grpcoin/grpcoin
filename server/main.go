@@ -88,7 +88,9 @@ func main() {
 	var traceExporter trace.SpanExporter
 	if onCloudRun {
 		gcp, err := texporter.NewExporter(
-			texporter.WithTraceClientOptions([]option.ClientOption{option.WithTelemetryDisabled()})) // don't trace the trace client itself
+			texporter.WithTraceClientOptions([]option.ClientOption{
+				// option.WithTelemetryDisabled(),
+			})) // don't trace the trace client itself
 		if err != nil {
 			log.Fatal("failed to initialize gcp trace exporter", zap.Error(err))
 		}
@@ -97,9 +99,9 @@ func main() {
 		traceExporter = dummyTraceExporter{}
 	}
 	tracer := trace.NewTracerProvider(trace.WithBatcher(traceExporter,
-		trace.WithBatchTimeout(time.Millisecond*200),
-		trace.WithMaxExportBatchSize(10)),
-		trace.WithSampler(trace.AlwaysSample()))
+		trace.WithMaxQueueSize(5000),
+		trace.WithMaxExportBatchSize(1000),
+	), trace.WithSampler(trace.TraceIDRatioBased(0.1)))
 
 	otel.SetTracerProvider(tracer)
 	tp := otel.GetTracerProvider().Tracer("grpcoin-server")
