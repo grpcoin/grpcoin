@@ -44,6 +44,7 @@ func (cb *coinbaseQuoteProvider) GetQuote(ctx context.Context, _ string) (*grpco
 			cb.logger.Warn("quote request cancelled", zap.Error(ctx.Err()),
 				zap.Duration("last_quote", time.Since(cb.lastUpdated)))
 			cb.lock.RUnlock()
+			return nil, ctx.Err()
 		default:
 			cb.lock.RLock()
 			if time.Since(cb.lastUpdated) > staleQuotePeriod {

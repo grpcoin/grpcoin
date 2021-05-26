@@ -153,7 +153,8 @@ func main() {
 	udb := &userdb.UserDB{DB: fs, T: tp}
 	as := &accountService{cache: ac, udb: udb}
 	au := &github.GitHubAuthenticator{T: tp, Cache: rc}
-	cb := &coinbaseQuoteProvider{}
+	cb := &coinbaseQuoteProvider{
+		logger: log.With(zap.String("facility", "coinbase"))}
 	go cb.sync(ctx, "BTC")
 	ts := &tickerService{}
 	pt := &tradingService{udb: udb, tp: cb, tr: tp}

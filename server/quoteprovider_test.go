@@ -18,13 +18,16 @@ import (
 	"context"
 	"testing"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 func Test_coinbaseQuoteProvider_GetQuote(t *testing.T) {
 	if testing.Short() {
 		t.Skip("makes calls to coinbase")
 	}
-	cb := &coinbaseQuoteProvider{}
+	lg, _ := zap.NewDevelopment()
+	cb := &coinbaseQuoteProvider{logger: lg}
 	ctx, stop := context.WithCancel(context.Background())
 	defer stop()
 	go cb.sync(ctx, "BTC")

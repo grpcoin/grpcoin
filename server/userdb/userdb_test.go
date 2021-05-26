@@ -337,3 +337,32 @@ func TestAmount_IsZero(t *testing.T) {
 		})
 	}
 }
+
+func Test_batchDeleteAll(t *testing.T) {
+	fs := firestoretestutil.StartEmulator(t, context.TODO())
+	col := fs.Collection("testcol")
+
+	if err := batchDeleteAll(context.TODO(), fs, col.Documents(context.TODO())); err != nil {
+		t.Fatal(err)
+	}
+
+	// add some documents
+	for i := 0; i < 1002; i++ {
+		_, _, err := col.Add(context.TODO(), map[string]string{"a": "b"})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	it := col.Documents(context.TODO())
+	if err := batchDeleteAll(context.TODO(), fs, it); err != nil {
+		t.Fatal(err)
+	}
+	it = col.Documents(context.TODO())
+	docs, err := it.GetAll()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(docs) > 0 {
+		t.Fatalf("was not expecting results: got %d", len(docs))
+	}
+}
