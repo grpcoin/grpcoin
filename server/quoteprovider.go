@@ -16,12 +16,12 @@ package main
 
 import (
 	"context"
-	"log"
 	"sync"
 	"time"
 
 	"github.com/grpcoin/grpcoin/api/grpcoin"
 	"github.com/grpcoin/grpcoin/gdax"
+	"go.uber.org/zap"
 )
 
 type coinbaseQuoteProvider struct {
@@ -30,15 +30,20 @@ type coinbaseQuoteProvider struct {
 	lock        sync.RWMutex
 	lastQuote   *grpcoin.Amount
 	lastUpdated time.Time
+
+	logger *zap.Logger
 }
 
-const staleQuotePeriod = time.Second
+const staleQuotePeriod = time.Second * 2
 
 func (cb *coinbaseQuoteProvider) GetQuote(ctx context.Context, _ string) (*grpcoin.Amount, error) {
 	for {
 		select {
 		case <-ctx.Done():
-			return nil, ctx.Err()
+			cb.lock.RLock()
+			cb.logger.Warn("quote request cancelled", zap.Error(ctx.Err()),
+				zap.Duration("last_quote", time.Since(cb.lastUpdated)))
+			cb.lock.RUnlock()
 		default:
 			cb.lock.RLock()
 			if time.Since(cb.lastUpdated) > staleQuotePeriod {
@@ -62,8 +67,7 @@ func (cb *coinbaseQuoteProvider) sync(ctx context.Context, ticker string) {
 		}
 		ch, err := gdax.StartWatch(ctx, ticker+"-USD")
 		if err != nil {
-			// TODO plumb logger here
-			log.Printf("warning: failed to connected to coinbase: %v", err)
+			cb.logger.Warn("warning: failed to connected to coinbase", zap.Error(err))
 			// TODO consider adding sleep/backoff to prevent DoSing coinbase API
 			continue
 		}
@@ -73,6 +77,6 @@ func (cb *coinbaseQuoteProvider) sync(ctx context.Context, ticker string) {
 			cb.lastQuote = m.Price
 			cb.lock.Unlock()
 		}
-		log.Printf("warn: coinbase channel terminated, reopening")
+		cb.logger.Warn("coinbase channel terminated, reopening")
 	}
 }
