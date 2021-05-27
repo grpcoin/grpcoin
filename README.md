@@ -46,4 +46,4 @@ Just to get started, you can also check out some example bot implementations:
 
 1. [Go example bot](./example-bot/)
 1. [C# example bot](https://github.com/grpcoin/example-bot-csharp)
-1. Please contribute more! 🚀
+1. [Node.js command-line tool](https://github.com/grpcoin/example-cli-node)
