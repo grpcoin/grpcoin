@@ -30,7 +30,7 @@
 					<td>
 						USD {{fmtPrice $v.Valuation}}
 					</td>
-				</tr>
+
 				{{ end }}
 			</tbody>
 		</table>

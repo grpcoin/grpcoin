@@ -3,7 +3,7 @@
 {{ $tv := pv .u.Portfolio .quotes }}
 <div class="container">
     <div class="row py-5">
-        <div class="col-md-5 col-lg-4">
+        <div class="col-md-5 col-lg-3">
             <div class="card mb-3">
                 {{ with (profilePic .u.ProfileURL) }}
                 <img src="{{.}}" class="card-image-top img-thumbnail
@@ -73,7 +73,7 @@
                 </a>
             </div>
         </div>
-        <div class="col-md-7 col-lg-8 order-md-last">
+        <div class="col-md-7 col-lg-9 order-md-last">
             <div class=card>
                 <h4 class="card-header">
                     <span>Returns</span>
@@ -108,7 +108,7 @@
                 <h4 class="card-header">
                     <span>Orders</span>
                 </h4>
-                <div class="card-body">
+                <div class="card-body overflow-scroll">
                     <table class="table table-striped table-hover">
                         <thead>
                             <tr>
