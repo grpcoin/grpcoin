@@ -35,6 +35,7 @@ var (
 		"fmtPercent":   fmtPercent,
 		"toPercent":    toPercent,
 		"pv":           valuation,
+		"isNegative":   isNegative,
 		"since":        since,
 		"mul":          mul,
 		"div":          div,
@@ -87,6 +88,7 @@ func valuation(p userdb.Portfolio, quotes map[string]userdb.Amount) userdb.Amoun
 func mul(a, b userdb.Amount) userdb.Amount    { return userdb.ToAmount(a.F().Mul(b.F())) }
 func div(a, b userdb.Amount) userdb.Amount    { return userdb.ToAmount(a.F().Div(b.F())) }
 func toPercent(a userdb.Amount) userdb.Amount { return mul(a, userdb.Amount{Units: 100}) }
+func isNegative(a userdb.Amount) bool         { return a.IsNegative() }
 
 func fmtDate(t time.Time) string { return t.Truncate(time.Hour * 24).Format("2 January 2006") }
 

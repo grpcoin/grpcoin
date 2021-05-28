@@ -1,102 +1,152 @@
 {{ template "header.tpl" (printf "User: %s" .u.DisplayName) }}
 
-<h1>
-    {{ with (profilePic .u.ProfileURL) }}
-    <img src="{{.}}" width=24 height=auto />
-    {{ end }}
-    <a href="{{.u.ProfileURL}}" rel="nofollow">
-        {{.u.DisplayName}}
-    </a>
-</h1>
-
-<small>
-    Joined on: {{fmtDate .u.CreatedAt}} ({{ fmtDuration (since .u.CreatedAt) 2 }} ago)
-</small>
-
-
-<h2>Positions</h2>
 {{ $tv := pv .u.Portfolio .quotes }}
+<div class="container">
+    <div class="row py-5">
+        <div class="col-md-5 col-lg-4">
+            <div class="card mb-3">
+                {{ with (profilePic .u.ProfileURL) }}
+                <img src="{{.}}" class="card-image-top img-thumbnail
+                    d-none d-md-block" />
+                {{ end }}
+                <div class="card-body">
+                    <h3 class="card-title display-5">
+                        <a href="{{.u.ProfileURL}}" class="card-link
+                        stretched-link">
+                            {{.u.DisplayName}}
+                        </a>
+                    </h3>
+                    <p class="card-text">
+                        Joined {{ fmtDuration (since .u.CreatedAt) 1 }} ago.
+                    </p>
+                </div>
+            </div>
 
-<table>
-    <thead>
-        <tr>
-            <th>Ticker</th>
-            <th>Amount</th>
-            <th>Price</th>
-            <th>Value</th>
-            <th>Allocation</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>CASH</td>
-            <td>{{fmtAmount .u.Portfolio.CashUSD -}}</td>
-            <td>$1.00</td>
-            <td>${{fmtAmount .u.Portfolio.CashUSD -}}</td>
-            <td>{{ fmtPercent (toPercent ( div .u.Portfolio.CashUSD $tv ) ) }}</td>
-        </tr>
-        {{ range $tick, $amount := .u.Portfolio.Positions }}
-        <tr>
-            <td>{{$tick}}</td>
-            <td>{{fmtAmount $amount -}}</td>
-            <td>{{ fmtPrice (index $.quotes $tick ) }} </td>
-            <td>{{ fmtPrice (mul $amount (index $.quotes $tick )) }} </td>
-            <td>{{ fmtPercent ( toPercent (div (mul $amount (index $.quotes $tick )) $tv )) }} </td>
-        </tr>
-        {{ end }}
-        <tr>
-            <td></td>
-            <td></td>
-            <td>TOTAL:</td>
-            <td>{{ fmtPrice $tv }} </td>
-        </tr>
-    </tbody>
-</table>
+            <div class="card">
+                <h5 class="card-header">
+                    Positions
+                </h5>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item
+                        justify-content-between d-flex">
+                        <div>
+                            <b>CASH</b>
+                        </div>
+                        <div class="text-end">
+                            {{fmtPrice .u.Portfolio.CashUSD -}}<br />
+                            <span class="text-muted">
+                                {{ fmtPercent (toPercent ( div .u.Portfolio.CashUSD $tv ) ) }}
+                            </span>
+                        </div>
+                    </li>
+                    {{ range $tick, $amount := .u.Portfolio.Positions }}
+                    <li class="list-group-item
+                        justify-content-between d-flex">
+                        <div>
+                            <b>{{$tick}}</b><br />
+                            <span class="text-muted">
+                                {{ fmtPrice (index $.quotes $tick ) }}
+                            </span>
+                        </div>
+                        <div class="text-end">
+                            {{ fmtPrice (mul $amount (index $.quotes $tick )) }}<br />
+                            <span class="text-muted">
+                                {{ fmtPercent ( toPercent (div (mul $amount (index $.quotes $tick )) $tv )) }}
+                            </span>
+                        </div>
+                    </li>
+                    {{ end }}
+                </ul>
+                <div class="card-footer justify-content-between d-flex">
+                    <div>
+                        <b>Total value</b>
+                    </div>
+                    <div class="text-end">
+                        {{fmtPrice $tv }}
+                    </div>
+                </div>
+            </div>
 
-<h2>Returns</h2>
+            <div class="mt-3">
+                <a href="/" class="btn btn-lg text-primary">
+                    &larr; Leaderboard
+                </a>
+            </div>
+        </div>
+        <div class="col-md-7 col-lg-8 order-md-last">
+            <div class=card>
+                <h4 class="card-header">
+                    <span>Returns</span>
+                </h4>
+                <div class="card-body text-center p-0">
+                    <table class="table table-striped mb-0">
+                        <thead>
+                            <tr>
+                                {{ range .returns }}
+                                <th scope="col">{{.Label}}</th>
+                                {{ end }}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                {{ range .returns }}
+                                <td class="{{ if isNegative .Percent }}table-danger{{ else }}table-success
+                                    {{end}}">
+                                    <b>
+                                        {{ fmtPercent .Percent }}
+                                    </b>
+                                </td>
+                                {{ end }}
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
-<table>
-    <tbody>
-        {{ range .returns }}
-        <tr>
-            <td>{{ .Label }}</td>
-            <td>{{ fmtPercent .Percent }}</td>
-        </tr>
-        {{ end }}
-    </tbody>
-</table>
+            {{ with .orders }}
+            <div class="card mt-3">
+                <h4 class="card-header">
+                    <span>Orders</span>
+                </h4>
+                <div class="card-body">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Action</th>
+                                <th>Ticker</th>
+                                <th>Size</th>
+                                <th>Price</th>
+                                <th>Total Cost</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{ range . }}
+                            <tr>
+                                <td>{{.Action}}</td>
+                                <td>{{.Ticker}}</td>
+                                <td>{{fmtAmount .Size}}</td>
+                                <td>{{fmtPrice .Price}}</td>
+                                <td>{{fmtPriceFull (mul .Price .Size)}}</td>
+                                <td>{{fmtDuration (since .Date) 2}}</td>
+                            </tr>
+                            {{ end }}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {{ end }}
+        </div>
+    </div>
 
-{{ with .orders }}
-<h2>Order History</h2>
+    {{ with .orders }}
+    <h2>Order History</h2>
 
-<table>
-    <thead>
-        <tr>
-            <th>Action</th>
-            <th>Ticker</th>
-            <th>Size</th>
-            <th>Price</th>
-            <th>Total Cost</th>
-            <th>Date</th>
-        </tr>
-    </thead>
-    <tbody>
-        {{ range . }}
-        <tr>
-            <td>{{.Action}}</td>
-            <td>{{.Ticker}}</td>
-            <td>{{fmtAmount .Size}}</td>
-            <td>{{fmtPrice .Price}}</td>
-            <td>{{fmtPriceFull (mul .Price .Size)}}</td>
-            <td>{{fmtDuration (since .Date) 2}}</td>
-        </tr>
-        {{ end }}
-    </tbody>
-</table>
-{{ end }}
 
-<hr />
-<p>
-    <a href="/">&larr; Back to leaderboard</a>
-</p>
-{{ template "footer.tpl" }}
+    {{ end }}
+
+    <hr />
+    <p>
+        <a href="/">&larr; Back to leaderboard</a>
+    </p>
+    {{ template "footer.tpl" }}
