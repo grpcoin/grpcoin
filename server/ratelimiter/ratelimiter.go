@@ -41,7 +41,7 @@ func (r *rateLimiter) Hit(ctx context.Context, id string, max int64) error {
 		return status.Error(codes.Internal, fmt.Sprintf("failed to reach redis: %v", err))
 	}
 	cur := incr.Val()
-	if cur >= max {
+	if cur > max {
 		return status.Error(codes.ResourceExhausted, fmt.Sprintf("rate limited: %d requests in the past minute (max: %d)", cur, max))
 	}
 	return nil

@@ -29,7 +29,7 @@ func TestRateLimiter_Hit(t *testing.T) {
 	origTime := time.Date(2020, 3, 21, 13, 00, 0, 0, time.UTC)
 	tt = origTime
 	var rate int64 = 100
-	for i := int64(1); i < rate; i++ {
+	for i := int64(0); i < rate; i++ {
 		tt = tt.Add(time.Millisecond * 100)
 		if err := rl.Hit(context.TODO(), "user1", rate); err != nil {
 			t.Fatal(err)
