@@ -28,6 +28,9 @@ using 100,000$ cash assigned to your account when you sign up.
 
 1. Endpoints you can use:
     - API PROD endpoint `grpcoin-main-kafjc7sboa-wl.a.run.app:443` (TLS)
+      - Rate limits:
+        - **100 per minute** for authenticated calls.
+        - **50 per minute** for unauthenticated calls.
     - Website: https://grpcoin-main-kafjc7sboa-wl.a.run.app/
 
 1. First time you make an authenticated request, your account will be created

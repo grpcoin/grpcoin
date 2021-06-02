@@ -33,12 +33,14 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	pb "github.com/grpcoin/grpcoin/api/grpcoin"
 	"github.com/grpcoin/grpcoin/server/auth"
 	"github.com/grpcoin/grpcoin/server/auth/github"
 	"github.com/grpcoin/grpcoin/server/firestoreutil"
 	"github.com/grpcoin/grpcoin/server/frontend"
+	"github.com/grpcoin/grpcoin/server/ratelimiter"
 	"github.com/grpcoin/grpcoin/server/userdb"
 	stackdriver "github.com/tommy351/zap-stackdriver"
 	octrace "go.opencensus.io/trace"
@@ -52,6 +54,8 @@ import (
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/peer"
 )
 
 var (
@@ -139,6 +143,7 @@ func main() {
 			log.Fatal("failed to start miniredis", zap.Error(err))
 		}
 		rc = redis.NewClient(&redis.Options{Addr: s.Addr()})
+		defer s.Close()
 	} else {
 		rc = redis.NewClient(&redis.Options{Addr: r + ":6379"})
 	}
@@ -196,7 +201,8 @@ func main() {
 	go cb.sync(ctx, "BTC")
 	ts := &tickerService{}
 	pt := &tradingService{udb: udb, tp: cb, tr: tp}
-	grpcServer := prepServer(ctx, log, au, udb, as, ts, pt)
+	rl := ratelimiter.New(rc, time.Now, tp)
+	grpcServer := prepServer(ctx, log, au, rl, udb, as, ts, pt)
 
 	frontendHandler := (&frontend.Frontend{
 		Trace:         tp,
@@ -232,14 +238,49 @@ func main() {
 	log.Debug("http: shut down the server")
 }
 
+const (
+	authenticatedRateLimitPerMinute   = 100
+	unauthenticatedRateLimitPerMinute = 50
+)
+
+func rateLimitInterceptor(rl ratelimiter.RateLimiter) grpc_auth.AuthFunc {
+	return func(rpcCtx context.Context) (context.Context, error) {
+		lg := ctxzap.Extract(rpcCtx).With(zap.String("facility", "rate"))
+		u := auth.AuthInfoFromContext(rpcCtx)
+		if u != nil {
+			lg.Debug("rate check for user", zap.String("uid", u.DBKey()))
+			return rpcCtx, rl.Hit(rpcCtx, u.DBKey(), authenticatedRateLimitPerMinute)
+		}
+		m, ok := metadata.FromIncomingContext(rpcCtx)
+		if ok && len(m.Get("x-forwarded-for")) > 0 {
+			ip := m.Get("x-forwarded-for")[0]
+			lg.Debug("rate check for ip", zap.String("ip", ip))
+			return rpcCtx, rl.Hit(rpcCtx, ip, unauthenticatedRateLimitPerMinute)
+		}
+		peer, ok := peer.FromContext(rpcCtx)
+		if ok {
+			ip, _, err := net.SplitHostPort(peer.Addr.String())
+			if err == nil {
+				lg.Debug("rate check for ip", zap.String("ip", ip))
+				return rpcCtx, rl.Hit(rpcCtx, ip, unauthenticatedRateLimitPerMinute)
+			} else {
+				lg.Warn("failed to parse host/port", zap.String("v", peer.Addr.String()))
+			}
+		}
+		lg.Warn("no ip or uid found in req ctx")
+		return rpcCtx, nil
+	}
+}
+
 func prepServer(ctx context.Context, log *zap.Logger, au auth.Authenticator,
-	udb *userdb.UserDB, as *accountService, ts *tickerService,
+	rl ratelimiter.RateLimiter, udb *userdb.UserDB, as *accountService, ts *tickerService,
 	pt *tradingService) *grpc.Server {
 	unaryInterceptors := grpc_middleware.WithUnaryServerChain(
 		otelgrpc.UnaryServerInterceptor(),
 		grpc_ctxtags.UnaryServerInterceptor(grpc_ctxtags.WithFieldExtractor(grpc_ctxtags.CodeGenRequestFieldExtractor)),
 		grpc_zap.UnaryServerInterceptor(log),
 		grpc_auth.UnaryServerInterceptor(auth.AuthenticatingInterceptor(au)),
+		grpc_auth.UnaryServerInterceptor(rateLimitInterceptor(rl)),
 		grpc_auth.UnaryServerInterceptor(udb.EnsureAccountExistsInterceptor()),
 	)
 
@@ -247,6 +288,7 @@ func prepServer(ctx context.Context, log *zap.Logger, au auth.Authenticator,
 	streamInterceptors := grpc_middleware.WithStreamServerChain(
 		grpc_ctxtags.StreamServerInterceptor(grpc_ctxtags.WithFieldExtractor(grpc_ctxtags.CodeGenRequestFieldExtractor)),
 		grpc_zap.StreamServerInterceptor(log),
+		grpc_auth.StreamServerInterceptor(rateLimitInterceptor(rl)),
 	)
 	// grpc_zap.ReplaceGrpcLoggerV2(log)
 	srv := grpc.NewServer(unaryInterceptors, streamInterceptors)

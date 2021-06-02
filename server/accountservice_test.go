@@ -31,6 +31,10 @@ import (
 	"google.golang.org/grpc"
 )
 
+type mockRateLimiter struct{}
+
+func (_ mockRateLimiter) Hit(ctx context.Context, id string, max int64) error { return nil }
+
 func TestTestAuth(t *testing.T) {
 	l, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
@@ -45,7 +49,7 @@ func TestTestAuth(t *testing.T) {
 	udb := &userdb.UserDB{DB: fs, T: trace.NewNoopTracerProvider().Tracer("")}
 	lg, _ := zap.NewDevelopment()
 	r := redisTestInstance(t)
-	srv := prepServer(context.TODO(), lg, au, udb, &accountService{cache: &AccountCache{cache: r}}, nil, nil)
+	srv := prepServer(context.TODO(), lg, au, mockRateLimiter{}, udb, &accountService{cache: &AccountCache{cache: r}}, nil, nil)
 	go srv.Serve(l)
 	defer srv.Stop()
 	defer l.Close()
