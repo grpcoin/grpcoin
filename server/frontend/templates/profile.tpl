@@ -45,8 +45,10 @@
                         <div>
                             <b>{{$tick}}</b><br />
                             <span class="text-muted">
-                                {{ fmtPrice (index $.quotes $tick ) }}
-                            </span>
+                                {{ if not (isZero $amount) }}
+                                x{{ fmtAmount $amount }}
+                                @ {{ fmtPrice (index $.quotes $tick ) }} </span>
+                                {{end}}
                         </div>
                         <div class="text-end">
                             {{ fmtPrice (mul $amount (index $.quotes $tick )) }}<br />
@@ -138,13 +140,6 @@
             {{ end }}
         </div>
     </div>
-
-    {{ with .orders }}
-    <h2>Order History</h2>
-
-
-    {{ end }}
-
     <hr />
     <p>
         <a href="/">&larr; Back to leaderboard</a>

@@ -36,6 +36,7 @@ var (
 		"toPercent":    toPercent,
 		"pv":           valuation,
 		"isNegative":   isNegative,
+		"isZero":       userdb.Amount.IsZero,
 		"since":        since,
 		"mul":          mul,
 		"div":          div,

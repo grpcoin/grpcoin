@@ -1,7 +1,7 @@
 {{ template "header.tpl" "Leaderboard" }}
 
 <main class="container">
-	<div class="py-5 text-center">
+	<div class="pt-5 text-center">
 		<h2>gRPCOIN</h2>
 		<p class="lead">Leaderboard</p>
 	</div>
