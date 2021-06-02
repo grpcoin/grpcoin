@@ -47,3 +47,30 @@ Just to get started, you can also check out some example bot implementations:
 1. [Go example bot](./example-bot/)
 1. [C# example bot](https://github.com/grpcoin/example-bot-csharp)
 1. [Node.js command-line tool](https://github.com/grpcoin/example-cli-node)
+
+## Development
+
+To run the server locally, follow these steps:
+
+1. Clone the repository and `cd` into it.
+1. Install Google Cloud SDK (`gcloud` tool) https://cloud.google.com/sdk/docs/quickstart
+1. Install Firestore Emulator to run database locally (this
+   may require you to install Java Runtime Environment).
+
+      ```sh
+      gcloud components install cloud-firestore-emulator
+      ```
+
+1. Make sure the emulator works by running it once:
+
+      ```sh
+      gcloud beta emulators firestore start
+      ```
+
+1. From repository root, run:
+
+      ```sh
+      LISTEN_ADDR=localhost PORT=8080 go run ./server
+      ```
+
+1. Navigate to http://localhost:8080 to explore.
