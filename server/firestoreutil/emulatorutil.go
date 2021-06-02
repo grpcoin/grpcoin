@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package firestoretestutil contains test utilities for starting a firestore
-// emulator locally for unit tests.
-package firestoretestutil
+// Package firestoreutil contains test utilities for starting a firestore
+// emulator locally.
+package firestoreutil
 
 import (
 	"bytes"
@@ -25,7 +25,6 @@ import (
 	"os"
 	"os/exec"
 	"sync"
-	"testing"
 	"time"
 
 	firestore "cloud.google.com/go/firestore"
@@ -45,15 +44,11 @@ func (c *cBuffer) Write(p []byte) (n int, err error) {
 	return c.b.Write(p)
 }
 
-func StartEmulator(t *testing.T, ctx context.Context) *firestore.Client {
-	t.Helper()
+func StartEmulator(ctx context.Context) (*firestore.Client, func(), error) {
 	port := "8010"
 	addr := "localhost:" + port
 	ctx, cancel := context.WithCancel(ctx)
-	t.Cleanup(func() {
-		t.Log("shutting down firestore operator")
-		cancel()
-	})
+	_ = cancel // to shush the linter
 
 	// TODO investigate why there are still java processes hanging around
 	// despite we kill the exec'd command, suspecting /bin/bash wrapper that gcloud
@@ -62,7 +57,7 @@ func StartEmulator(t *testing.T, ctx context.Context) *firestore.Client {
 	out := &cBuffer{b: bytes.Buffer{}}
 	cmd.Stderr, cmd.Stdout = out, out
 	if err := cmd.Start(); err != nil {
-		t.Fatalf("failed to start firestore emulator: %v -- out:%s", err, out.b.String())
+		return nil, nil, fmt.Errorf("failed to start firestore emulator: %v -- out:%s", err, out.b.String())
 	}
 	dialCtx, clean := context.WithTimeout(ctx, time.Second*10)
 	defer clean()
@@ -70,12 +65,11 @@ func StartEmulator(t *testing.T, ctx context.Context) *firestore.Client {
 	for !connected {
 		select {
 		case <-dialCtx.Done():
-			t.Fatalf("emulator did not come up timely: %v -- output: %s", dialCtx.Err(), out.b.String())
+			return nil, nil, fmt.Errorf("emulator did not come up timely: %v -- output: %s", dialCtx.Err(), out.b.String())
 		default:
 			c, err := (&net.Dialer{Timeout: time.Millisecond * 200}).DialContext(ctx, "tcp", addr)
 			if err == nil {
 				c.Close()
-				t.Log("firestore emulator started")
 				connected = true
 				break
 			}
@@ -85,23 +79,23 @@ func StartEmulator(t *testing.T, ctx context.Context) *firestore.Client {
 	os.Setenv("FIRESTORE_EMULATOR_HOST", addr)
 	cl, err := firestore.NewClient(ctx, firestoreEmulatorProj)
 	if err != nil {
-		t.Fatal(err)
+		return nil, nil, err
 	}
 	os.Unsetenv("FIRESTORE_EMULATOR_HOST")
-	truncateDB(t, addr)
-	return cl
+	err = truncateDB(addr)
+	return cl, cancel, err
 }
 
-func truncateDB(t *testing.T, addr string) {
-	t.Helper()
+func truncateDB(addr string) error {
 	// technique adopted from https://stackoverflow.com/a/58866194/54929
 	req, _ := http.NewRequest(http.MethodDelete, fmt.Sprintf("http://%s/emulator/v1/projects/%s/databases/(default)/documents",
 		addr, firestoreEmulatorProj), nil)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		t.Fatal(err)
+		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("failed to clear db: %v", resp.Status)
+		return fmt.Errorf("failed to clear db: %v", resp.Status)
 	}
+	return nil
 }

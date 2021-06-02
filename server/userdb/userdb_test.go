@@ -22,7 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/grpcoin/grpcoin/api/grpcoin"
-	"github.com/grpcoin/grpcoin/server/firestoretestutil"
+	"github.com/grpcoin/grpcoin/server/firestoreutil"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -39,7 +39,7 @@ func (t testUser) ProfileURL() string  { return "https://" + t.name }
 
 func TestGetUser_notFound(t *testing.T) {
 	ctx := context.Background()
-	udb := &UserDB{DB: firestoretestutil.StartEmulator(t, ctx),
+	udb := &UserDB{DB: firestoreutil.StartTestEmulator(t, ctx),
 		T: trace.NewNoopTracerProvider().Tracer("")}
 
 	u, ok, err := udb.Get(ctx, "foo")
@@ -53,7 +53,7 @@ func TestGetUser_notFound(t *testing.T) {
 
 func TestNewUser(t *testing.T) {
 	ctx := context.Background()
-	udb := &UserDB{DB: firestoretestutil.StartEmulator(t, ctx),
+	udb := &UserDB{DB: firestoreutil.StartTestEmulator(t, ctx),
 		T: trace.NewNoopTracerProvider().Tracer("")}
 	tu := testUser{id: "foobar", name: "ab"}
 
@@ -92,7 +92,7 @@ func TestNewUser(t *testing.T) {
 
 func TestEnsureAccountExists(t *testing.T) {
 	ctx := context.Background()
-	udb := &UserDB{DB: firestoretestutil.StartEmulator(t, ctx),
+	udb := &UserDB{DB: firestoreutil.StartTestEmulator(t, ctx),
 		T: trace.NewNoopTracerProvider().Tracer("")}
 	tu := testUser{id: "testuser", name: "abc"}
 
@@ -114,7 +114,7 @@ func TestEnsureAccountExists(t *testing.T) {
 
 func TestValuationHistory(t *testing.T) {
 	ctx := context.Background()
-	udb := &UserDB{DB: firestoretestutil.StartEmulator(t, ctx),
+	udb := &UserDB{DB: firestoreutil.StartTestEmulator(t, ctx),
 		T: trace.NewNoopTracerProvider().Tracer("")}
 	tu := testUser{id: "testuser", name: "abc"}
 	u, err := udb.EnsureAccountExists(ctx, tu)
@@ -147,7 +147,7 @@ func TestValuationHistory(t *testing.T) {
 
 func TestRotateUserValuationHistory(t *testing.T) {
 	ctx := context.Background()
-	udb := &UserDB{DB: firestoretestutil.StartEmulator(t, ctx),
+	udb := &UserDB{DB: firestoreutil.StartTestEmulator(t, ctx),
 		T: trace.NewNoopTracerProvider().Tracer("")}
 	tu := testUser{id: "testuser", name: "abc"}
 	u, err := udb.EnsureAccountExists(ctx, tu)
@@ -187,7 +187,7 @@ func TestRotateUserValuationHistory(t *testing.T) {
 
 func TestUserDB_Trade_OrderHistory(t *testing.T) {
 	ctx := context.Background()
-	udb := &UserDB{DB: firestoretestutil.StartEmulator(t, ctx),
+	udb := &UserDB{DB: firestoreutil.StartTestEmulator(t, ctx),
 		T: trace.NewNoopTracerProvider().Tracer("")}
 	tu := testUser{id: "testuser", name: "abc"}
 	if _, err := udb.EnsureAccountExists(ctx, tu); err != nil {
@@ -241,7 +241,7 @@ func TestUserDB_Trade_OrderHistory(t *testing.T) {
 
 func TestRotateOrderHistory(t *testing.T) {
 	ctx := context.Background()
-	udb := &UserDB{DB: firestoretestutil.StartEmulator(t, ctx),
+	udb := &UserDB{DB: firestoreutil.StartTestEmulator(t, ctx),
 		T: trace.NewNoopTracerProvider().Tracer("")}
 	tu := testUser{id: "testuser", name: "abc"}
 	if _, err := udb.EnsureAccountExists(ctx, tu); err != nil {
@@ -339,7 +339,7 @@ func TestAmount_IsZero(t *testing.T) {
 }
 
 func Test_batchDeleteAll(t *testing.T) {
-	fs := firestoretestutil.StartEmulator(t, context.TODO())
+	fs := firestoreutil.StartTestEmulator(t, context.TODO())
 	col := fs.Collection("testcol")
 
 	if err := batchDeleteAll(context.TODO(), fs, col.Documents(context.TODO())); err != nil {

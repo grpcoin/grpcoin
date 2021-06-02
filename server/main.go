@@ -17,6 +17,7 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
 	"net"
 	"net/http"
 	"os"
@@ -36,6 +37,7 @@ import (
 	pb "github.com/grpcoin/grpcoin/api/grpcoin"
 	"github.com/grpcoin/grpcoin/server/auth"
 	"github.com/grpcoin/grpcoin/server/auth/github"
+	"github.com/grpcoin/grpcoin/server/firestoreutil"
 	"github.com/grpcoin/grpcoin/server/frontend"
 	"github.com/grpcoin/grpcoin/server/userdb"
 	stackdriver "github.com/tommy351/zap-stackdriver"
@@ -51,6 +53,17 @@ import (
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 )
+
+var (
+	flRealData bool
+	flTestData string
+)
+
+func init() {
+	flag.BoolVar(&flRealData, "use-real-db", false, "run against production database (requires $GOOGLE_CLOUD_PROJECT set), ignored when running on prod")
+	flag.StringVar(&flTestData, "test-data", "testdata/local.db", "test data to load into the emulator when running locally, ignored when real db is used")
+	flag.Parse()
+}
 
 func main() {
 	ctx := context.Background()
@@ -137,16 +150,41 @@ func main() {
 	if onCloudRun {
 		proj = firestore.DetectProjectID
 		log.Debug("detecting project id from environment")
-	} else {
+	} else if flRealData {
 		proj = os.Getenv("GOOGLE_CLOUD_PROJECT")
 		if proj == "" {
 			log.Fatal("please set GOOGLE_CLOUD_PROJECT environment variable")
 		}
 		log.Debug("project id is explicitly set", zap.String("project", proj))
 	}
-	fs, err := firestore.NewClient(ctx, proj)
-	if err != nil {
-		log.Fatal("failed to initialize firestore client", zap.String("project", proj), zap.Error(err))
+	var fs *firestore.Client
+	if flRealData || onCloudRun {
+		f, err := firestore.NewClient(ctx, proj)
+		if err != nil {
+			log.Fatal("failed to initialize firestore client", zap.String("project", proj), zap.Error(err))
+		}
+		fs = f
+	} else {
+		log.Info("starting a local firestore emulator")
+		f, shutdown, err := firestoreutil.StartEmulator(ctx)
+		if err != nil {
+			log.Fatal("failed to initialize local firestore emulator", zap.Error(err))
+		}
+		fs = f
+		defer func() {
+			log.Debug("shutting down firestore emulator")
+			shutdown()
+		}()
+
+		log.Debug("loading test data", zap.String("file", flTestData))
+		td, err := os.Open(flTestData)
+		if err != nil {
+			log.Fatal("failed to open local test data file", zap.Error(err))
+		}
+		if err := firestoreutil.ImportData(td, f); err != nil {
+			log.Fatal("failed to load test data", zap.Error(err))
+		}
+		log.Info("loaded test data into the local firestore emulator")
 	}
 
 	ac := &AccountCache{cache: rc}

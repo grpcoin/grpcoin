@@ -24,7 +24,7 @@ import (
 	"github.com/grpcoin/grpcoin/api/grpcoin"
 	"github.com/grpcoin/grpcoin/server/auth"
 	"github.com/grpcoin/grpcoin/server/auth/github"
-	"github.com/grpcoin/grpcoin/server/firestoretestutil"
+	"github.com/grpcoin/grpcoin/server/firestoreutil"
 	"github.com/grpcoin/grpcoin/server/userdb"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -36,7 +36,7 @@ func TestTestAuth(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fs := firestoretestutil.StartEmulator(t, context.TODO())
+	fs := firestoreutil.StartTestEmulator(t, context.TODO())
 	au := auth.MockAuthenticator{
 		F: func(c context.Context) (auth.AuthenticatedUser, error) {
 			return &github.GitHubUser{ID: 1, Username: "abc"}, nil
