@@ -19,7 +19,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TickerInfoClient interface {
 	// Watch returns real-time quotes of the ticker.
-	// The only supported ticker is "BTC-USD".
+	// The only supported tickers are "BTC-USD" and "ETH-USD"
 	//
 	// The stream might return error (if it fails to get prices) or
 	// time out if you stream it for over 15 minutes.
@@ -74,7 +74,7 @@ func (x *tickerInfoWatchClient) Recv() (*Quote, error) {
 // for forward compatibility
 type TickerInfoServer interface {
 	// Watch returns real-time quotes of the ticker.
-	// The only supported ticker is "BTC-USD".
+	// The only supported tickers are "BTC-USD" and "ETH-USD"
 	//
 	// The stream might return error (if it fails to get prices) or
 	// time out if you stream it for over 15 minutes.
@@ -151,7 +151,7 @@ type AccountClient interface {
 	//
 	// Send a header (gRPC metadata) named "Authorization"
 	// with value "Bearer XXX" where XXX is a GitHub Personal Access token
-	// (does not require any permissions).
+	// from https://github.com/settings/tokens (no permissions needed).
 	TestAuth(ctx context.Context, in *TestAuthRequest, opts ...grpc.CallOption) (*TestAuthResponse, error)
 }
 
@@ -180,7 +180,7 @@ type AccountServer interface {
 	//
 	// Send a header (gRPC metadata) named "Authorization"
 	// with value "Bearer XXX" where XXX is a GitHub Personal Access token
-	// (does not require any permissions).
+	// from https://github.com/settings/tokens (no permissions needed).
 	TestAuth(context.Context, *TestAuthRequest) (*TestAuthResponse, error)
 	mustEmbedUnimplementedAccountServer()
 }

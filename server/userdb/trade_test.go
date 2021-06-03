@@ -91,12 +91,6 @@ func Test_makeTrade(t *testing.T) {
 		errMsg string
 		want   *Portfolio
 	}{
-		{name: "no position initiated",
-			args: args{p: &Portfolio{},
-				action: grpcoin.TradeAction_SELL,
-				ticker: "BTC"},
-			code:   codes.InvalidArgument,
-			errMsg: "position in portfolio"},
 		{name: "insufficient cash",
 			args: args{p: &Portfolio{
 				CashUSD:   Amount{Units: 100, Nanos: 500_000_000},
@@ -121,6 +115,26 @@ func Test_makeTrade(t *testing.T) {
 			},
 			code:   codes.InvalidArgument,
 			errMsg: "insufficient BTC positions (-0.1) after transaction"},
+		{name: "no position initiated (sell)",
+			args: args{p: &Portfolio{},
+				action:   grpcoin.TradeAction_SELL,
+				ticker:   "ETH",
+				quote:    &grpcoin.Amount{Units: 200},
+				quantity: &grpcoin.Amount{Units: 2}},
+			code:   codes.InvalidArgument,
+			errMsg: "insufficient ETH positions"},
+		{name: "no position initiated (buy)",
+			args: args{p: &Portfolio{
+				CashUSD: Amount{400, 1}},
+				action:   grpcoin.TradeAction_BUY,
+				ticker:   "ETH",
+				quote:    &grpcoin.Amount{Units: 200},
+				quantity: &grpcoin.Amount{Units: 2}},
+			want: &Portfolio{
+				CashUSD: Amount{Units: 0, Nanos: 1},
+				Positions: map[string]Amount{
+					"ETH": {Units: 2, Nanos: 0}},
+			}},
 		{name: "successful buy",
 			args: args{p: &Portfolio{
 				CashUSD: Amount{Units: 100_000},

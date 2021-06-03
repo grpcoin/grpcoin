@@ -30,7 +30,7 @@ func Test_coinbaseQuoteProvider_GetQuote(t *testing.T) {
 	cb := &coinbaseQuoteProvider{logger: lg}
 	ctx, stop := context.WithCancel(context.Background())
 	defer stop()
-	go cb.sync(ctx, "BTC")
+	go cb.sync(ctx)
 
 	q1, err := cb.GetQuote(ctx, "BTC")
 	if err != nil {

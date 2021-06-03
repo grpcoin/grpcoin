@@ -48,13 +48,12 @@ func (t *tickerService) initWatch() error {
 		t.bus = nil
 		t.lock.Unlock()
 	}()
-	quotes, err := gdax.StartWatch(ctx, "BTC-USD")
+	quotes, err := gdax.StartWatch(ctx, "BTC-USD", "ETH-USD")
 	if err != nil {
 		stop()
 		t.lock.Unlock()
 		return err
 	}
-	quotes = gdax.RateLimited(quotes, time.Millisecond*500)
 	t.bus = NewPubSub(quotes, stop)
 	t.lock.Unlock()
 	return nil
@@ -73,14 +72,29 @@ func (t *tickerService) registerWatch(ctx context.Context) (<-chan gdax.Quote, e
 	return ch, nil
 }
 
+func filterProduct(ch <-chan gdax.Quote, product string) <-chan gdax.Quote {
+	outCh := make(chan gdax.Quote)
+	go func() {
+		for m := range ch {
+			if m.Product == product {
+				outCh <- m
+			}
+		}
+		close(outCh)
+	}()
+	return outCh
+}
+
 func (f *tickerService) Watch(req *grpcoin.QuoteTicker, stream grpcoin.TickerInfo_WatchServer) error {
-	if req.GetTicker() != "BTC-USD" {
-		return status.Error(codes.InvalidArgument, "only supported ticker is BTC-USD")
+	if req.GetTicker() != "BTC-USD" && req.GetTicker() != "ETH-USD" {
+		return status.Error(codes.InvalidArgument, "only supported tickers are BTC-USD and ETH-USD")
 	}
 	ch, err := f.registerWatch(stream.Context())
 	if err != nil {
 		return status.Error(codes.Internal, fmt.Sprintf("failed to register ticker watch: %v", err))
 	}
+	ch = filterProduct(ch, req.GetTicker())
+	ch = gdax.RateLimited(ch, time.Millisecond*300)
 	for m := range ch {
 		err = stream.Send(&grpcoin.Quote{
 			T:     timestamppb.New(m.Time),

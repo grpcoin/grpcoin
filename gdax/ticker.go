@@ -50,7 +50,7 @@ func RateLimited(ch <-chan Quote, d time.Duration) <-chan Quote {
 	return out
 }
 
-func StartWatch(ctx context.Context, product string) (<-chan Quote, error) {
+func StartWatch(ctx context.Context, product ...string) (<-chan Quote, error) {
 	var wsDialer ws.Dialer
 	wsConn, _, err := wsDialer.Dial("wss://ws-feed.pro.coinbase.com", nil)
 	if err != nil {
@@ -60,10 +60,8 @@ func StartWatch(ctx context.Context, product string) (<-chan Quote, error) {
 		Type: "subscribe",
 		Channels: []coinbasepro.MessageChannel{
 			{
-				Name: "ticker",
-				ProductIds: []string{
-					product,
-				},
+				Name:       "ticker",
+				ProductIds: product,
 			},
 		},
 	}
@@ -88,7 +86,7 @@ func StartWatch(ctx context.Context, product string) (<-chan Quote, error) {
 			if message.Type != "ticker" {
 				continue
 			}
-			ch <- Quote{Product: product,
+			ch <- Quote{Product: message.ProductID,
 				Price: convertPrice(message.Price),
 				Time:  message.Time.Time(),
 			}

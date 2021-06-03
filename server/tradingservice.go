@@ -91,7 +91,7 @@ func (t *tradingService) Trade(ctx context.Context, req *grpcoin.TradeRequest) (
 	defer cancel2()
 	err = t.udb.Trade(tradeCtx, user.ID, req.GetTicker().Ticker, req.Action, quote, req.Quantity)
 	if errors.Is(err, context.DeadlineExceeded) {
-		return nil, status.Error(codes.Unavailable, "could not execute trade in a timely manner: %v")
+		return nil, status.Errorf(codes.Unavailable, "could not execute trade in a timely manner: %v", err)
 	} else if status.Code(err) == codes.InvalidArgument {
 		return nil, err
 	} else if err != nil {
@@ -122,8 +122,8 @@ func validateTradeRequest(req *grpcoin.TradeRequest) error {
 	if req.GetTicker().GetTicker() == "" {
 		return status.Error(codes.InvalidArgument, "ticker not specified")
 	}
-	if req.GetTicker().GetTicker() != "BTC" {
-		return status.Errorf(codes.InvalidArgument, "ticker '%s' not specified, only 'BTC' is supported", req.Ticker.Ticker)
+	if req.GetTicker().GetTicker() != "BTC" && req.GetTicker().GetTicker() != "ETH" {
+		return status.Errorf(codes.InvalidArgument, "ticker '%s' not specified, only 'BTC' and 'ETH' are supported", req.Ticker.Ticker)
 	}
 	return nil
 }

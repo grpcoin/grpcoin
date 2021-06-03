@@ -75,24 +75,35 @@ func main() {
 	}
 	log.Printf("cash position: %#v", portfolio.CashUsd.String())
 	for _, p := range portfolio.Positions {
-		log.Printf("coin position: %s", p.String())
+		log.Printf("-> coin position: %s", p.String())
 	}
-	// buy 0.05 bitcoin
-	for {
-		order, err := grpcoin.NewPaperTradeClient(conn).Trade(authCtx, &grpcoin.TradeRequest{
-			Action:   grpcoin.TradeAction_BUY,
-			Ticker:   &grpcoin.TradeRequest_Ticker{Ticker: "BTC"},
-			Quantity: &grpcoin.Amount{Units: 0, Nanos: 5},
-		})
-		if err != nil {
-			log.Fatalf("sell order failed: %v", err)
-		}
-		log.Printf("ORDER EXECUTED: %s [%s] coins at USD[%s]", order.Action, order.Quantity, order.ExecutedPrice)
+
+	// buy 0.05 btc
+	order, err := grpcoin.NewPaperTradeClient(conn).Trade(authCtx, &grpcoin.TradeRequest{
+		Action:   grpcoin.TradeAction_BUY,
+		Ticker:   &grpcoin.TradeRequest_Ticker{Ticker: "BTC"},
+		Quantity: &grpcoin.Amount{Units: 0, Nanos: 50_000_000},
+	})
+	if err != nil {
+		log.Fatalf("trade order failed: %v", err)
 	}
+	log.Printf("ORDER EXECUTED: %s [%s] BTC coins at USD[%s]", order.Action, order.Quantity, order.ExecutedPrice)
+
+	// buy 0.4 eth
+	order, err = grpcoin.NewPaperTradeClient(conn).Trade(authCtx, &grpcoin.TradeRequest{
+		Action:   grpcoin.TradeAction_BUY,
+		Ticker:   &grpcoin.TradeRequest_Ticker{Ticker: "ETH"},
+		Quantity: &grpcoin.Amount{Units: 0, Nanos: 400_000_000},
+	})
+	if err != nil {
+		log.Fatalf("trade order failed: %v", err)
+	}
+	log.Printf("ORDER EXECUTED: %s [%s] ETH coins at USD[%s]", order.Action, order.Quantity, order.ExecutedPrice)
+
 	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	for ctx.Err() == nil {
-		log.Printf("connecting to stream real-time BTC quotes, hit Ctrl-C to quit anytime")
-		stream, err := grpcoin.NewTickerInfoClient(conn).Watch(ctx, &grpcoin.QuoteTicker{Ticker: "BTC-USD"})
+		log.Printf("connecting to stream real-time ETH quotes, hit Ctrl-C to quit anytime")
+		stream, err := grpcoin.NewTickerInfoClient(conn).Watch(ctx, &grpcoin.QuoteTicker{Ticker: "ETH-USD"})
 		if err != nil {
 			log.Fatal(err)
 		}

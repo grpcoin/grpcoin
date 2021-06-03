@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -27,16 +28,17 @@ import (
 type coinbaseQuoteProvider struct {
 	ticker string
 
-	lock        sync.RWMutex
-	lastQuote   *grpcoin.Amount
-	lastUpdated time.Time
+	lock         sync.RWMutex
+	lastBTCQuote *grpcoin.Amount
+	lastETHQuote *grpcoin.Amount
+	lastUpdated  time.Time
 
 	logger *zap.Logger
 }
 
 const staleQuotePeriod = time.Second * 2
 
-func (cb *coinbaseQuoteProvider) GetQuote(ctx context.Context, _ string) (*grpcoin.Amount, error) {
+func (cb *coinbaseQuoteProvider) GetQuote(ctx context.Context, product string) (*grpcoin.Amount, error) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -51,9 +53,14 @@ func (cb *coinbaseQuoteProvider) GetQuote(ctx context.Context, _ string) (*grpco
 				cb.lock.RUnlock()
 				break
 			}
-			q := cb.lastQuote
-			cb.lock.RUnlock()
-			return q, nil
+			defer cb.lock.RUnlock()
+			if product == "BTC" {
+				return cb.lastBTCQuote, nil
+			} else if product == "ETH" {
+				return cb.lastETHQuote, nil
+			} else {
+				return nil, fmt.Errorf("unknown trading product %q", product)
+			}
 		}
 		time.Sleep(time.Millisecond * 10) // TODO not so great but prevents 100% cpu
 	}
@@ -61,12 +68,12 @@ func (cb *coinbaseQuoteProvider) GetQuote(ctx context.Context, _ string) (*grpco
 
 // sync continually maintains a channel to Coinbase realtime prices.
 // meant to be invoked in a goroutine
-func (cb *coinbaseQuoteProvider) sync(ctx context.Context, ticker string) {
+func (cb *coinbaseQuoteProvider) sync(ctx context.Context) {
 	for {
 		if ctx.Err() != nil {
 			return
 		}
-		ch, err := gdax.StartWatch(ctx, ticker+"-USD")
+		ch, err := gdax.StartWatch(ctx, "BTC-USD", "ETH-USD")
 		if err != nil {
 			cb.logger.Warn("warning: failed to connected to coinbase", zap.Error(err))
 			// TODO consider adding sleep/backoff to prevent DoSing coinbase API
@@ -75,7 +82,13 @@ func (cb *coinbaseQuoteProvider) sync(ctx context.Context, ticker string) {
 		for m := range ch {
 			cb.lock.Lock()
 			cb.lastUpdated = time.Now()
-			cb.lastQuote = m.Price
+			if m.Product == "ETH-USD" {
+				cb.lastETHQuote = m.Price
+			} else if m.Product == "BTC-USD" {
+				cb.lastBTCQuote = m.Price
+			} else {
+				cb.logger.Warn("unknown product", zap.String("product", m.Product))
+			}
 			cb.lock.Unlock()
 		}
 		cb.logger.Warn("coinbase channel terminated, reopening")

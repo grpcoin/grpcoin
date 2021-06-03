@@ -29,7 +29,10 @@ func makeTrade(p *Portfolio, action grpcoin.TradeAction, ticker string, quote, q
 	inCash := toDecimal(p.CashUSD.V())
 	pos, ok := p.Positions[ticker]
 	if !ok {
-		return status.Errorf(codes.InvalidArgument, "don't have a %s position in portfolio", ticker)
+		if p.Positions == nil {
+			p.Positions = make(map[string]Amount)
+		}
+		p.Positions[ticker] = Amount{0, 0}
 	}
 	posN := toDecimal(pos.V())
 	// TODO support non-existing currencies by adding zero to positions map in the future

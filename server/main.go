@@ -66,10 +66,10 @@ var (
 func init() {
 	flag.BoolVar(&flRealData, "use-real-db", false, "run against production database (requires $GOOGLE_CLOUD_PROJECT set), ignored when running on prod")
 	flag.StringVar(&flTestData, "test-data", "testdata/local.db", "test data to load into the emulator when running locally, ignored when real db is used")
-	flag.Parse()
 }
 
 func main() {
+	flag.Parse()
 	ctx := context.Background()
 	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	onCloudRun := os.Getenv("K_SERVICE") != ""
@@ -198,7 +198,7 @@ func main() {
 	au := &github.GitHubAuthenticator{T: tp, Cache: rc}
 	cb := &coinbaseQuoteProvider{
 		logger: log.With(zap.String("facility", "coinbase"))}
-	go cb.sync(ctx, "BTC")
+	go cb.sync(ctx)
 	ts := &tickerService{}
 	pt := &tradingService{udb: udb, tp: cb, tr: tp}
 	rl := ratelimiter.New(rc, time.Now, tp)

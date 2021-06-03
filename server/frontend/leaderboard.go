@@ -20,8 +20,10 @@ import (
 	"errors"
 	"net/http"
 	"sort"
+	"sync"
 
 	"github.com/grpcoin/grpcoin/server/userdb"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -50,15 +52,27 @@ func (fe *Frontend) getQuotes(ctx context.Context) (map[string]userdb.Amount, er
 	quoteCtx, cancel := context.WithTimeout(subCtx, fe.QuoteDeadline)
 	defer cancel()
 
-	btcQuote, err := fe.QuoteProvider.GetQuote(quoteCtx, "BTC")
-	if errors.Is(err, context.DeadlineExceeded) {
-		return nil, status.Errorf(codes.Unavailable, "could not get real-time market quote for %s in %v", "BTC", fe.QuoteDeadline)
-	} else if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to retrieve a quote: %v", err)
-	}
+	var mu sync.Mutex
+	out := make(map[string]userdb.Amount)
 
-	return map[string]userdb.Amount{
-		"BTC": {Units: btcQuote.GetUnits(), Nanos: btcQuote.GetNanos()}}, nil
+	quotes := []string{"BTC", "ETH"}
+	eg, ctx := errgroup.WithContext(quoteCtx)
+	for i := range quotes {
+		quote := quotes[i] // capture for closure
+		eg.Go(func() error {
+			v, err := fe.QuoteProvider.GetQuote(quoteCtx, quote)
+			if errors.Is(err, context.DeadlineExceeded) {
+				return status.Errorf(codes.Unavailable, "could not get real-time market quote for %s in %v", quote, fe.QuoteDeadline)
+			} else if err != nil {
+				return status.Errorf(codes.Internal, "failed to retrieve a quote: %v", err)
+			}
+			mu.Lock()
+			out[quote] = userdb.Amount{Units: v.GetUnits(), Nanos: v.GetNanos()}
+			mu.Unlock()
+			return nil
+		})
+	}
+	return out, eg.Wait()
 }
 
 func (fe *Frontend) leaderboard(w http.ResponseWriter, r *http.Request) error {

@@ -150,6 +150,12 @@ func Test_validateTradeRequest(t *testing.T) {
 			code: codes.InvalidArgument,
 		},
 		{
+			name: "eth supported",
+			req: &grpcoin.TradeRequest{Action: grpcoin.TradeAction_SELL,
+				Ticker: &grpcoin.TradeRequest_Ticker{Ticker: "ETH"}},
+			code: codes.InvalidArgument,
+		},
+		{
 			name: "missing quantity",
 			req: &grpcoin.TradeRequest{Action: grpcoin.TradeAction_SELL,
 				Ticker: &grpcoin.TradeRequest_Ticker{Ticker: "BTC"}},
@@ -204,7 +210,7 @@ func TestTrade(t *testing.T) {
 	ctx, stop := context.WithCancel(context.Background())
 	t.Cleanup(func() { stop() })
 	cb := &coinbaseQuoteProvider{}
-	go cb.sync(ctx, "BTC")
+	go cb.sync(ctx)
 	pt := &tradingService{udb: udb, tp: cb, tr: tp}
 
 	ctx = auth.WithUser(ctx, au)
