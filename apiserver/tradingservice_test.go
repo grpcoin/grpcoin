@@ -25,11 +25,11 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/grpcoin/grpcoin/api/grpcoin"
-	"github.com/grpcoin/grpcoin/realtimequote"
-	"github.com/grpcoin/grpcoin/realtimequote/coinbase"
 	"github.com/grpcoin/grpcoin/apiserver/auth"
 	"github.com/grpcoin/grpcoin/apiserver/auth/github"
 	"github.com/grpcoin/grpcoin/apiserver/firestoreutil"
+	"github.com/grpcoin/grpcoin/realtimequote"
+	"github.com/grpcoin/grpcoin/realtimequote/coinbase"
 	"github.com/grpcoin/grpcoin/userdb"
 )
 
@@ -64,13 +64,8 @@ func TestPortfolio(t *testing.T) {
 	}
 
 	expected := &grpcoin.PortfolioResponse{
-		CashUsd: &grpcoin.Amount{Units: 100_000, Nanos: 0},
-		Positions: []*grpcoin.PortfolioPosition{
-			{
-				Ticker: &grpcoin.PortfolioPosition_Ticker{Ticker: "BTC"},
-				Amount: &grpcoin.Amount{},
-			},
-		},
+		CashUsd:   &grpcoin.Amount{Units: 100_000, Nanos: 0},
+		Positions: nil,
 	}
 
 	diff := cmp.Diff(resp, expected, cmpopts.IgnoreUnexported(
