@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package frontend
+package main
 
 import (
 	"context"
@@ -22,10 +22,11 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/grpcoin/grpcoin/server/userdb"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/grpcoin/grpcoin/userdb"
 )
 
 type leaderboardUser struct {
@@ -46,7 +47,7 @@ func (l leaderboardResp) Less(i int, j int) bool {
 	return false
 }
 
-func (fe *Frontend) getQuotes(ctx context.Context) (map[string]userdb.Amount, error) {
+func (fe *frontend) getQuotes(ctx context.Context) (map[string]userdb.Amount, error) {
 	subCtx, s := fe.Trace.Start(ctx, "realtime quote")
 	defer s.End()
 	quoteCtx, cancel := context.WithTimeout(subCtx, fe.QuoteDeadline)
@@ -75,7 +76,7 @@ func (fe *Frontend) getQuotes(ctx context.Context) (map[string]userdb.Amount, er
 	return out, eg.Wait()
 }
 
-func (fe *Frontend) leaderboard(w http.ResponseWriter, r *http.Request) error {
+func (fe *frontend) leaderboard(w http.ResponseWriter, r *http.Request) error {
 	quotes, err := fe.getQuotes(r.Context())
 	if err != nil {
 		return err

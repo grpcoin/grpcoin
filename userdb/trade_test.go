@@ -20,10 +20,11 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/grpcoin/grpcoin/api/grpcoin"
 	"github.com/shopspring/decimal"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/grpcoin/grpcoin/api/grpcoin"
 )
 
 func Test_toDecimal(t *testing.T) {

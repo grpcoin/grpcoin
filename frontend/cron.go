@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package frontend
+package main
 
 import (
 	"context"
@@ -21,19 +21,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/grpcoin/grpcoin/server/userdb"
 	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
 	"google.golang.org/api/idtoken"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/grpcoin/grpcoin/userdb"
 )
 
 var (
 	maxPortfolioHistory = time.Hour * 24 * 31
 )
 
-func (fe *Frontend) calcPortfolioHistory(w http.ResponseWriter, r *http.Request) error {
+func (fe *frontend) calcPortfolioHistory(w http.ResponseWriter, r *http.Request) error {
 	log := loggerFrom(r.Context())
 	if fe.CronSAEmail != "" {
 		token := strings.TrimPrefix(r.Header.Get("authorization"), "Bearer ")

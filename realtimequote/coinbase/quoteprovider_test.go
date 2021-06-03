@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package coinbase
 
 import (
 	"context"
@@ -22,15 +22,15 @@ import (
 	"go.uber.org/zap"
 )
 
-func Test_coinbaseQuoteProvider_GetQuote(t *testing.T) {
+func TestCoinbaseQuoteProvider_GetQuote(t *testing.T) {
 	if testing.Short() {
 		t.Skip("makes calls to coinbase")
 	}
 	lg, _ := zap.NewDevelopment()
-	cb := &coinbaseQuoteProvider{logger: lg}
+	cb := &QuoteProvider{Logger: lg}
 	ctx, stop := context.WithCancel(context.Background())
 	defer stop()
-	go cb.sync(ctx)
+	go cb.Sync(ctx)
 
 	q1, err := cb.GetQuote(ctx, "BTC")
 	if err != nil {

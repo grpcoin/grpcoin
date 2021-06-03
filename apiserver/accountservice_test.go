@@ -21,14 +21,15 @@ import (
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/go-redis/redis/v8"
-	"github.com/grpcoin/grpcoin/api/grpcoin"
-	"github.com/grpcoin/grpcoin/server/auth"
-	"github.com/grpcoin/grpcoin/server/auth/github"
-	"github.com/grpcoin/grpcoin/server/firestoreutil"
-	"github.com/grpcoin/grpcoin/server/userdb"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+
+	"github.com/grpcoin/grpcoin/api/grpcoin"
+	"github.com/grpcoin/grpcoin/apiserver/auth"
+	"github.com/grpcoin/grpcoin/apiserver/auth/github"
+	"github.com/grpcoin/grpcoin/apiserver/firestoreutil"
+	"github.com/grpcoin/grpcoin/userdb"
 )
 
 type mockRateLimiter struct{}
@@ -49,7 +50,7 @@ func TestTestAuth(t *testing.T) {
 	udb := &userdb.UserDB{DB: fs, T: trace.NewNoopTracerProvider().Tracer("")}
 	lg, _ := zap.NewDevelopment()
 	r := redisTestInstance(t)
-	srv := prepServer(context.TODO(), lg, au, mockRateLimiter{}, udb, &accountService{cache: &AccountCache{cache: r}}, nil, nil)
+	srv := prepServer(lg, au, mockRateLimiter{}, udb, &accountService{cache: &AccountCache{cache: r}}, nil, nil)
 	go srv.Serve(l)
 	defer srv.Stop()
 	defer l.Close()

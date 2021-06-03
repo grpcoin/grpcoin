@@ -18,12 +18,13 @@ import (
 	"context"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
-	"github.com/grpcoin/grpcoin/api/grpcoin"
-	"github.com/grpcoin/grpcoin/server/auth"
-	"github.com/grpcoin/grpcoin/server/userdb"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/grpcoin/grpcoin/api/grpcoin"
+	"github.com/grpcoin/grpcoin/apiserver/auth"
+	"github.com/grpcoin/grpcoin/userdb"
 )
 
 type accountServiceOpts struct {

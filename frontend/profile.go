@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package frontend
+package main
 
 import (
 	_ "embed"
@@ -20,15 +20,16 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/grpcoin/grpcoin/server/userdb"
 	"github.com/shopspring/decimal"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/grpcoin/grpcoin/userdb"
 )
 
-func (fe *Frontend) userProfile(w http.ResponseWriter, r *http.Request) error {
+func (fe *frontend) userProfile(w http.ResponseWriter, r *http.Request) error {
 	uid := mux.Vars(r)["id"]
 	if uid == "" {
 		return status.Error(codes.InvalidArgument, "url does not have user id")

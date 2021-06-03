@@ -33,17 +33,18 @@ import (
 	"math/rand"
 	"time"
 
-	firestore "cloud.google.com/go/firestore"
+	"cloud.google.com/go/firestore"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
-	"github.com/grpcoin/grpcoin/api/grpcoin"
-	"github.com/grpcoin/grpcoin/server/auth"
 	"github.com/shopspring/decimal"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/api/iterator"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/grpcoin/grpcoin/api/grpcoin"
+	"github.com/grpcoin/grpcoin/apiserver/auth"
 )
 
 type ctxUserRecordKey struct{}

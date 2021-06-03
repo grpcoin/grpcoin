@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package frontend
+package main
 
 import (
 	"bytes"
@@ -27,14 +27,15 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/grpcoin/grpcoin/server/realtimequote"
-	"github.com/grpcoin/grpcoin/server/userdb"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/grpcoin/grpcoin/realtimequote"
+	"github.com/grpcoin/grpcoin/userdb"
 )
 
 var (
@@ -44,7 +45,7 @@ var (
 		"templates/*.tpl"))
 )
 
-type Frontend struct {
+type frontend struct {
 	QuoteProvider realtimequote.QuoteProvider
 	QuoteDeadline time.Duration
 
@@ -54,10 +55,10 @@ type Frontend struct {
 	DB    *userdb.UserDB
 }
 
-func (_ *Frontend) health(w http.ResponseWriter, r *http.Request) {
+func (_ *frontend) health(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "ok")
 }
-func (fe *Frontend) Handler(log *zap.Logger) http.Handler {
+func (fe *frontend) Handler(log *zap.Logger) http.Handler {
 	m := mux.NewRouter()
 	m.Use(otelmux.Middleware("grpcoin-frontend"))
 	m.Use(withLogging(log))

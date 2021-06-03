@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package frontend
+package main
 
 import (
 	"reflect"
 	"testing"
 	"time"
 
-	"github.com/grpcoin/grpcoin/server/userdb"
+	"github.com/grpcoin/grpcoin/userdb"
 )
 
 func TestPortfolioSnaphotAt(t *testing.T) {

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package coinbase
 
 import (
 	"context"
@@ -20,30 +20,29 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/grpcoin/grpcoin/api/grpcoin"
 	"github.com/grpcoin/grpcoin/gdax"
-	"go.uber.org/zap"
 )
 
-type coinbaseQuoteProvider struct {
-	ticker string
-
+type QuoteProvider struct {
 	lock         sync.RWMutex
 	lastBTCQuote *grpcoin.Amount
 	lastETHQuote *grpcoin.Amount
 	lastUpdated  time.Time
 
-	logger *zap.Logger
+	Logger *zap.Logger
 }
 
 const staleQuotePeriod = time.Second * 2
 
-func (cb *coinbaseQuoteProvider) GetQuote(ctx context.Context, product string) (*grpcoin.Amount, error) {
+func (cb *QuoteProvider) GetQuote(ctx context.Context, product string) (*grpcoin.Amount, error) {
 	for {
 		select {
 		case <-ctx.Done():
 			cb.lock.RLock()
-			cb.logger.Warn("quote request cancelled", zap.Error(ctx.Err()),
+			cb.Logger.Warn("quote request cancelled", zap.Error(ctx.Err()),
 				zap.Duration("last_quote", time.Since(cb.lastUpdated)))
 			cb.lock.RUnlock()
 			return nil, ctx.Err()
@@ -53,11 +52,12 @@ func (cb *coinbaseQuoteProvider) GetQuote(ctx context.Context, product string) (
 				cb.lock.RUnlock()
 				break
 			}
-			defer cb.lock.RUnlock()
+			btc,eth:=cb.lastBTCQuote,cb.lastETHQuote
+			cb.lock.RUnlock()
 			if product == "BTC" {
-				return cb.lastBTCQuote, nil
+				return btc, nil
 			} else if product == "ETH" {
-				return cb.lastETHQuote, nil
+				return eth, nil
 			} else {
 				return nil, fmt.Errorf("unknown trading product %q", product)
 			}
@@ -68,14 +68,14 @@ func (cb *coinbaseQuoteProvider) GetQuote(ctx context.Context, product string) (
 
 // sync continually maintains a channel to Coinbase realtime prices.
 // meant to be invoked in a goroutine
-func (cb *coinbaseQuoteProvider) sync(ctx context.Context) {
+func (cb *QuoteProvider) Sync(ctx context.Context) {
 	for {
 		if ctx.Err() != nil {
 			return
 		}
 		ch, err := gdax.StartWatch(ctx, "BTC-USD", "ETH-USD")
 		if err != nil {
-			cb.logger.Warn("warning: failed to connected to coinbase", zap.Error(err))
+			cb.Logger.Warn("warning: failed to connected to coinbase", zap.Error(err))
 			// TODO consider adding sleep/backoff to prevent DoSing coinbase API
 			continue
 		}
@@ -87,10 +87,10 @@ func (cb *coinbaseQuoteProvider) sync(ctx context.Context) {
 			} else if m.Product == "BTC-USD" {
 				cb.lastBTCQuote = m.Price
 			} else {
-				cb.logger.Warn("unknown product", zap.String("product", m.Product))
+				cb.Logger.Warn("unknown product", zap.String("product", m.Product))
 			}
 			cb.lock.Unlock()
 		}
-		cb.logger.Warn("coinbase channel terminated, reopening")
+		cb.Logger.Warn("coinbase channel terminated, reopening")
 	}
 }

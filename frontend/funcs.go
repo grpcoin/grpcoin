@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package frontend
+package main
 
 import (
 	"fmt"
@@ -21,8 +21,9 @@ import (
 	"time"
 
 	"github.com/dustin/go-humanize"
-	"github.com/grpcoin/grpcoin/server/userdb"
 	"github.com/hako/durafmt"
+
+	"github.com/grpcoin/grpcoin/userdb"
 )
 
 var (

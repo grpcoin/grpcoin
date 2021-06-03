@@ -24,7 +24,7 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
-	"github.com/grpcoin/grpcoin/server/auth"
+	"github.com/grpcoin/grpcoin/apiserver/auth"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"

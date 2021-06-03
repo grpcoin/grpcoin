@@ -31,14 +31,14 @@ using 100,000$ cash assigned to your account when you sign up.
       - Rate limits:
         - **100 per minute** for authenticated calls.
         - **50 per minute** for unauthenticated calls.
-    - Website: https://grpcoin-main-kafjc7sboa-wl.a.run.app/
+    - Website: https://grpcoin-frontend-kafjc7sboa-wl.a.run.app/
 
 1. First time you make an authenticated request, your account will be created
    with $100,000 cash to start buying coins.
 
 1. Start tracking your progress on the [leaderboard].
 
-[leaderboard]: https://grpcoin-main-kafjc7sboa-wl.a.run.app/
+[leaderboard]: https://grpcoin-frontend-kafjc7sboa-wl.a.run.app/
 
 ## Example bot implementations
 
@@ -73,7 +73,11 @@ To run the server locally, follow these steps:
 1. From repository root, run:
 
       ```sh
-      LISTEN_ADDR=localhost PORT=8080 go run ./server
+      LISTEN_ADDR=localhost PORT=8080 go run ./apiserver
       ```
+      to start the gRPC API server, or run
 
-1. Navigate to http://localhost:8080 to explore.
+      ```sh
+      LISTEN_ADDR=localhost PORT=8080 go run ./frontend
+      ```
+      to start the web frontend and navigate to http://localhost:8080 to explore.

@@ -32,8 +32,13 @@ variable "region" {
   default = "us-west2"
 }
 
-variable "image" {
-  description = "main server container image"
+variable "apiserver-image" {
+  description = "apiserver container image"
+  type        = string
+}
+
+variable "frontend-image" {
+  description = "apiserver container image"
   type        = string
 }
 
@@ -104,7 +109,7 @@ resource "google_redis_instance" "cache" {
 
 resource "google_service_account" "sa" {
   account_id   = "grpcoin"
-  display_name = "grpc main server identity"
+  display_name = "grpc api server identity"
 }
 
 resource "google_project_iam_binding" "firestore-access" {
@@ -125,6 +130,20 @@ resource "google_project_iam_binding" "tracing-access" {
   ]
 }
 
+resource "google_service_account" "fe-sa" {
+  account_id   = "grpcoin-fe"
+  display_name = "grpc frontend server identity"
+}
+
+resource "google_project_iam_binding" "frontend-firestore-access" {
+  project = var.project
+  role    = "roles/datastore.viewer"
+
+  members = [
+    "serviceAccount:${google_service_account.fe-sa.email}",
+  ]
+}
+
 resource "google_vpc_access_connector" "default" {
   depends_on = [
     google_project_service.vpcaccess
@@ -136,7 +155,7 @@ resource "google_vpc_access_connector" "default" {
   ip_cidr_range = "10.8.0.0/28"
 }
 
-resource "google_cloud_run_service" "default" {
+resource "google_cloud_run_service" "apiserver" {
   depends_on = [
     google_project_service.run
   ]
@@ -153,11 +172,11 @@ resource "google_cloud_run_service" "default" {
     }
     spec {
       service_account_name  = google_service_account.sa.email
-      container_concurrency = 100
+      container_concurrency = 20
       timeout_seconds       = 900
 
       containers {
-        image = var.image
+        image = var.apiserver-image
         ports {
           name           = "h2c"
           container_port = 8080
@@ -171,10 +190,6 @@ resource "google_cloud_run_service" "default" {
         env {
           name  = "REDIS_IP"
           value = google_redis_instance.cache.host
-        }
-        env {
-          name  = "CRON_SERVICE_ACCOUNT"
-          value = google_service_account.cron.email
         }
       }
     }
@@ -190,10 +205,50 @@ data "google_iam_policy" "noauth" {
   }
 }
 
-resource "google_cloud_run_service_iam_policy" "default-noauth" {
-  location    = google_cloud_run_service.default.location
-  project     = google_cloud_run_service.default.project
-  service     = google_cloud_run_service.default.name
+resource "google_cloud_run_service_iam_policy" "apiserver-noauth" {
+  location    = google_cloud_run_service.apiserver.location
+  project     = google_cloud_run_service.apiserver.project
+  service     = google_cloud_run_service.apiserver.name
+  policy_data = data.google_iam_policy.noauth.policy_data
+}
+
+resource "google_cloud_run_service" "frontend" {
+  depends_on = [
+    google_project_service.run
+  ]
+  project  = var.project
+  location = var.region
+  name     = "grpcoin-frontend"
+
+  template {
+    metadata {
+      annotations = {
+        "autoscaling.knative.dev/maxScale" : "10",
+      }
+    }
+    spec {
+      service_account_name  = google_service_account.fe-sa.email
+      containers {
+        image = var.frontend-image
+        resources {
+          limits = {
+            cpu    = "1"
+            memory = "128Mi"
+          }
+        }
+        env {
+          name  = "CRON_SERVICE_ACCOUNT"
+          value = google_service_account.cron.email
+        }
+      }
+    }
+  }
+}
+
+resource "google_cloud_run_service_iam_policy" "frontend-noauth" {
+  location    = google_cloud_run_service.frontend.location
+  project     = google_cloud_run_service.frontend.project
+  service     = google_cloud_run_service.frontend.name
   policy_data = data.google_iam_policy.noauth.policy_data
 }
 
@@ -219,14 +274,18 @@ resource "google_cloud_scheduler_job" "pv-job" {
 
   http_target {
     http_method = "GET"
-    uri         = "${element(google_cloud_run_service.default.status, 0).url}/_cron/pv"
+    uri         = "${element(google_cloud_run_service.frontend.status, 0).url}/_cron/pv"
     oidc_token {
       service_account_email = google_service_account.cron.email
-      audience              = "${element(google_cloud_run_service.default.status, 0).url}/_cron/pv"
+      audience              = "${element(google_cloud_run_service.frontend.status, 0).url}/_cron/pv"
     }
   }
 }
 
-output "cloud_run_url" {
-  value = element(google_cloud_run_service.default.status, 0).url
+output "apiserver_url" {
+  value = element(google_cloud_run_service.apiserver.status, 0).url
+}
+
+output "frontend_url" {
+  value = element(google_cloud_run_service.frontend.status, 0).url
 }

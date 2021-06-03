@@ -19,10 +19,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/grpcoin/grpcoin/api/grpcoin"
 	"github.com/shopspring/decimal"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/grpcoin/grpcoin/api/grpcoin"
 )
 
 func makeTrade(p *Portfolio, action grpcoin.TradeAction, ticker string, quote, quantity *grpcoin.Amount) error {

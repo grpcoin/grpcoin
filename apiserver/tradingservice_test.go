@@ -20,18 +20,20 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/grpcoin/grpcoin/api/grpcoin"
-	"github.com/grpcoin/grpcoin/server/auth"
-	"github.com/grpcoin/grpcoin/server/auth/github"
-	"github.com/grpcoin/grpcoin/server/firestoreutil"
-	"github.com/grpcoin/grpcoin/server/realtimequote"
-	"github.com/grpcoin/grpcoin/server/userdb"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/grpcoin/grpcoin/api/grpcoin"
+	"github.com/grpcoin/grpcoin/realtimequote"
+	"github.com/grpcoin/grpcoin/realtimequote/coinbase"
+	"github.com/grpcoin/grpcoin/apiserver/auth"
+	"github.com/grpcoin/grpcoin/apiserver/auth/github"
+	"github.com/grpcoin/grpcoin/apiserver/firestoreutil"
+	"github.com/grpcoin/grpcoin/userdb"
 )
 
-var _ realtimequote.QuoteProvider = &coinbaseQuoteProvider{}
+var _ realtimequote.QuoteProvider = &coinbase.QuoteProvider{}
 
 type mockQuoteProvider struct {
 	a   *grpcoin.Amount
@@ -209,8 +211,8 @@ func TestTrade(t *testing.T) {
 	}
 	ctx, stop := context.WithCancel(context.Background())
 	t.Cleanup(func() { stop() })
-	cb := &coinbaseQuoteProvider{}
-	go cb.sync(ctx)
+	cb := &coinbase.QuoteProvider{}
+	go cb.Sync(ctx)
 	pt := &tradingService{udb: udb, tp: cb, tr: tp}
 
 	ctx = auth.WithUser(ctx, au)

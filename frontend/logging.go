@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package frontend
+package main
 
 import (
 	"context"
@@ -26,7 +26,7 @@ import (
 
 type reqZapCtx struct{}
 
-var reqZapCtxVar reqZapCtx = reqZapCtx{}
+var reqZapCtxVar = reqZapCtx{}
 
 func withLogging(log *zap.Logger) mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
