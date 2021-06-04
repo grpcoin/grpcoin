@@ -127,6 +127,7 @@ resource "google_project_iam_binding" "tracing-access" {
 
   members = [
     "serviceAccount:${google_service_account.sa.email}",
+    "serviceAccount:${google_service_account.fe-sa.email}",
   ]
 }
 
