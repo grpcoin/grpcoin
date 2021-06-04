@@ -27,18 +27,18 @@ using 100,000$ cash assigned to your account when you sign up.
        authorization: Bearer MY_TOKEN
 
 1. Endpoints you can use:
-    - API PROD endpoint `grpcoin-main-kafjc7sboa-wl.a.run.app:443` (TLS)
+    - API PROD endpoint `api.grpco.in:443` (TLS)
       - Rate limits:
         - **100 per minute** for authenticated calls.
         - **50 per minute** for unauthenticated calls.
-    - Website: https://grpcoin-frontend-kafjc7sboa-wl.a.run.app/
+    - Website: https://grpco.in/
 
 1. First time you make an authenticated request, your account will be created
    with $100,000 cash to start buying coins.
 
-1. Start tracking your progress on the [leaderboard].
+1. Start tracking your progress on the [leaderboard][home].
 
-[leaderboard]: https://grpcoin-frontend-kafjc7sboa-wl.a.run.app/
+[home]: https://grpco.in/
 
 ## Example bot implementations
 

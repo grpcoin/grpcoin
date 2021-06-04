@@ -33,7 +33,7 @@ import (
 )
 
 const (
-	prod  = `grpcoin-main-kafjc7sboa-wl.a.run.app:443`
+	prod  = `api.grpco.in:443`
 	local = `localhost:8080`
 )
 

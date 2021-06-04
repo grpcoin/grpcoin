@@ -228,7 +228,7 @@ resource "google_cloud_run_service" "frontend" {
       }
     }
     spec {
-      service_account_name  = google_service_account.fe-sa.email
+      service_account_name = google_service_account.fe-sa.email
       containers {
         image = var.frontend-image
         resources {
@@ -289,4 +289,8 @@ output "apiserver_url" {
 
 output "frontend_url" {
   value = element(google_cloud_run_service.frontend.status, 0).url
+}
+
+output "lb_ip" {
+  value = google_compute_global_address.lb.address
 }
