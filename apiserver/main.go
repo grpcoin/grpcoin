@@ -36,10 +36,10 @@ import (
 	"google.golang.org/grpc"
 
 	pb "github.com/grpcoin/grpcoin/api/grpcoin"
-	"github.com/grpcoin/grpcoin/realtimequote/coinbase"
 	"github.com/grpcoin/grpcoin/apiserver/auth"
 	"github.com/grpcoin/grpcoin/apiserver/auth/github"
 	"github.com/grpcoin/grpcoin/apiserver/ratelimiter"
+	"github.com/grpcoin/grpcoin/realtimequote/coinbase"
 	"github.com/grpcoin/grpcoin/serverutil"
 	"github.com/grpcoin/grpcoin/userdb"
 )

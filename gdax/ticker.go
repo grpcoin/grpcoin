@@ -96,6 +96,7 @@ func StartWatch(ctx context.Context, product ...string) (<-chan Quote, error) {
 }
 
 func convertPrice(p string) *grpcoin.Amount {
+
 	out := strings.SplitN(p, ".", 2)
 	if len(out) == 0 {
 		return &grpcoin.Amount{}

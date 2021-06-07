@@ -25,6 +25,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gorilla/websocket"
+
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
@@ -44,6 +46,14 @@ var (
 	tpl        = template.Must(template.New("").Funcs(funcs).ParseFS(templateFS,
 		"templates/*.tpl"))
 )
+
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
 
 type frontend struct {
 	QuoteProvider realtimequote.QuoteProvider
@@ -65,7 +75,10 @@ func (fe *frontend) Handler(log *zap.Logger) http.Handler {
 	m.HandleFunc("/health", fe.health)
 	m.HandleFunc("/_cron/pv", toHandler(fe.calcPortfolioHistory))
 	m.HandleFunc("/user/{id}", toHandler(fe.userProfile))
+	m.HandleFunc("/ws/tickers", wsTickers)
 	m.HandleFunc("/", toHandler(fe.leaderboard))
+
+	go hub.run()
 	return m
 }
 

@@ -44,15 +44,17 @@
                         justify-content-between d-flex bg-color-black bg-hover">
                         <div>
                             <b class="text-white">{{$tick}}</b><br />
-                            <span class="text-muted">
+                            <span class="text-muted" id="{{$tick}}-stream">
                                 {{ if not (isZero $amount) }}
                                 x{{ fmtAmount $amount }}
                                 @ {{ fmtPrice (index $.quotes $tick ) }} </span>
                             {{end}}
                         </div>
                         <div class="text-end text-white">
-                            {{ fmtPrice (mul $amount (index $.quotes $tick )) }}<br />
-                            <span class="text-white-50">
+                            <span id="{{$tick}}">
+                            {{ fmtPrice (mul $amount (index $.quotes $tick )) }}
+                            </span><br />
+                            <span class="text-white-50" >
                                 {{ fmtPercent ( toPercent (div (mul $amount (index $.quotes $tick )) $tv )) }}
                             </span>
                         </div>
@@ -63,7 +65,7 @@
                     <div>
                         <b class="text-white">Total value</b>
                     </div>
-                    <div class="text-end text-white">
+                    <div class="text-end text-white" id="total">
                         {{fmtPrice $tv }}
                     </div>
                 </div>
@@ -141,5 +143,38 @@
         </div>
     </div>
     <hr />
+    <script>
+        const portfolio = {{.u.Portfolio.Positions }};
+        const cash = {{.u.Portfolio.CashUSD}};
+        
+        const currencies = {};
+        const userCashs = {};
 
-    {{ template "footer.tpl" }}
+        let cashUSD = cash.Units + cash.Nanos * Math.pow(10, -9)
+
+        const socket = new WebSocket("ws://localhost:8081/ws/tickers");
+
+        // Connection opened
+        socket.addEventListener("open", function (event) {
+            socket.send("Hi grpco.in websocket server!");
+        });
+        let totalCurrencies;
+        // Listen for messages
+        socket.onmessage = function(evt) {
+            const data = JSON.parse(evt.data)
+            currencies[data.product === "BTC-USD" ? "BTC" : "ETH"] = data.price.units + data.price.nanos * Math.pow(10, -9);
+            for(const curr in portfolio){
+                const cryptoWithoutUSD = portfolio[curr].Units + portfolio[curr].Nanos * Math.pow(10, -9)
+                userCashs[curr] = cryptoWithoutUSD * currencies[curr];
+                document.getElementById(curr).innerHTML = parseFloat(userCashs[curr].toFixed(2)).toLocaleString('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                });
+                document.getElementById(`${curr}-stream`).innerHTML = `x${cryptoWithoutUSD.toFixed(2)} @ `+ parseFloat((currencies[curr]).toFixed(2)).toLocaleString('en-US', {style: 'currency',currency: 'USD'});;
+            }
+            totalCurencies = Object.values(userCashs).reduce((a, b) => a + b);
+            document.getElementById("total").innerHTML = (totalCurencies + cashUSD).toLocaleString('en-US', {style: 'currency',currency: 'USD',});
+        }
+    </script>
+
+{{ template "footer.tpl" }}

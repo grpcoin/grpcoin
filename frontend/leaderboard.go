@@ -82,18 +82,21 @@ func (fe *frontend) leaderboard(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 	users, err := fe.DB.GetAll(r.Context())
+
 	if err != nil {
 		return err
 	}
 	var resp leaderboardResp
-	for _, u := range users {
+	for _, u := range users{
 		resp = append(resp, leaderboardUser{
 			User:      u,
-			Valuation: valuation(u.Portfolio, quotes)})
+			Valuation: valuation(u.Portfolio, quotes),
+		})
 	}
+
 	sort.Sort(sort.Reverse(resp))
 
 	// TODO do not parse on every request
 	return tpl.ExecuteTemplate(w, "leaderboard.tpl", map[string]interface{}{
-		"users": resp})
+		"users": resp, "quotes": quotes})
 }

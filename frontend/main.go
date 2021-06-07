@@ -48,27 +48,29 @@ func main() {
 	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	onCloudRun := os.Getenv("K_SERVICE") != ""
 
-	log,err:=serverutil.GetLogging(onCloudRun)
-	if err!=nil{panic(err)}
+	log, err := serverutil.GetLogging(onCloudRun)
+	if err != nil {
+		panic(err)
+	}
 
-	db, shutdownDB, err := serverutil.DetectDatabase(ctxzap.ToContext(ctx,log.With(zap.String("facility","db"))),
-		flTestData,onCloudRun,flRealData)
+	db, shutdownDB, err := serverutil.DetectDatabase(ctxzap.ToContext(ctx, log.With(zap.String("facility", "db"))),
+		flTestData, onCloudRun, flRealData)
 	defer shutdownDB()
 
-	coinbaseQuotes := &coinbase.QuoteProvider{		Logger: log	}
+	coinbaseQuotes := &coinbase.QuoteProvider{Logger: log}
 	go coinbaseQuotes.Sync(ctx)
 
 	trace, flushTraces := serverutil.GetTracer("grpcoin-frontend", onCloudRun)
-	if err!=nil{
-		log.Fatal("failed to init tracing",zap.Error(err))
+	if err != nil {
+		log.Fatal("failed to init tracing", zap.Error(err))
 	}
-	defer flushTraces(log.With(zap.String("facility","tracing")))
+	defer flushTraces(log.With(zap.String("facility", "tracing")))
 	fe := frontend{
 		QuoteProvider: coinbaseQuotes,
 		QuoteDeadline: time.Second,
 		CronSAEmail:   os.Getenv("CRON_SERVICE_ACCOUNT"),
 		Trace:         trace,
-		DB:            &userdb.UserDB{
+		DB: &userdb.UserDB{
 			DB: db,
 			T:  trace}}
 
@@ -76,7 +78,7 @@ func main() {
 	port := os.Getenv("PORT")
 	server := &http.Server{
 		Handler: fe.Handler(log),
-		Addr: addr+":"+port,
+		Addr:    addr + ":" + port,
 	}
 	log.Debug("starting to listen", zap.String("addr", addr+":"+port))
 	go func() {
@@ -86,7 +88,8 @@ func main() {
 	}()
 
 	err = server.ListenAndServe()
-	if errors.Is(err, http.ErrServerClosed){
+
+	if errors.Is(err, http.ErrServerClosed) {
 		log.Debug("http server closed")
 	} else {
 		log.Fatal("http server failed", zap.Error(err))
