@@ -170,7 +170,7 @@
                     style: 'currency',
                     currency: 'USD',
                 });
-                document.getElementById(`${curr}-stream`).innerHTML = `x${cryptoWithoutUSD.toFixed(2)} @ `+ parseFloat((currencies[curr]).toFixed(2)).toLocaleString('en-US', {style: 'currency',currency: 'USD'});;
+                document.getElementById(`${curr}-stream`).innerHTML = `x${cryptoWithoutUSD} @ `+ parseFloat((currencies[curr]).toFixed(2)).toLocaleString('en-US', {style: 'currency',currency: 'USD'});;
             }
             totalCurencies = Object.values(userCashs).reduce((a, b) => a + b);
             document.getElementById("total").innerHTML = (totalCurencies + cashUSD).toLocaleString('en-US', {style: 'currency',currency: 'USD',});
