@@ -162,19 +162,21 @@
         // Listen for messages
         socket.onmessage = function(evt) {
             const data = JSON.parse(evt.data)
-            currencies[data.product === "BTC-USD" ? "BTC" : "ETH"] = data.price.units + data.price.nanos * Math.pow(10, -9);
-            for(const curr in portfolio){
-                const cryptoWithoutUSD = portfolio[curr].Units + portfolio[curr].Nanos * Math.pow(10, -9)
-                userCashs[curr] = cryptoWithoutUSD * currencies[curr];
-                document.getElementById(curr).innerHTML = parseFloat(userCashs[curr].toFixed(2)).toLocaleString('en-US', {
-                    style: 'currency',
-                    currency: 'USD',
-                });
-                document.getElementById(`${curr}-stream`).innerHTML = `x${cryptoWithoutUSD} @ `+ parseFloat((currencies[curr]).toFixed(2)).toLocaleString('en-US', {style: 'currency',currency: 'USD'});;
-            }
+            if(data.product === "BTC-USD" ||  data.product === "ETH"){
+                currencies[data.product === "BTC-USD" ? "BTC" : "ETH"] = data.price.units + data.price.nanos * Math.pow(10, -9);
+                for(const curr in portfolio){
+                    const cryptoWithoutUSD = portfolio[curr].Units + portfolio[curr].Nanos * Math.pow(10, -9)
+                    userCashs[curr] = cryptoWithoutUSD * currencies[curr];
+                    document.getElementById(curr).innerHTML = parseFloat(userCashs[curr].toFixed(2)).toLocaleString('en-US', {
+                        style: 'currency',
+                        currency: 'USD',
+                    });
+                    document.getElementById(`${curr}-stream`).innerHTML = `x${cryptoWithoutUSD} @ `+ parseFloat((currencies[curr]).toFixed(2)).toLocaleString('en-US', {style: 'currency',currency: 'USD'});;
+                }
             totalCurencies = Object.values(userCashs).reduce((a, b) => a + b);
             document.getElementById("total").innerHTML = (totalCurencies + cashUSD).toLocaleString('en-US', {style: 'currency',currency: 'USD',});
-        }
+            }
+        } 
     </script>
 
 {{ template "footer.tpl" }}
