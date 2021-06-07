@@ -1,76 +1,26 @@
+/**
+ * Copyright 2021 Ahmet Alp Balkan
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-resource "google_compute_global_address" "lb" {
-  name = "lb-ip"
-}
-
-provider "google-beta" {
-  project = var.project
-}
-
-module "lb-http" {
+resource "google_compute_global_address" "default" {
   depends_on = [
     google_project_service.compute
   ]
-
-  source  = "GoogleCloudPlatform/lb-http/google//modules/serverless_negs"
-  version = "~> 5.1"
-
-  project = var.project
-  name    = "lb"
-
-  ssl                             = true
-  managed_ssl_certificate_domains = ["grpco.in", "api.grpco.in"]
-  https_redirect                  = true
-  address                         = google_compute_global_address.lb.address
-
-  backends = {
-    default = {
-      description            = "web frontend server"
-      timeout_sec            = 30
-      enable_cdn             = false
-      custom_request_headers = null
-      security_policy        = null
-      log_config = {
-        enable      = true
-        sample_rate = 1.0
-      }
-      groups = [
-        {
-          group = google_compute_region_network_endpoint_group.frontend.id
-        }
-      ]
-      iap_config = {
-        enable               = false
-        oauth2_client_id     = null
-        oauth2_client_secret = null
-      }
-    }
-    api = {
-      description            = "api server"
-      timeout_sec            = 86400 // it's longer than Cloud Run timeout anyway
-      enable_cdn             = false
-      custom_request_headers = null
-      security_policy        = null
-      log_config = {
-        enable      = true
-        sample_rate = 1.0
-      }
-      groups = [
-        {
-          group = google_compute_region_network_endpoint_group.apiserver.id
-        }
-      ]
-      iap_config = {
-        enable               = false
-        oauth2_client_id     = null
-        oauth2_client_secret = null
-      }
-    }
-  }
-  create_url_map = false
-  url_map        = google_compute_url_map.default.id
+  name = "lb-ip"
+  description = "load balancer ip"
 }
-
 
 resource "google_compute_region_network_endpoint_group" "frontend" {
   depends_on = [
@@ -100,19 +50,90 @@ resource "google_compute_region_network_endpoint_group" "apiserver" {
   }
 }
 
-resource "google_compute_url_map" "default" {
+resource "google_compute_managed_ssl_certificate" "default" {
   depends_on = [
     google_project_service.compute
   ]
+
+  name = "grpcoin-cert"
+  managed {
+    domains = ["grpco.in", "api.grpco.in"]
+  }
+}
+
+resource "google_compute_backend_service" "frontend" {
+  name      = "grpcoin-frontend"
+
+  protocol  = "HTTP"
+  port_name = "http"
+  timeout_sec = 30
+
+  backend {
+    group = google_compute_region_network_endpoint_group.frontend.id
+  }
+}
+
+resource "google_compute_backend_service" "apiserver" {
+  name      = "grpcoin-apiserver"
+
+  protocol  = "HTTP"
+  port_name = "http"
+  backend {
+    group = google_compute_region_network_endpoint_group.apiserver.id
+  }
+}
+
+resource "google_compute_url_map" "default" {
   project         = var.project
-  name            = "urlmap"
-  default_service = module.lb-http.backend_services["default"].self_link
+  name            = "grpcoin-urlmap"
+
+  default_service = google_compute_backend_service.frontend.self_link
   host_rule {
     hosts        = ["api.grpco.in"]
     path_matcher = "api"
   }
   path_matcher {
     name            = "api"
-    default_service = module.lb-http.backend_services["api"].self_link
+    default_service = google_compute_backend_service.apiserver.self_link
   }
+}
+
+resource "google_compute_target_https_proxy" "default" {
+  name   = "lb-https-proxy"
+
+  url_map          = google_compute_url_map.default.id
+  ssl_certificates = [
+    google_compute_managed_ssl_certificate.default.id
+  ]
+}
+
+resource "google_compute_global_forwarding_rule" "default" {
+  name   = "lb-https-fwdrule"
+
+  port_range = "443"
+  ip_address = google_compute_global_address.default.address
+  target = google_compute_target_https_proxy.default.id
+}
+
+resource "google_compute_url_map" "https_redirect" {
+  name            = "grpcoin-https-redirect"
+
+  default_url_redirect {
+    https_redirect         = true
+    redirect_response_code = "MOVED_PERMANENTLY_DEFAULT"
+    strip_query            = false
+  }
+}
+
+resource "google_compute_target_http_proxy" "https_redirect" {
+  name   = "lb-http-proxy"
+  url_map          = google_compute_url_map.https_redirect.id
+}
+
+resource "google_compute_global_forwarding_rule" "https_redirect" {
+  name   = "lb-http-fwdrule"
+
+  port_range = "80"
+  ip_address = google_compute_global_address.default.address
+  target = google_compute_target_http_proxy.https_redirect.id
 }

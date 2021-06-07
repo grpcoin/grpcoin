@@ -168,7 +168,8 @@ resource "google_cloud_run_service" "apiserver" {
     metadata {
       annotations = {
         "run.googleapis.com/vpc-access-connector" : google_vpc_access_connector.default.name
-        "autoscaling.knative.dev/maxScale" : "10",
+        "run.googleapis.com/vpc-access-egress": "private-ranges-only"
+        "autoscaling.knative.dev/maxScale" : "10"
       }
     }
     spec {
@@ -292,5 +293,5 @@ output "frontend_url" {
 }
 
 output "lb_ip" {
-  value = google_compute_global_address.lb.address
+  value = google_compute_global_address.default.address
 }
