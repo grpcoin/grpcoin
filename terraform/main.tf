@@ -118,6 +118,7 @@ resource "google_project_iam_binding" "firestore-access" {
 
   members = [
     "serviceAccount:${google_service_account.sa.email}",
+    "serviceAccount:${google_service_account.fe-sa.email}",
   ]
 }
 
@@ -134,15 +135,6 @@ resource "google_project_iam_binding" "tracing-access" {
 resource "google_service_account" "fe-sa" {
   account_id   = "grpcoin-fe"
   display_name = "grpc frontend server identity"
-}
-
-resource "google_project_iam_binding" "frontend-firestore-access" {
-  project = var.project
-  role    = "roles/datastore.viewer"
-
-  members = [
-    "serviceAccount:${google_service_account.fe-sa.email}",
-  ]
 }
 
 resource "google_vpc_access_connector" "default" {
