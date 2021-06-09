@@ -29,6 +29,7 @@ import (
 var (
 	funcs = template.FuncMap{
 		"fmtAmount":    fmtAmount,
+		"fmtAmountRaw": fmtAmountRaw,
 		"fmtPrice":     fmtPrice,
 		"fmtPriceFull": fmtPriceFull,
 		"fmtDate":      fmtDate,
@@ -48,6 +49,11 @@ var (
 func fmtAmount(a userdb.Amount) string {
 	v := fmt.Sprintf("%s.%09d", humanize.Comma(a.Units), a.Nanos)
 	return trimTrailingZeros(v)
+}
+
+func fmtAmountRaw(a userdb.Amount) float64 {
+	v, _ := a.F().Float64()
+	return v
 }
 
 func trimTrailingZeros(v string) string {

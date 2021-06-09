@@ -190,6 +190,7 @@
                                     return resp.json()
                                 })
                                 .then(data => {
+                                    data.push([new Date().getTime(), {{fmtAmountRaw $tv }} ]);
                                     options.series = [{
                                         name: 'Portfolio',
                                         data: data,
