@@ -130,6 +130,7 @@
                                     enabled: false
                                 },
                                 type: 'area',
+                                fontFamily: null,
                                 zoom: {
                                     autoScaleYaxis: true
                                 }
@@ -139,10 +140,10 @@
                                 enabled: false,
                             },
                             markers: {
-                                size: 5,
+                                size: 0,
                                 colors: '#D4D9DE',
                                 hover: {
-                                    sizeOffset: 1,
+                                    sizeOffset: 5,
                                 }
                             },
                             xaxis: {

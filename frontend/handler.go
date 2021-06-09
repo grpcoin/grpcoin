@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
@@ -53,6 +54,7 @@ type frontend struct {
 
 	Trace trace.Tracer
 	DB    *userdb.UserDB
+	Redis *redis.Client
 }
 
 func (_ *frontend) health(w http.ResponseWriter, r *http.Request) {

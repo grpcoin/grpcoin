@@ -24,8 +24,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/alicebob/miniredis/v2"
-	"github.com/go-redis/redis/v8"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
@@ -36,10 +34,10 @@ import (
 	"google.golang.org/grpc"
 
 	pb "github.com/grpcoin/grpcoin/api/grpcoin"
-	"github.com/grpcoin/grpcoin/realtimequote/coinbase"
 	"github.com/grpcoin/grpcoin/apiserver/auth"
 	"github.com/grpcoin/grpcoin/apiserver/auth/github"
 	"github.com/grpcoin/grpcoin/apiserver/ratelimiter"
+	"github.com/grpcoin/grpcoin/realtimequote/coinbase"
 	"github.com/grpcoin/grpcoin/serverutil"
 	"github.com/grpcoin/grpcoin/userdb"
 )
@@ -72,20 +70,12 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
-	var rc *redis.Client
-	if r := os.Getenv("REDIS_IP"); r == "" {
-		s, err := miniredis.Run()
-		if err != nil {
-			log.Fatal("failed to start miniredis", zap.Error(err))
-		}
-		rc = redis.NewClient(&redis.Options{Addr: s.Addr()})
-		defer s.Close()
-	} else {
-		rc = redis.NewClient(&redis.Options{Addr: r + ":6379"})
+	rc, close, err := serverutil.ConnectRedis(ctx, os.Getenv("REDIS_IP"))
+	if err != nil {
+		log.Fatal("failed to get redis instance", zap.Error(err))
 	}
-	if err := rc.Ping(ctx).Err(); err != nil {
-		log.Fatal("redis ping failed", zap.Error(err))
-	}
+	defer close()
+	defer rc.Close()
 
 	db, shutdown, err := serverutil.DetectDatabase(ctxzap.ToContext(ctx, log.With(zap.String("facility", "db"))),
 		flTestData, onCloudRun, flRealData)

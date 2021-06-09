@@ -218,6 +218,8 @@ resource "google_cloud_run_service" "frontend" {
     metadata {
       annotations = {
         "autoscaling.knative.dev/maxScale" : "10",
+        "run.googleapis.com/vpc-access-connector" : google_vpc_access_connector.default.name
+        "run.googleapis.com/vpc-access-egress": "private-ranges-only"
       }
     }
     spec {
@@ -233,6 +235,10 @@ resource "google_cloud_run_service" "frontend" {
         env {
           name  = "CRON_SERVICE_ACCOUNT"
           value = google_service_account.cron.email
+        }
+        env {
+          name  = "REDIS_IP"
+          value = google_redis_instance.cache.host
         }
       }
     }
