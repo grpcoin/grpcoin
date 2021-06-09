@@ -19,34 +19,23 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/gorilla/mux"
+	"github.com/purini-to/zapmw"
 	stackdriver "github.com/tommy351/zap-stackdriver"
 	"go.uber.org/zap"
 )
 
-type reqZapCtx struct{}
-
-var reqZapCtxVar = reqZapCtx{}
-
-func withLogging(log *zap.Logger) mux.MiddlewareFunc {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			log = log.With(stackdriver.LogHTTPRequest(&stackdriver.HTTPRequest{
-				Method:    r.Method,
-				URL:       r.URL.Path,
-				UserAgent: r.Header.Get("user-agent"),
-				Referrer:  r.Header.Get("referer"),
-				RemoteIP:  r.Header.Get("x-forwarded-for"),
-			}))
-			ctx := context.WithValue(r.Context(), reqZapCtxVar, log)
-			r = r.WithContext(ctx)
-			next.ServeHTTP(w, r)
-		})
-	}
+func withStackdriverFields(log *zap.Logger, r *http.Request) *zap.Logger {
+	return log.With(stackdriver.LogHTTPRequest(&stackdriver.HTTPRequest{
+		Method:    r.Method,
+		URL:       r.URL.Path,
+		UserAgent: r.Header.Get("user-agent"),
+		Referrer:  r.Header.Get("referer"),
+		RemoteIP:  r.Header.Get("x-forwarded-for"),
+	}))
 }
 
 func loggerFrom(ctx context.Context) *zap.Logger {
-	v := ctx.Value(reqZapCtxVar)
+	v := ctx.Value(zapmw.ZapKey)
 	if v == nil {
 		panic("request did not have a logger")
 	}

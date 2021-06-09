@@ -17,6 +17,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/hako/durafmt v0.0.0-20210316092057-3a2c319c1acd
 	github.com/preichenberger/go-coinbasepro/v2 v2.0.5
+	github.com/purini-to/zapmw v1.1.0
 	github.com/shopspring/decimal v1.2.0
 	github.com/tommy351/zap-stackdriver v0.1.4
 	go.opencensus.io v0.23.0

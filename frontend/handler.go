@@ -28,9 +28,11 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/purini-to/zapmw"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -62,8 +64,11 @@ func (_ *frontend) health(w http.ResponseWriter, r *http.Request) {
 }
 func (fe *frontend) Handler(log *zap.Logger) http.Handler {
 	m := mux.NewRouter()
-	m.Use(otelmux.Middleware("grpcoin-frontend"))
-	m.Use(withLogging(log))
+	m.Use(otelmux.Middleware("grpcoin-frontend"),
+		zapmw.WithZap(log, withStackdriverFields),
+		zapmw.Request(zapcore.InfoLevel, "request"),
+		zapmw.Recoverer(zapcore.ErrorLevel, "recover", zapmw.RecovererDefault),
+	)
 	m.HandleFunc("/health", fe.health)
 	m.HandleFunc("/_cron/pv", toHandler(fe.calcPortfolioHistory))
 	m.HandleFunc("/api/portfolioValuation/{id}", fe.apiPortfolioHistory)
