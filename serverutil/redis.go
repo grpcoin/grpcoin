@@ -3,6 +3,7 @@ package serverutil
 import (
 	"context"
 	"log"
+	"net"
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/go-redis/redis/v8"
@@ -19,9 +20,8 @@ func ConnectRedis(ctx context.Context, redisIP string) (rc *redis.Client, close 
 		rc = redis.NewClient(&redis.Options{Addr: s.Addr()})
 		close = s.Close
 	} else {
-		rc = redis.NewClient(&redis.Options{Addr: redisIP + ":6379"})
-		close = func() {
-		}
+		rc = redis.NewClient(&redis.Options{Addr: net.JoinHostPort(redisIP, "6379")})
+		close = func() {}
 	}
 	if err := rc.Ping(ctx).Err(); err != nil {
 		log.Fatal("redis ping failed", zap.Error(err))

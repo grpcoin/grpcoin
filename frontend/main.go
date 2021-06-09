@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -82,13 +83,14 @@ func main() {
 			DB: db,
 			T:  trace}}
 
-	addr := os.Getenv("LISTEN_ADDR")
+	listenHost := os.Getenv("LISTEN_ADDR")
 	port := os.Getenv("PORT")
+	addr := net.JoinHostPort(listenHost, port)
 	server := &http.Server{
 		Handler: fe.Handler(log),
-		Addr:    addr + ":" + port,
+		Addr:    addr,
 	}
-	log.Debug("starting to listen", zap.String("addr", addr+":"+port))
+	log.Debug("starting to listen", zap.String("addr", addr))
 	go func() {
 		<-ctx.Done()
 		log.Debug("shutdown signal received")

@@ -46,7 +46,7 @@ func (c *cBuffer) Write(p []byte) (n int, err error) {
 
 func StartEmulator(ctx context.Context) (*firestore.Client, func(), error) {
 	port := "8010"
-	addr := "localhost:" + port
+	addr := net.JoinHostPort("localhost", port)
 	ctx, cancel := context.WithCancel(ctx)
 	_ = cancel // to shush the linter
 

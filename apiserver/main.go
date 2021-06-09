@@ -92,13 +92,14 @@ func main() {
 	pt := &tradingService{udb: udb, tp: cb, tr: tp}
 	rl := ratelimiter.New(rc, time.Now, tp)
 	grpcServer := prepServer(log, au, rl, udb, as, ts, pt)
-	addr := os.Getenv("LISTEN_ADDR")
-	lis, err := net.Listen("tcp", addr+":"+port)
+	listenHost := os.Getenv("LISTEN_ADDR")
+	addr := net.JoinHostPort(listenHost, port)
+	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		log.Fatal("tcp listen failed", zap.Error(err))
 	}
 
-	log.Debug("starting to listen", zap.String("addr", addr+":"+port))
+	log.Debug("starting to listen", zap.String("addr", addr))
 	go func() {
 		<-ctx.Done()
 		log.Debug("shutdown signal received")
