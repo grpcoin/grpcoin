@@ -64,6 +64,7 @@ func (fe *frontend) Handler(log *zap.Logger) http.Handler {
 	m.Use(withLogging(log))
 	m.HandleFunc("/health", fe.health)
 	m.HandleFunc("/_cron/pv", toHandler(fe.calcPortfolioHistory))
+	m.HandleFunc("/api/portfolioValuation/{id}", fe.apiPortfolioHistory)
 	m.HandleFunc("/user/{id}", toHandler(fe.userProfile))
 	m.HandleFunc("/", toHandler(fe.leaderboard))
 	return m
