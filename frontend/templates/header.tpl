@@ -22,8 +22,7 @@
         }
 
         .bg-color-black {
-            background-color: #2C313D;
-             !important
+            background-color: #2C313D !important;
         }
 
         .table-bg {

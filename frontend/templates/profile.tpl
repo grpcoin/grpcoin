@@ -93,7 +93,8 @@
                         <tbody>
                             <tr>
                                 {{ range .returns }}
-                                <td class="{{ if isNegative .Percent }}gh-bg-color-red{{ else }}gh-bg-color-green{{end}} returns-tbl">
+                                <td
+                                    class="{{ if isNegative .Percent }}gh-bg-color-red{{ else }}gh-bg-color-green{{end}} returns-tbl">
                                     <b>
                                         {{ fmtPercent .Percent }}
                                     </b>
@@ -102,6 +103,136 @@
                             </tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <div class="card bg-color-black mt-3">
+                <h4 class="card-header">
+                    <span class="text-white">Portfolio Value</span>
+                </h4>
+                <div class="card-body p-2">
+                    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+                    <style>
+                        #chart {
+                            width: 100%;
+                        }
+
+                        #chart-timeline {
+                            height: 400px;
+                        }
+                    </style>
+                    <script>
+                        var formatUSD = val => Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val)
+                        var options = {
+                            chart: {
+                                id: 'area-datetime',
+                                animations: {
+                                    enabled: false
+                                },
+                                type: 'area',
+                                zoom: {
+                                    autoScaleYaxis: true
+                                }
+                            },
+                            series: [],
+                            dataLabels: {
+                                enabled: false,
+                            },
+                            markers: {
+                                size: 5,
+                                colors: '#D4D9DE',
+                                hover: {
+                                    sizeOffset: 1,
+                                }
+                            },
+                            xaxis: {
+                                type: 'datetime',
+                                tickAmount: 6,
+                                borderColor: '#000',
+                                labels: {
+                                    datetimeUTC: false,
+                                    style: { colors: "#ffffff" },
+                                }
+                            },
+                            yaxis: {
+                                labels: {
+                                    formatter: formatUSD,
+                                    style: { colors: "#ffffff" },
+                                },
+                            },
+                            tooltip: {
+                                x: {
+                                    fillSeriesColor: false,
+                                    format: 'dd MMM yyyy HH:mm',
+                                },
+                                y: {
+                                    formatter: formatUSD,
+                                }
+                            },
+                            fill: {
+                                type: 'solid',
+                                colors: '#8C949C'
+                            },
+                            stroke: {
+                                curve: 'straight',
+                                colors: '#848894'
+                            },
+                        };
+
+
+                        document.addEventListener('DOMContentLoaded', async () => {
+                            await fetch('/api/portfolioValuation/{{.u.ID}}')
+                                .then(resp => {
+                                    if (!resp.ok) {
+                                        throw new Error(`http status code: ${resp.status}`)
+                                    }
+                                    return resp.json()
+                                })
+                                .then(data => {
+                                    options.series = [{
+                                        name: 'Portfolio',
+                                        data: data,
+                                    }];
+                                }).catch(e => console.log(e));
+
+                            var tl = document.getElementById("chart-timeline");
+                            options.chart.height = tl.offsetHeight;
+                            var chart = new ApexCharts(tl, options);
+                            chart.render();
+
+                            Date.prototype.subDays = function (days) {
+                                var date = new Date(this.valueOf());
+                                date.setDate(date.getDate() - days);
+                                return date;
+                            }
+                            var resetButtonStyles = function (activeEl) {
+                                document.querySelectorAll('#chart button').forEach(el => el.classList.remove('btn-primary'));
+                                document.querySelectorAll('#chart button').forEach(el => el.classList.add('btn-secondary'));
+                                activeEl.target.classList.remove('btn-secondary');
+                                activeEl.target.classList.add('btn-primary');
+                            }
+                            document.getElementById('one_month').addEventListener('click', function (e) {
+                                resetButtonStyles(e);
+                                chart.zoomX(new Date().subDays(31).getTime(), new Date().getTime());
+                            })
+                            document.getElementById('one_week').addEventListener('click', function (e) {
+                                resetButtonStyles(e);
+                                chart.zoomX(new Date().subDays(7).getTime(), new Date().getTime());
+                            })
+                            document.getElementById('one_day').addEventListener('click', function (e) {
+                                resetButtonStyles(e);
+                                chart.zoomX(new Date().subDays(1).getTime(), new Date().getTime());
+                            })
+                        });
+                    </script>
+                    <div id="chart">
+                        <div class="toolbar text-end">
+                            <button type="button" class="btn btn-sm btn-primary" id="one_month">1 month</button>
+                            <button type="button" class="btn btn-sm btn-secondary" id="one_week">1 week</button>
+                            <button type="button" class="btn btn-sm btn-secondary" id="one_day">1 day</button>
+                        </div>
+                        <div id="chart-timeline"></div>
+                    </div>
                 </div>
             </div>
 
