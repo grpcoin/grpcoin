@@ -69,9 +69,10 @@
                 </div>
             </div>
 
+            <div class="mt-3">
+                <a type="button" href="/" class="btn bg-color-black bg-hover btn-lg text-white" style="width: 100%;">
                     &larr; Leaderboard
                 </a>
-
             </div>
         </div>
         <div class="col-md-7 col-lg-9 order-md-last">

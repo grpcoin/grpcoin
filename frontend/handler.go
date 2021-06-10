@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/purini-to/zapmw"
@@ -64,7 +65,10 @@ func (_ *frontend) health(w http.ResponseWriter, r *http.Request) {
 }
 func (fe *frontend) Handler(log *zap.Logger) http.Handler {
 	m := mux.NewRouter()
-	m.Use(otelmux.Middleware("grpcoin-frontend"),
+	m.Use(
+		handlers.ProxyHeaders,
+		handlers.CompressHandler,
+		otelmux.Middleware("grpcoin-frontend"),
 		zapmw.WithZap(log, withStackdriverFields),
 		zapmw.Request(zapcore.InfoLevel, "request"),
 		zapmw.Recoverer(zapcore.ErrorLevel, "recover", zapmw.RecovererDefault),

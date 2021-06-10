@@ -19,19 +19,15 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/blendle/zapdriver"
 	"github.com/purini-to/zapmw"
-	stackdriver "github.com/tommy351/zap-stackdriver"
 	"go.uber.org/zap"
 )
 
 func withStackdriverFields(log *zap.Logger, r *http.Request) *zap.Logger {
-	return log.With(stackdriver.LogHTTPRequest(&stackdriver.HTTPRequest{
-		Method:    r.Method,
-		URL:       r.URL.Path,
-		UserAgent: r.Header.Get("user-agent"),
-		Referrer:  r.Header.Get("referer"),
-		RemoteIP:  r.Header.Get("x-forwarded-for"),
-	}))
+	payload := zapdriver.NewHTTP(r, nil)
+	payload.RemoteIP = r.Header.Get("x-forwarded-for")
+	return log.With(zapdriver.HTTP(payload))
 }
 
 func loggerFrom(ctx context.Context) *zap.Logger {

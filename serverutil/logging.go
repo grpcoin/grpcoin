@@ -17,32 +17,16 @@ package serverutil
 import (
 	"os"
 
-	stackdriver "github.com/tommy351/zap-stackdriver"
+	"github.com/blendle/zapdriver"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 func GetLogging(onCloud bool) (*zap.Logger, error) {
 	if !onCloud {
-		z, err := zap.NewDevelopment()
-		if err != nil {
-			return nil, err
-		}
-		z = z.With(zap.String("env", "dev"))
-		return z, nil
-
+		return zap.NewDevelopment()
 	}
-	c := zap.NewProductionConfig()
-	c.EncoderConfig = stackdriver.EncoderConfig
-	c.OutputPaths = []string{"stdout"}
-	return c.Build(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-		return &stackdriver.Core{
-			Core: core,
-		}
-	}), zap.Fields(
-		stackdriver.LogServiceContext(&stackdriver.ServiceContext{
-			Service: os.Getenv("K_SERVICE"),
-			Version: os.Getenv("K_REVISION"),
-		}),
+	return zapdriver.NewProductionWithCore(zapdriver.WrapCore(
+		zapdriver.ReportAllErrors(true),
+		zapdriver.ServiceName(os.Getenv("K_SERVICE")),
 	))
 }
