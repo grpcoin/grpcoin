@@ -69,8 +69,6 @@
                 </div>
             </div>
 
-            <div class="mt-3">
-                <a type="button" href="/" class="btn bg-color-black bg-hover btn-lg text-white" style="width: 100%;">
                     &larr; Leaderboard
                 </a>
 
@@ -190,41 +188,41 @@
                                     return resp.json()
                                 })
                                 .then(data => {
-                                    data.push([new Date().getTime(), {{fmtAmountRaw $tv }} ]);
-                                    options.series = [{
-                                        name: 'Portfolio',
-                                        data: data,
-                                    }];
-                                }).catch(e => console.log(e));
+                                    data.push([new Date().getTime(), {{ fmtAmountRaw $tv }} ]);
+                            options.series = [{
+                                name: 'Portfolio',
+                                data: data,
+                            }];
+                        }).catch(e => console.log(e));
 
-                            var tl = document.getElementById("chart-timeline");
-                            options.chart.height = tl.offsetHeight;
-                            var chart = new ApexCharts(tl, options);
-                            chart.render();
+                        var tl = document.getElementById("chart-timeline");
+                        options.chart.height = tl.offsetHeight;
+                        var chart = new ApexCharts(tl, options);
+                        chart.render();
 
-                            Date.prototype.subDays = function (days) {
-                                var date = new Date(this.valueOf());
-                                date.setDate(date.getDate() - days);
-                                return date;
-                            }
-                            var resetButtonStyles = function (activeEl) {
-                                document.querySelectorAll('#chart button').forEach(el => el.classList.remove('btn-primary'));
-                                document.querySelectorAll('#chart button').forEach(el => el.classList.add('btn-secondary'));
-                                activeEl.target.classList.remove('btn-secondary');
-                                activeEl.target.classList.add('btn-primary');
-                            }
-                            document.getElementById('one_month').addEventListener('click', function (e) {
-                                resetButtonStyles(e);
-                                chart.zoomX(new Date().subDays(31).getTime(), new Date().getTime());
-                            })
-                            document.getElementById('one_week').addEventListener('click', function (e) {
-                                resetButtonStyles(e);
-                                chart.zoomX(new Date().subDays(7).getTime(), new Date().getTime());
-                            })
-                            document.getElementById('one_day').addEventListener('click', function (e) {
-                                resetButtonStyles(e);
-                                chart.zoomX(new Date().subDays(1).getTime(), new Date().getTime());
-                            })
+                        Date.prototype.subDays = function (days) {
+                            var date = new Date(this.valueOf());
+                            date.setDate(date.getDate() - days);
+                            return date;
+                        }
+                        var resetButtonStyles = function (activeEl) {
+                            document.querySelectorAll('#chart button').forEach(el => el.classList.remove('btn-primary'));
+                            document.querySelectorAll('#chart button').forEach(el => el.classList.add('btn-secondary'));
+                            activeEl.target.classList.remove('btn-secondary');
+                            activeEl.target.classList.add('btn-primary');
+                        }
+                        document.getElementById('one_month').addEventListener('click', function (e) {
+                            resetButtonStyles(e);
+                            chart.zoomX(new Date().subDays(31).getTime(), new Date().getTime());
+                        })
+                        document.getElementById('one_week').addEventListener('click', function (e) {
+                            resetButtonStyles(e);
+                            chart.zoomX(new Date().subDays(7).getTime(), new Date().getTime());
+                        })
+                        document.getElementById('one_day').addEventListener('click', function (e) {
+                            resetButtonStyles(e);
+                            chart.zoomX(new Date().subDays(1).getTime(), new Date().getTime());
+                        })
                         });
                     </script>
                     <div id="chart">
