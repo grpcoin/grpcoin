@@ -105,7 +105,7 @@ func main() {
 		log.Debug("shutdown signal received")
 		grpcServer.GracefulStop()
 	}()
-	if err := grpcServer.Serve(lis); errors.Is(err, grpc.ErrServerStopped) {
+	if err := grpcServer.Serve(lis); err == nil || errors.Is(err, grpc.ErrServerStopped) {
 		log.Debug("grpc: shut down the server")
 	} else {
 		log.Fatal("grpc: server failed", zap.Error(err))
