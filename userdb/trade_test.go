@@ -176,6 +176,23 @@ func Test_makeTrade(t *testing.T) {
 					"ETH": {Units: 3}},
 			},
 		},
+		{name: "uninitialize zeroed position",
+			args: args{p: &Portfolio{
+				CashUSD: Amount{Units: 100_000},
+				Positions: map[string]Amount{
+					"ETH": {Units: 3}},
+			},
+				action:   grpcoin.TradeAction_SELL,
+				ticker:   "ETH",
+				quote:    &grpcoin.Amount{Units: 1},
+				quantity: &grpcoin.Amount{Units: 3},
+			},
+			code: codes.OK,
+			want: &Portfolio{
+				CashUSD:   Amount{Units: 100_003},
+				Positions: map[string]Amount{},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -187,7 +204,7 @@ func Test_makeTrade(t *testing.T) {
 				t.Errorf("error doesn't contain %q, error: %v", tt.errMsg, err)
 			}
 			if err == nil {
-				diff := cmp.Diff(tt.args.p, tt.want)
+				diff := cmp.Diff(tt.want, tt.args.p)
 				if diff != "" {
 					t.Fatal(diff)
 				}

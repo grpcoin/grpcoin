@@ -58,9 +58,12 @@ func makeTrade(p *Portfolio, action grpcoin.TradeAction, ticker string, quote, q
 		return status.Errorf(codes.InvalidArgument,
 			"insufficient %s positions (%s) after transaction (current: %s)", ticker, finalPos, posN)
 	}
-
 	p.CashUSD = ToAmount(finalCash)
-	p.Positions[ticker] = ToAmount(finalPos)
+	if finalPos.IsZero() {
+		delete(p.Positions, ticker)
+	} else {
+		p.Positions[ticker] = ToAmount(finalPos)
+	}
 	return nil
 }
 

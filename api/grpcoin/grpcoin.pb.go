@@ -90,7 +90,7 @@ type QuoteTicker struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Ticker string `protobuf:"bytes,1,opt,name=ticker,proto3" json:"ticker,omitempty"` // e.g. BTC-USD or ETH-USD
+	Ticker string `protobuf:"bytes,1,opt,name=ticker,proto3" json:"ticker,omitempty"` // e.g. BTC-USD, ETH-USD, DOGE-USD
 }
 
 func (x *QuoteTicker) Reset() {

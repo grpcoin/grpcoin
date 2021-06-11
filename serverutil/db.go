@@ -44,7 +44,7 @@ func DetectDatabase(ctx context.Context, datasetFile string, onCloud, useProdDB 
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to connect firestore: %w", err)
 	}
-	return fs, func() {fs.Close()}, nil
+	return fs, func() { fs.Close() }, nil
 }
 
 func GetProdDB(ctx context.Context, project string) (*firestore.Client, error) {
