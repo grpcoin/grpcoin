@@ -23,6 +23,7 @@ import (
 
 	"github.com/grpcoin/grpcoin/api/grpcoin"
 	"github.com/grpcoin/grpcoin/gdax"
+	"github.com/grpcoin/grpcoin/realtimequote"
 )
 
 type quote struct {
@@ -73,7 +74,7 @@ func (cb *QuoteProvider) Sync(ctx context.Context) {
 		if ctx.Err() != nil {
 			return
 		}
-		ch, err := gdax.StartWatch(ctx, "BTC-USD", "ETH-USD")
+		ch, err := gdax.StartWatch(ctx, realtimequote.SupportedProducts...)
 		if err != nil {
 			cb.Logger.Warn("warning: failed to connected to coinbase", zap.Error(err))
 			// TODO consider adding sleep/backoff to prevent DoSing coinbase API

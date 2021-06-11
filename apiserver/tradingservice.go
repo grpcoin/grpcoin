@@ -123,8 +123,9 @@ func validateTradeRequest(req *grpcoin.TradeRequest) error {
 	if req.GetTicker().GetTicker() == "" {
 		return status.Error(codes.InvalidArgument, "ticker not specified")
 	}
-	if req.GetTicker().GetTicker() != "BTC" && req.GetTicker().GetTicker() != "ETH" {
-		return status.Errorf(codes.InvalidArgument, "ticker '%s' not specified, only 'BTC' and 'ETH' are supported", req.Ticker.Ticker)
+	if !realtimequote.IsSupported(realtimequote.SupportedTickers, req.GetTicker().GetTicker()) {
+		return status.Errorf(codes.InvalidArgument, "ticker '%s' is not supported, must be %#v", req.Ticker.Ticker,
+			realtimequote.SupportedTickers)
 	}
 	return nil
 }

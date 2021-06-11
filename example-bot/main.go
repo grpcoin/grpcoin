@@ -79,26 +79,37 @@ func main() {
 	}
 
 	// buy 0.05 btc
-	order, err := grpcoin.NewPaperTradeClient(conn).Trade(authCtx, &grpcoin.TradeRequest{
-		Action:   grpcoin.TradeAction_BUY,
-		Ticker:   &grpcoin.TradeRequest_Ticker{Ticker: "BTC"},
-		Quantity: &grpcoin.Amount{Units: 0, Nanos: 50_000_000},
-	})
-	if err != nil {
-		log.Fatalf("trade order failed: %v", err)
-	}
-	log.Printf("ORDER EXECUTED: %s [%s] BTC coins at USD[%s]", order.Action, order.Quantity, order.ExecutedPrice)
+	// order, err := grpcoin.NewPaperTradeClient(conn).Trade(authCtx, &grpcoin.TradeRequest{
+	// 	Action:   grpcoin.TradeAction_BUY,
+	// 	Ticker:   &grpcoin.TradeRequest_Ticker{Ticker: "BTC"},
+	// 	Quantity: &grpcoin.Amount{Units: 0, Nanos: 50_000_000},
+	// })
+	// if err != nil {
+	// 	log.Fatalf("trade order failed: %v", err)
+	// }
+	// log.Printf("ORDER EXECUTED: %s [%s] BTC coins at USD[%s]", order.Action, order.Quantity, order.ExecutedPrice)
 
 	// buy 0.4 eth
-	order, err = grpcoin.NewPaperTradeClient(conn).Trade(authCtx, &grpcoin.TradeRequest{
+	// order, err = grpcoin.NewPaperTradeClient(conn).Trade(authCtx, &grpcoin.TradeRequest{
+	// 	Action:   grpcoin.TradeAction_BUY,
+	// 	Ticker:   &grpcoin.TradeRequest_Ticker{Ticker: "ETH"},
+	// 	Quantity: &grpcoin.Amount{Units: 0, Nanos: 400_000_000},
+	// })
+	// if err != nil {
+	// 	log.Fatalf("trade order failed: %v", err)
+	// }
+	// log.Printf("ORDER EXECUTED: %s [%s] ETH coins at USD[%s]", order.Action, order.Quantity, order.ExecutedPrice)
+
+	// buy 1000 doge
+	order, err := grpcoin.NewPaperTradeClient(conn).Trade(authCtx, &grpcoin.TradeRequest{
 		Action:   grpcoin.TradeAction_BUY,
-		Ticker:   &grpcoin.TradeRequest_Ticker{Ticker: "ETH"},
-		Quantity: &grpcoin.Amount{Units: 0, Nanos: 400_000_000},
+		Ticker:   &grpcoin.TradeRequest_Ticker{Ticker: "DOGE"},
+		Quantity: &grpcoin.Amount{Units: 1000},
 	})
 	if err != nil {
 		log.Fatalf("trade order failed: %v", err)
 	}
-	log.Printf("ORDER EXECUTED: %s [%s] ETH coins at USD[%s]", order.Action, order.Quantity, order.ExecutedPrice)
+	log.Printf("ORDER EXECUTED: %s [%s] DOGE coins at USD[%s]", order.Action, order.Quantity, order.ExecutedPrice)
 
 	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	for ctx.Err() == nil {

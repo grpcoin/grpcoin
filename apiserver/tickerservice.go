@@ -22,6 +22,7 @@ import (
 
 	"github.com/grpcoin/grpcoin/api/grpcoin"
 	"github.com/grpcoin/grpcoin/gdax"
+	"github.com/grpcoin/grpcoin/realtimequote"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -48,7 +49,7 @@ func (t *tickerService) initWatch() error {
 		t.bus = nil
 		t.lock.Unlock()
 	}()
-	quotes, err := gdax.StartWatch(ctx, "BTC-USD", "ETH-USD")
+	quotes, err := gdax.StartWatch(ctx, realtimequote.SupportedProducts...)
 	if err != nil {
 		stop()
 		t.lock.Unlock()
@@ -86,8 +87,8 @@ func filterProduct(ch <-chan gdax.Quote, product string) <-chan gdax.Quote {
 }
 
 func (f *tickerService) Watch(req *grpcoin.QuoteTicker, stream grpcoin.TickerInfo_WatchServer) error {
-	if req.GetTicker() != "BTC-USD" && req.GetTicker() != "ETH-USD" {
-		return status.Error(codes.InvalidArgument, "only supported tickers are BTC-USD and ETH-USD")
+	if !realtimequote.IsSupported(realtimequote.SupportedProducts, req.GetTicker()) {
+		return status.Errorf(codes.InvalidArgument, "only supported tickers are %#v", realtimequote.SupportedProducts)
 	}
 	ch, err := f.registerWatch(stream.Context())
 	if err != nil {

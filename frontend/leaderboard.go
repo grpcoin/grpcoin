@@ -26,6 +26,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/grpcoin/grpcoin/realtimequote"
 	"github.com/grpcoin/grpcoin/userdb"
 )
 
@@ -56,7 +57,7 @@ func (fe *frontend) getQuotes(ctx context.Context) (map[string]userdb.Amount, er
 	var mu sync.Mutex
 	out := make(map[string]userdb.Amount)
 
-	quotes := []string{"BTC", "ETH"}
+	quotes := realtimequote.SupportedTickers
 	eg, ctx := errgroup.WithContext(quoteCtx)
 	for i := range quotes {
 		quote := quotes[i] // capture for closure
