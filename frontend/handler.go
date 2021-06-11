@@ -19,7 +19,6 @@ import (
 	"embed"
 	_ "embed"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"html/template"
 	"io"
@@ -36,7 +35,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -94,10 +92,7 @@ func toHandler(f func(http.ResponseWriter, *http.Request) error) http.HandlerFun
 			io.Copy(w, &bw.b)
 			return
 		}
-		if errors.Is(err, context.Canceled) {
-			// convert context cancellations into proper grpc Canceled error
-			err = status.Error(codes.Canceled, err.Error())
-		}
+		err = status.FromContextError(err).Err() // convert ctx errors to grpc status when possible
 		handleErr(loggerFrom(r.Context()), w, bw.status, err)
 	}
 }

@@ -24,6 +24,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/google/uuid"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
@@ -32,6 +33,8 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	pb "github.com/grpcoin/grpcoin/api/grpcoin"
 	"github.com/grpcoin/grpcoin/apiserver/auth"
@@ -117,6 +120,7 @@ func prepServer(log *zap.Logger, au auth.Authenticator, rl ratelimiter.RateLimit
 		otelgrpc.UnaryServerInterceptor(),
 		grpc_ctxtags.UnaryServerInterceptor(grpc_ctxtags.WithFieldExtractor(grpc_ctxtags.CodeGenRequestFieldExtractor)),
 		grpc_zap.UnaryServerInterceptor(log),
+		internalErrorHidingInterceptor,
 		grpc_auth.UnaryServerInterceptor(auth.AuthenticatingInterceptor(au)),
 		grpc_auth.UnaryServerInterceptor(rateLimitInterceptor(rl)),
 		grpc_auth.UnaryServerInterceptor(udb.EnsureAccountExistsInterceptor()),
@@ -128,10 +132,24 @@ func prepServer(log *zap.Logger, au auth.Authenticator, rl ratelimiter.RateLimit
 		grpc_zap.StreamServerInterceptor(log),
 		grpc_auth.StreamServerInterceptor(rateLimitInterceptor(rl)),
 	)
-	// grpc_zap.ReplaceGrpcLoggerV2(log)
+	grpc_zap.ReplaceGrpcLoggerV2(log) // grpc's internal logs
 	srv := grpc.NewServer(unaryInterceptors, streamInterceptors)
 	pb.RegisterAccountServer(srv, as)
 	pb.RegisterTickerInfoServer(srv, ts) // this one is not authenticated (since it's stream-only, no unary)
 	pb.RegisterPaperTradeServer(srv, pt)
 	return srv
+}
+
+func internalErrorHidingInterceptor(ctx context.Context,
+	req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+	resp, err = handler(ctx, req)
+	c := status.Code(err)
+	if c == codes.Internal {
+		id := uuid.New().String()
+		newErr := status.Errorf(c, "internal error occurred (for debugging purposes, error.id=%s)", id)
+		status.Convert(err).Details()
+		ctxzap.Extract(ctx).Error("internal error", zap.Error(err), zap.String("error.id", id))
+		return resp, newErr
+	}
+	return resp, err
 }
