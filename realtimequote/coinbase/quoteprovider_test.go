@@ -49,4 +49,9 @@ func TestCoinbaseQuoteProvider_GetQuote(t *testing.T) {
 	if q1.String() == q2.String() {
 		t.Fatal("identical quotes")
 	}
+
+	_, err = cb.GetQuote(context.TODO(), "ETH")
+	if err != nil {
+		t.Fatal(err)
+	}
 }
