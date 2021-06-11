@@ -242,7 +242,7 @@
                 <h4 class="card-header">
                     <span class="text-white">Orders</span>
                 </h4>
-                <div class="card-body overflow-scroll" style="height: 500px;">
+                <div class="card-body overflow-scroll" style="max-height: 500px;">
                     <table class="table table-striped table-hover text-white">
                         <thead>
                             <tr>
