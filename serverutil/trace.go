@@ -30,7 +30,6 @@ import (
 )
 
 func GetTracer(component string, onCloud bool) (tracer oteltrace.Tracer, flush func(logger *zap.Logger)) {
-	var traceExporter trace.SpanExporter
 	if !onCloud {
 		return oteltrace.NewNoopTracerProvider().Tracer(""), func(logger *zap.Logger) {
 		}
@@ -42,8 +41,7 @@ func GetTracer(component string, onCloud bool) (tracer oteltrace.Tracer, flush f
 	if err != nil {
 		log.Fatal("failed to initialize gcp trace exporter", zap.Error(err))
 	}
-	traceExporter = gcp
-	tr := trace.NewTracerProvider(trace.WithBatcher(traceExporter,
+	tr := trace.NewTracerProvider(trace.WithBatcher(gcp,
 		trace.WithMaxQueueSize(5000),
 		trace.WithMaxExportBatchSize(1000),
 	), trace.WithSampler(trace.TraceIDRatioBased(0.1)))

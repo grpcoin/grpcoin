@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"embed"
 	_ "embed"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
@@ -26,6 +27,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/google/uuid"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
@@ -65,22 +67,22 @@ func (_ *frontend) health(w http.ResponseWriter, r *http.Request) {
 }
 func (fe *frontend) Handler(log *zap.Logger) http.Handler {
 	m := mux.NewRouter()
-	m.Use(
-		handlers.ProxyHeaders,
+	m.Use(handlers.ProxyHeaders,
 		handlers.CompressHandler,
 		otelmux.Middleware("grpcoin-frontend"),
 		zapmw.WithZap(log, withStackdriverFields),
 		zapmw.Request(zapcore.InfoLevel, "request"),
-		zapmw.Recoverer(zapcore.ErrorLevel, "recover", zapmw.RecovererDefault),
-	)
+		zapmw.Recoverer(zapcore.ErrorLevel, "recover", zapmw.RecovererDefault))
 	m.HandleFunc("/health", fe.health)
 	m.HandleFunc("/_cron/pv", toHandler(fe.calcPortfolioHistory))
-	m.HandleFunc("/api/portfolioValuation/{id}", fe.apiPortfolioHistory)
+	m.HandleFunc("/api/portfolioValuation/{id}", toHandler(fe.apiPortfolioHistory))
 	m.HandleFunc("/user/{id}", toHandler(fe.userProfile))
 	m.HandleFunc("/", toHandler(fe.leaderboard))
 	return m
 }
 
+// toHandler allows handlers to return errors, ideally as grpc/status errors
+// which are converted to HTTP statuses and properly rendered error responses.
 func toHandler(f func(http.ResponseWriter, *http.Request) error) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		bw := &bufferedRespWriter{ResponseWriter: w}
@@ -96,19 +98,41 @@ func toHandler(f func(http.ResponseWriter, *http.Request) error) http.HandlerFun
 			// convert context cancellations into proper grpc Canceled error
 			err = status.Error(codes.Canceled, err.Error())
 		}
-		grpcStatus, ok := status.FromError(err)
-		if !ok {
-			if bw.status != 0 {
-				w.WriteHeader(bw.status)
-			} else {
-				w.WriteHeader(http.StatusInternalServerError)
-			}
-			fmt.Fprintf(w, "error: %v", err)
-			return
-		}
-		w.WriteHeader(runtime.HTTPStatusFromCode(grpcStatus.Code()))
-		fmt.Fprintf(w, `ERROR: code: %s -- message: %s`, grpcStatus.Code(), grpcStatus.Message())
+		handleErr(loggerFrom(r.Context()), w, bw.status, err)
 	}
+}
+
+type respErr struct {
+	Status  int    `json:"status,omitempty"`
+	Code    string `json:"code,omitempty"`
+	Message string `json:"message,omitempty"`
+	ID      string `json:"id,omitempty"`
+}
+
+func handleErr(log *zap.Logger, w http.ResponseWriter, statusOverride int, err error) {
+	var outErr respErr
+	id := uuid.New().String()
+	grpcStatus, ok := status.FromError(err)
+	log.Error("request error", zap.Error(err), zap.String("error.id", id))
+	if !ok {
+		outErr = respErr{
+			ID:      id,
+			Status:  http.StatusInternalServerError,
+			Code:    codes.Internal.String(),
+			Message: err.Error()}
+		if statusOverride != 0 {
+			outErr.Status = statusOverride
+		}
+	}
+	outErr = respErr{
+		ID:      id,
+		Status:  runtime.HTTPStatusFromCode(grpcStatus.Code()),
+		Code:    grpcStatus.Code().String(),
+		Message: grpcStatus.Message()}
+	w.WriteHeader(outErr.Status)
+	e := json.NewEncoder(w)
+	e.SetIndent("", "\t")
+	e.Encode(outErr)
 }
 
 type bufferedRespWriter struct {
