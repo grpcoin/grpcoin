@@ -38,7 +38,7 @@ type QuoteProvider struct {
 	quotes map[string]quote
 }
 
-const staleQuotePeriod = time.Second * 2
+const staleQuotePeriod = time.Second * 10 // fails if quote is older than this
 
 func (cb *QuoteProvider) GetQuote(ctx context.Context, product string) (*grpcoin.Amount, error) {
 	product += "-USD"
