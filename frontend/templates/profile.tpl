@@ -10,7 +10,7 @@
                     d-none d-md-block" />
                 {{ end }}
                 <div class="card-body">
-                    <h3 class="card-title display-5">
+                    <h3 class="card-title display-6">
                         <a href="{{.u.ProfileURL}}" class="card-link
                         stretched-link">
                             {{.u.DisplayName}}
@@ -262,7 +262,13 @@
                                 <td>{{fmtAmount .Size}}</td>
                                 <td>{{fmtPrice .Price}}</td>
                                 <td>{{fmtPriceFull (mul .Price .Size)}}</td>
-                                <td>{{fmtDuration (since .Date) 2}}</td>
+                                <td>
+                                    <time
+                                        datetime="{{fmtDateISO .Date}}"
+                                        alt="{{fmtDateISO .Date}}">
+                                        {{fmtDuration (since .Date) 2}}
+                                    </time>
+                                </td>
                             </tr>
                             {{ end }}
                         </tbody>

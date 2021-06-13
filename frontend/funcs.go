@@ -33,6 +33,7 @@ var (
 		"fmtPrice":     fmtPrice,
 		"fmtPriceFull": fmtPriceFull,
 		"fmtDate":      fmtDate,
+		"fmtDateISO":   fmtDateISO,
 		"fmtDuration":  fmtDuration,
 		"fmtPercent":   fmtPercent,
 		"toPercent":    toPercent,
@@ -98,7 +99,8 @@ func div(a, b userdb.Amount) userdb.Amount    { return userdb.ToAmount(a.F().Div
 func toPercent(a userdb.Amount) userdb.Amount { return mul(a, userdb.Amount{Units: 100}) }
 func isNegative(a userdb.Amount) bool         { return a.IsNegative() }
 
-func fmtDate(t time.Time) string { return t.Truncate(time.Hour * 24).Format("2 January 2006") }
+func fmtDate(t time.Time) string    { return t.Truncate(time.Hour * 24).Format("2 January 2006") }
+func fmtDateISO(t time.Time) string { return t.Truncate(time.Second).Format(time.RFC3339) }
 
 func since(t time.Time) time.Duration { return time.Since(t) }
 
