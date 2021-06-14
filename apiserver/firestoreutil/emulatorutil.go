@@ -27,10 +27,12 @@ import (
 	"sync"
 	"time"
 
-	firestore "cloud.google.com/go/firestore"
+	"cloud.google.com/go/firestore"
 )
 
-const firestoreEmulatorProj = "dummy-emulator-firestore-project"
+const FirestoreEmulatorProject = "dummy-emulator-firestore-project"
+const FirestoreEmulatorHost = "localhost"
+const FirestoreEmulatorPort = "8010"
 
 // cBuffer is a buffer safe for concurrent use.
 type cBuffer struct {
@@ -45,8 +47,7 @@ func (c *cBuffer) Write(p []byte) (n int, err error) {
 }
 
 func StartEmulator(ctx context.Context) (*firestore.Client, func(), error) {
-	port := "8010"
-	addr := net.JoinHostPort("localhost", port)
+	addr := net.JoinHostPort(FirestoreEmulatorHost, FirestoreEmulatorPort)
 	ctx, cancel := context.WithCancel(ctx)
 	_ = cancel // to shush the linter
 
@@ -77,7 +78,7 @@ func StartEmulator(ctx context.Context) (*firestore.Client, func(), error) {
 		}
 	}
 	os.Setenv("FIRESTORE_EMULATOR_HOST", addr)
-	cl, err := firestore.NewClient(ctx, firestoreEmulatorProj)
+	cl, err := firestore.NewClient(ctx, FirestoreEmulatorProject)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -89,7 +90,7 @@ func StartEmulator(ctx context.Context) (*firestore.Client, func(), error) {
 func truncateDB(addr string) error {
 	// technique adopted from https://stackoverflow.com/a/58866194/54929
 	req, _ := http.NewRequest(http.MethodDelete, fmt.Sprintf("http://%s/emulator/v1/projects/%s/databases/(default)/documents",
-		addr, firestoreEmulatorProj), nil)
+		addr, FirestoreEmulatorProject), nil)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err

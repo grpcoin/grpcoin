@@ -36,6 +36,7 @@ import (
 	"cloud.google.com/go/firestore"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
+	"github.com/grpcoin/grpcoin/apiserver/firestoreutil"
 	"github.com/shopspring/decimal"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -280,44 +281,7 @@ func (u *UserDB) UserOrderHistory(ctx context.Context, uid string) ([]Order, err
 func (u *UserDB) RotateOrderHistory(ctx context.Context, uid string, maxHist int) error {
 	it := u.DB.Collection(fsUserCol).Doc(uid).Collection(fsOrdersCol).
 		OrderBy("date", firestore.Desc).Offset(maxHist).Documents(ctx)
-	return batchDeleteAll(ctx, u.DB, it)
-}
-
-// batchDeleteAll deletes all returned results in batches of sizes
-// allowed by firestore.
-func batchDeleteAll(ctx context.Context, cl *firestore.Client, it *firestore.DocumentIterator) error {
-	const maxBatchSize = 500 // hardcoded on firestore API
-	wb := cl.Batch()
-	var deleted int
-	commit := func() error {
-		if _, err := wb.Commit(ctx); err != nil {
-			return err
-		}
-		wb = cl.Batch()
-		deleted = 0
-		return nil
-	}
-	for {
-		doc, err := it.Next()
-		if err == iterator.Done {
-			break
-		}
-		if err != nil {
-			return err
-		}
-		wb.Delete(doc.Ref)
-		deleted++
-
-		if deleted == maxBatchSize {
-			if err := commit(); err != nil {
-				return err
-			}
-		}
-	}
-	if deleted == 0 {
-		return nil
-	}
-	return commit()
+	return firestoreutil.BatchDeleteAll(ctx, u.DB, it)
 }
 
 func (u *UserDB) UserValuationHistory(ctx context.Context, uid string) ([]ValuationHistory, error) {
@@ -361,7 +325,7 @@ func (u *UserDB) RotateUserValuationHistory(ctx context.Context, uid string, del
 	// TODO create an index for users/*/date ASC
 	it := u.DB.Collection(fsUserCol).Doc(uid).Collection(fsValueHistCol).
 		Where("date", "<", deleteBefore).Documents(ctx)
-	return batchDeleteAll(ctx, u.DB, it)
+	return firestoreutil.BatchDeleteAll(ctx, u.DB, it)
 }
 
 func UserRecordFromContext(ctx context.Context) (User, bool) {

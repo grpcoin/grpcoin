@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/firestore"
+	"github.com/grpcoin/grpcoin/apiserver/firestoreutil"
 )
 
 var (
@@ -34,11 +35,6 @@ var (
 func init() {
 	flag.StringVar(&flProj, "project", "", "gcp project")
 	flag.Parse()
-}
-
-type Doc struct {
-	Path  string `json:"p"`
-	Value []byte `json:"v"`
 }
 
 func main() {
@@ -67,7 +63,7 @@ func main() {
 			if err := gob.NewEncoder(&b).Encode(&data); err != nil {
 				panic(err)
 			}
-			w.Encode(Doc{clearPathPrefix(d.Ref.Path), b.Bytes()})
+			w.Encode(firestoreutil.Doc{Path: clearPathPrefix(d.Ref.Path), Value: b.Bytes()})
 		}
 	}
 }

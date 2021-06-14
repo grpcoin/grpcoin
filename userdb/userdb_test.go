@@ -341,7 +341,7 @@ func Test_batchDeleteAll(t *testing.T) {
 	fs := firestoreutil.StartTestEmulator(t, context.TODO())
 	col := fs.Collection("testcol")
 
-	if err := batchDeleteAll(context.TODO(), fs, col.Documents(context.TODO())); err != nil {
+	if err := firestoreutil.BatchDeleteAll(context.TODO(), fs, col.Documents(context.TODO())); err != nil {
 		t.Fatal(err)
 	}
 
@@ -353,7 +353,7 @@ func Test_batchDeleteAll(t *testing.T) {
 		}
 	}
 	it := col.Documents(context.TODO())
-	if err := batchDeleteAll(context.TODO(), fs, it); err != nil {
+	if err := firestoreutil.BatchDeleteAll(context.TODO(), fs, it); err != nil {
 		t.Fatal(err)
 	}
 	it = col.Documents(context.TODO())

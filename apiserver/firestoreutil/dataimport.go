@@ -23,18 +23,19 @@ import (
 	"io"
 	"time"
 
-	firestore "cloud.google.com/go/firestore"
+	"cloud.google.com/go/firestore"
 )
+
+type Doc struct {
+	Path  string `json:"p"`
+	Value []byte `json:"v"`
+}
 
 // ImportData loads data into firestore from a newline-separated json doc
 // file with objects in format:
 //      {"p": "col/<NAME>/<SUBCOL>/<NAME>", "v": {base64 then gob-encoded map[string]interface{}}
 //      {"p": "col/<NAME>/<SUBCOL>/<NAME>", "v": {base64 then gob-encoded map[string]interface{}}
 func ImportData(r io.Reader, c *firestore.Client) error {
-	type Doc struct {
-		Path  string `json:"p"`
-		Value []byte `json:"v"`
-	}
 
 	batch := c.Batch()
 	written := 0
