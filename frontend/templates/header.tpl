@@ -95,6 +95,12 @@
             min-width: 1em;
             margin-right: 0.5em;
         }
+
+        #chart .btn:focus {
+            /* chart time buttons do not focus off in macOS */
+            outline: none;
+            box-shadow: none;
+        }
     </style>
 </head>
 

@@ -47,7 +47,7 @@
                             <span class="text-muted">
                                 {{ if not (isZero $amount) }}
                                 x{{ fmtAmount $amount }}
-                                @ {{ fmtPrice (index $.quotes $tick ) }} </span>
+                                <small>at {{ fmtPrice (index $.quotes $tick ) }} </small></span>
                             {{end}}
                         </div>
                         <div class="text-end text-white">
