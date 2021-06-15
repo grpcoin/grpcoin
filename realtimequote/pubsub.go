@@ -14,7 +14,9 @@
 
 package realtimequote
 
-import "sync"
+import (
+	"sync"
+)
 
 type PubSub struct {
 	// src is where the producer sends the messages. Close

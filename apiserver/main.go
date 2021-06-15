@@ -132,7 +132,7 @@ func prepServer(log *zap.Logger, au auth.Authenticator, rl ratelimiter.RateLimit
 		grpc_zap.StreamServerInterceptor(log),
 		grpc_auth.StreamServerInterceptor(rateLimitInterceptor(rl)),
 	)
-	grpc_zap.ReplaceGrpcLoggerV2(log) // grpc's internal logs
+	//grpc_zap.ReplaceGrpcLoggerV2(log) // grpc's internal logs
 	srv := grpc.NewServer(unaryInterceptors, streamInterceptors)
 	pb.RegisterAccountServer(srv, as)
 	pb.RegisterTickerInfoServer(srv, ts) // this one is not authenticated (since it's stream-only, no unary)
