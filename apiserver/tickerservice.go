@@ -21,8 +21,8 @@ import (
 	"time"
 
 	"github.com/grpcoin/grpcoin/api/grpcoin"
-	"github.com/grpcoin/grpcoin/gdax"
 	"github.com/grpcoin/grpcoin/realtimequote"
+	"github.com/grpcoin/grpcoin/realtimequote/coinbase/gdax"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -60,8 +60,8 @@ func (t *tickerService) initWatch() error {
 	return nil
 }
 
-func (t *tickerService) registerWatch(ctx context.Context) (<-chan gdax.Quote, error) {
-	ch := make(chan gdax.Quote)
+func (t *tickerService) registerWatch(ctx context.Context) (<-chan realtimequote.Quote, error) {
+	ch := make(chan realtimequote.Quote)
 	if err := t.initWatch(); err != nil {
 		return nil, err
 	}
@@ -73,8 +73,8 @@ func (t *tickerService) registerWatch(ctx context.Context) (<-chan gdax.Quote, e
 	return ch, nil
 }
 
-func filterProduct(ch <-chan gdax.Quote, product string) <-chan gdax.Quote {
-	outCh := make(chan gdax.Quote)
+func filterProduct(ch <-chan realtimequote.Quote, product string) <-chan realtimequote.Quote {
+	outCh := make(chan realtimequote.Quote)
 	go func() {
 		for m := range ch {
 			if m.Product == product {
@@ -95,7 +95,7 @@ func (f *tickerService) Watch(req *grpcoin.QuoteTicker, stream grpcoin.TickerInf
 		return status.Error(codes.Internal, fmt.Sprintf("failed to register ticker watch: %v", err))
 	}
 	ch = filterProduct(ch, req.GetTicker())
-	ch = gdax.RateLimited(ch, time.Millisecond*300)
+	ch = realtimequote.RateLimited(ch, time.Millisecond*300)
 	for m := range ch {
 		err = stream.Send(&grpcoin.Quote{
 			T:     timestamppb.New(m.Time),

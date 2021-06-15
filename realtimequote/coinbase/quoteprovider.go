@@ -19,10 +19,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/grpcoin/grpcoin/realtimequote/coinbase/gdax"
 	"go.uber.org/zap"
 
 	"github.com/grpcoin/grpcoin/api/grpcoin"
-	"github.com/grpcoin/grpcoin/gdax"
 	"github.com/grpcoin/grpcoin/realtimequote"
 )
 
@@ -64,7 +64,7 @@ func (cb *QuoteProvider) GetQuote(ctx context.Context, product string) (*grpcoin
 	}
 }
 
-// sync continually maintains a channel to Coinbase realtime prices.
+// Sync continually maintains a channel to Coinbase realtime prices.
 // meant to be invoked in a goroutine
 func (cb *QuoteProvider) Sync(ctx context.Context) {
 	cb.lock.Lock()

@@ -20,37 +20,14 @@ import (
 	"log"
 	"strconv"
 	"strings"
-	"time"
 
 	ws "github.com/gorilla/websocket"
 	"github.com/grpcoin/grpcoin/api/grpcoin"
+	"github.com/grpcoin/grpcoin/realtimequote"
 	"github.com/preichenberger/go-coinbasepro/v2"
-	"golang.org/x/time/rate"
 )
 
-type Quote struct {
-	Product string          `json:"product"`
-	Price   *grpcoin.Amount `json:"price"`
-	Time    time.Time       `json:"time"`
-}
-
-func RateLimited(ch <-chan Quote, d time.Duration) <-chan Quote {
-	out := make(chan Quote)
-	lim := rate.Every(d)
-	l := rate.NewLimiter(lim, 1)
-	go func() {
-		for m := range ch {
-			if l.Allow() {
-				out <- m
-			}
-			continue
-		}
-		close(out)
-	}()
-	return out
-}
-
-func StartWatch(ctx context.Context, product ...string) (<-chan Quote, error) {
+func StartWatch(ctx context.Context, product ...string) (<-chan realtimequote.Quote, error) {
 	var wsDialer ws.Dialer
 	wsConn, _, err := wsDialer.Dial("wss://ws-feed.pro.coinbase.com", nil)
 	if err != nil {
@@ -70,7 +47,7 @@ func StartWatch(ctx context.Context, product ...string) (<-chan Quote, error) {
 		return nil, fmt.Errorf("failed to subscribe: %w", err)
 	}
 
-	ch := make(chan Quote)
+	ch := make(chan realtimequote.Quote)
 	go func() {
 		for {
 			if ctx.Err() != nil {
@@ -86,7 +63,7 @@ func StartWatch(ctx context.Context, product ...string) (<-chan Quote, error) {
 			if message.Type != "ticker" {
 				continue
 			}
-			ch <- Quote{Product: message.ProductID,
+			ch <- realtimequote.Quote{Product: message.ProductID,
 				Price: convertPrice(message.Price),
 				Time:  message.Time.Time(),
 			}

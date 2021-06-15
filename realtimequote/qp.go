@@ -16,6 +16,7 @@ package realtimequote
 
 import (
 	"context"
+	"time"
 
 	"github.com/grpcoin/grpcoin/api/grpcoin"
 )
@@ -24,4 +25,15 @@ type QuoteProvider interface {
 	// GetQuote provides real-time quote for ticker.
 	// Can quit early if ctx is cancelled.
 	GetQuote(ctx context.Context, ticker string) (*grpcoin.Amount, error)
+}
+
+type QuoteWatchProvider interface { // TODO currently not used. refactor to make a type for coinbase
+	// Watch provides real-time quotes for given products.
+	Watch(ctx context.Context, products ...string) (<-chan Quote, error)
+}
+
+type Quote struct {
+	Product string
+	Price   *grpcoin.Amount
+	Time    time.Time
 }
