@@ -32,7 +32,7 @@ type tickerService struct {
 	grpcoin.UnimplementedTickerInfoServer
 
 	lock sync.Mutex
-	bus  *PubSub
+	bus  *realtimequote.PubSub
 }
 
 func (t *tickerService) initWatch() error {
@@ -55,7 +55,7 @@ func (t *tickerService) initWatch() error {
 		t.lock.Unlock()
 		return err
 	}
-	t.bus = NewPubSub(quotes, stop)
+	t.bus = realtimequote.NewPubSub(quotes, stop)
 	t.lock.Unlock()
 	return nil
 }
