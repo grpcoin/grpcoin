@@ -1,13 +1,13 @@
 {{ template "header.tpl" (printf "User: %s" .u.DisplayName) }}
 
 {{ $tv := pv .u.Portfolio .quotes }}
-<div class="container">
+<div class="px-5">
     <div class="row py-5">
-        <div class="col-md-5 col-lg-3">
+        <div class="col-lg-3">
             <div class="card bg-color-black mb-3">
                 {{ with (profilePic .u.ProfileURL) }}
                 <img src="{{.}}" class="card-image-top img-thumbnail
-                    d-none d-md-block" />
+                    d-none d-lg-block" />
                 {{ end }}
                 <div class="card-body">
                     <h3 class="card-title display-6">
@@ -70,12 +70,13 @@
             </div>
 
             <div class="mt-3">
-                <a type="button" href="/" class="btn bg-color-black bg-hover btn-lg text-white" style="width: 100%;">
+                <a type="button" href="/" class="btn bg-color-black bg-hover btn-lg text-white
+                d-none d-lg-block" style="width: 100%;">
                     &larr; Leaderboard
                 </a>
             </div>
         </div>
-        <div class="col-md-7 col-lg-9 order-md-last">
+        <div class="col-lg-9 order-lg-last">
             <div class="card bg-color-black">
                 <h4 class="card-header">
                     <span class="text-white">Returns</span>
