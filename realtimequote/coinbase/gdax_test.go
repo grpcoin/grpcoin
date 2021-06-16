@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gdax
+package coinbase
 
 import (
 	"context"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -30,16 +31,19 @@ func TestStartWatch(t *testing.T) {
 	ctx, cleanup := context.WithTimeout(context.Background(), time.Second*3)
 	defer cleanup()
 
-	c, err := StartWatch(ctx, "BTC-USD")
+	c, err := StartWatch(ctx, "BTC")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	count := 0
 	for {
-		_, ok := <-c
+		v, ok := <-c
 		if !ok {
 			break
+		}
+		if strings.HasSuffix(v.Product, "-USD") {
+			t.Fatalf("quote has -USD suffix %#v", v)
 		}
 		count++
 	}

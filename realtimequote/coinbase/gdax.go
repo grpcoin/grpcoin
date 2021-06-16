@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gdax
+package coinbase
 
 import (
 	"context"
@@ -27,7 +27,9 @@ import (
 	"github.com/preichenberger/go-coinbasepro/v2"
 )
 
-func StartWatch(ctx context.Context, product ...string) (<-chan realtimequote.Quote, error) {
+func StartWatch(ctx context.Context, products ...string) (<-chan realtimequote.Quote, error) {
+	products = ensureUSDSuffix(products)
+
 	var wsDialer ws.Dialer
 	wsConn, _, err := wsDialer.Dial("wss://ws-feed.pro.coinbase.com", nil)
 	if err != nil {
@@ -38,7 +40,7 @@ func StartWatch(ctx context.Context, product ...string) (<-chan realtimequote.Qu
 		Channels: []coinbasepro.MessageChannel{
 			{
 				Name:       "ticker",
-				ProductIds: product,
+				ProductIds: products,
 			},
 		},
 	}
@@ -63,10 +65,10 @@ func StartWatch(ctx context.Context, product ...string) (<-chan realtimequote.Qu
 			if message.Type != "ticker" {
 				continue
 			}
-			ch <- realtimequote.Quote{Product: message.ProductID,
-				Price: convertPrice(message.Price),
-				Time:  message.Time.Time(),
-			}
+			ch <- realtimequote.Quote{
+				Product: strings.TrimSuffix(message.ProductID, "-USD"),
+				Price:   convertPrice(message.Price),
+				Time:    message.Time.Time()}
 		}
 	}()
 	return ch, nil
@@ -87,4 +89,14 @@ func convertPrice(p string) *grpcoin.Amount {
 	out[1] += strings.Repeat("0", 9-len(out[1]))
 	j, _ := strconv.Atoi(out[1])
 	return &grpcoin.Amount{Units: i, Nanos: int32(j)}
+}
+
+func ensureUSDSuffix(products []string) []string {
+	out := make([]string, len(products))
+	for i, v := range products {
+		if !strings.HasSuffix(v, "-USD") {
+			out[i] = v + "-USD"
+		}
+	}
+	return out
 }

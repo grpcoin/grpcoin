@@ -16,64 +16,70 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/grpcoin/grpcoin/api/grpcoin"
 	"github.com/grpcoin/grpcoin/realtimequote"
-	"github.com/grpcoin/grpcoin/realtimequote/coinbase/gdax"
+	"github.com/grpcoin/grpcoin/realtimequote/pubsub"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type tickerService struct {
-	grpcoin.UnimplementedTickerInfoServer
+	quoteStream      realtimequote.QuoteStream
+	supportedTickers []string
+	maxRate          time.Duration
 
 	lock sync.Mutex
-	bus  *realtimequote.PubSub
+	bus  *pubsub.PubSub
+
+	grpcoin.UnimplementedTickerInfoServer
 }
 
-func (t *tickerService) initWatch() error {
-	t.lock.Lock()
-	if t.bus != nil {
-		t.lock.Unlock()
+func (ts *tickerService) initWatch() error {
+	ts.lock.Lock()
+	if ts.bus != nil {
+		ts.lock.Unlock()
 		return nil
 	}
 
 	ctx, stop := context.WithCancel(context.Background())
 	go func() {
 		<-ctx.Done()
-		t.lock.Lock()
-		t.bus = nil
-		t.lock.Unlock()
+		ts.lock.Lock()
+		ts.bus = nil
+		ts.lock.Unlock()
 	}()
-	quotes, err := gdax.StartWatch(ctx, realtimequote.SupportedProducts...)
+	quotes, err := ts.quoteStream.Watch(ctx, ts.supportedTickers...)
 	if err != nil {
 		stop()
-		t.lock.Unlock()
+		ts.lock.Unlock()
 		return err
 	}
-	t.bus = realtimequote.NewPubSub(quotes, stop)
-	t.lock.Unlock()
+	ts.bus = pubsub.NewPubSub(quotes, stop)
+	ts.lock.Unlock()
 	return nil
 }
 
-func (t *tickerService) registerWatch(ctx context.Context) (<-chan realtimequote.Quote, error) {
+func (ts *tickerService) registerWatch(ctx context.Context) (<-chan realtimequote.Quote, error) {
 	ch := make(chan realtimequote.Quote)
-	if err := t.initWatch(); err != nil {
+	if err := ts.initWatch(); err != nil {
 		return nil, err
 	}
-	t.bus.Sub(ch)
+	ts.bus.Sub(ch)
 	go func() {
 		<-ctx.Done()
-		t.bus.Unsub(ch)
+		ts.bus.Unsub(ch)
 	}()
 	return ch, nil
 }
 
-func filterProduct(ch <-chan realtimequote.Quote, product string) <-chan realtimequote.Quote {
+func filterByProduct(ch <-chan realtimequote.Quote, product string) <-chan realtimequote.Quote {
 	outCh := make(chan realtimequote.Quote)
 	go func() {
 		for m := range ch {
@@ -86,23 +92,26 @@ func filterProduct(ch <-chan realtimequote.Quote, product string) <-chan realtim
 	return outCh
 }
 
-func (f *tickerService) Watch(req *grpcoin.QuoteTicker, stream grpcoin.TickerInfo_WatchServer) error {
-	if !realtimequote.IsSupported(realtimequote.SupportedProducts, req.GetTicker()) {
-		return status.Errorf(codes.InvalidArgument, "only supported tickers are %#v", realtimequote.SupportedProducts)
+func (ts *tickerService) Watch(req *grpcoin.QuoteTicker, stream grpcoin.TickerInfo_WatchServer) error {
+	// -USD suffix is now obsolete, keepin for back-compat with old clients
+	req.Ticker = strings.TrimSuffix(req.GetTicker(), "-USD")
+
+	if !realtimequote.IsSupported(ts.supportedTickers, req.GetTicker()) {
+		return status.Errorf(codes.InvalidArgument, "only supported tickers are %#v", ts.supportedTickers)
 	}
-	ch, err := f.registerWatch(stream.Context())
+	ch, err := ts.registerWatch(stream.Context())
 	if err != nil {
 		return status.Error(codes.Internal, fmt.Sprintf("failed to register ticker watch: %v", err))
 	}
-	ch = filterProduct(ch, req.GetTicker())
-	ch = realtimequote.RateLimited(ch, time.Millisecond*300)
+	ch = filterByProduct(ch, req.Ticker)
+	ch = realtimequote.RateLimited(ch, ts.maxRate)
 	for m := range ch {
 		err = stream.Send(&grpcoin.Quote{
 			T:     timestamppb.New(m.Time),
 			Price: m.Price,
 		})
 		if err != nil {
-			if err == context.Canceled {
+			if errors.Is(err, context.Canceled) {
 				break
 			}
 			return err

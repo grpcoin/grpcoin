@@ -14,15 +14,10 @@
 
 package realtimequote
 
-var SupportedTickers = []string{
+var SupportedTickers = []string{ // make sure to update the grpcoin.proto for documentation as well
 	"BTC",
 	"ETH",
 	"DOGE"}
-
-var SupportedProducts = []string{
-	"BTC-USD",
-	"ETH-USD",
-	"DOGE-USD"}
 
 func IsSupported(arr []string, t string) bool {
 	for _, v := range arr {

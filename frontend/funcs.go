@@ -66,6 +66,9 @@ func trimTrailingZeros(v string) string {
 }
 
 func fmtPrice(a userdb.Amount) string {
+	if a.Units == 0 {
+		return fmtPriceFull(a)
+	}
 	return fmt.Sprintf("$%s.%02d", humanize.Comma(a.Units), a.Nanos/1_000_000_0)
 }
 

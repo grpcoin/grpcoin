@@ -17,9 +17,11 @@ package main
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/grpcoin/grpcoin/realtimequote"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -28,19 +30,40 @@ import (
 	"github.com/grpcoin/grpcoin/apiserver/auth"
 	"github.com/grpcoin/grpcoin/apiserver/auth/github"
 	"github.com/grpcoin/grpcoin/apiserver/firestoreutil"
-	"github.com/grpcoin/grpcoin/realtimequote"
-	"github.com/grpcoin/grpcoin/realtimequote/coinbase"
 	"github.com/grpcoin/grpcoin/userdb"
 )
 
-var _ realtimequote.QuoteProvider = &coinbase.QuoteProvider{}
+type mockQuoteStream struct {
+	product string
+	price   *grpcoin.Amount
+	n       int
+}
+
+func (m mockQuoteStream) Watch(ctx context.Context, _ ...string) (<-chan realtimequote.Quote, error) {
+	ch := make(chan realtimequote.Quote)
+	go func() {
+		tick := time.NewTicker(time.Millisecond * 10)
+		defer tick.Stop()
+		for i := 0; i < m.n; i++ {
+			select {
+			case t := <-tick.C:
+				ch <- realtimequote.Quote{
+					Product: m.product,
+					Price:   m.price,
+					Time:    t}
+			case <-ctx.Done():
+			}
+		}
+	}()
+	return ch, ctx.Err()
+}
 
 type mockQuoteProvider struct {
 	a   *grpcoin.Amount
 	err error
 }
 
-func (m *mockQuoteProvider) GetQuote(ctx context.Context, ticker string) (*grpcoin.Amount, error) {
+func (m *mockQuoteProvider) GetQuote(_ context.Context, _ string) (*grpcoin.Amount, error) {
 	return m.a, m.err
 }
 
@@ -54,7 +77,7 @@ func TestPortfolio(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	pt := &tradingService{udb: udb, tr: tp}
+	pt := &tradingService{udb: udb, tracer: tp, supportedTickers: []string{"BTC"}}
 	ctx := auth.WithUser(context.Background(), au)
 	ctx = userdb.WithUserRecord(ctx, user)
 
@@ -85,7 +108,7 @@ func TestTradeQuotePrices(t *testing.T) {
 	udb := &userdb.UserDB{DB: fs, T: tr}
 
 	faultyQuote := &mockQuoteProvider{err: context.DeadlineExceeded}
-	pt := &tradingService{udb: udb, tp: faultyQuote, tr: tr}
+	pt := &tradingService{udb: udb, quoteProvider: faultyQuote, tracer: tr, supportedTickers: []string{"BTC"}}
 	au := &github.GitHubUser{ID: 1, Username: "abc"}
 	user, err := udb.EnsureAccountExists(context.TODO(), au)
 	if err != nil {
@@ -109,7 +132,7 @@ func TestTradeQuotePrices(t *testing.T) {
 		t.Fatalf("expected unavailable error when quote cannot be recvd: %v", err)
 	}
 
-	pt.tp = &mockQuoteProvider{a: &grpcoin.Amount{Units: 50_000}}
+	pt.quoteProvider = &mockQuoteProvider{a: &grpcoin.Amount{Units: 50_000}}
 	resp, err := pt.Trade(ctx, &grpcoin.TradeRequest{
 		Action:   grpcoin.TradeAction_BUY,
 		Ticker:   &grpcoin.TradeRequest_Ticker{Ticker: "BTC"},
@@ -126,9 +149,10 @@ func TestTradeQuotePrices(t *testing.T) {
 
 func Test_validateTradeRequest(t *testing.T) {
 	tests := []struct {
-		name string
-		req  *grpcoin.TradeRequest
-		code codes.Code
+		name             string
+		req              *grpcoin.TradeRequest
+		supportedTickers []string
+		code             codes.Code
 	}{
 		{
 			name: "empty",
@@ -144,26 +168,23 @@ func Test_validateTradeRequest(t *testing.T) {
 			name: "wrong ticker",
 			req: &grpcoin.TradeRequest{Action: grpcoin.TradeAction_SELL,
 				Ticker: &grpcoin.TradeRequest_Ticker{Ticker: "XXX"}},
-			code: codes.InvalidArgument,
-		},
-		{
-			name: "eth supported",
-			req: &grpcoin.TradeRequest{Action: grpcoin.TradeAction_SELL,
-				Ticker: &grpcoin.TradeRequest_Ticker{Ticker: "ETH"}},
-			code: codes.InvalidArgument,
+			supportedTickers: []string{},
+			code:             codes.InvalidArgument,
 		},
 		{
 			name: "missing quantity",
 			req: &grpcoin.TradeRequest{Action: grpcoin.TradeAction_SELL,
 				Ticker: &grpcoin.TradeRequest_Ticker{Ticker: "BTC"}},
-			code: codes.InvalidArgument,
+			supportedTickers: []string{"ABC", "BTC"},
+			code:             codes.InvalidArgument,
 		},
 		{
 			name: "zero quantity",
 			req: &grpcoin.TradeRequest{Action: grpcoin.TradeAction_SELL,
 				Ticker:   &grpcoin.TradeRequest_Ticker{Ticker: "BTC"},
 				Quantity: &grpcoin.Amount{}},
-			code: codes.InvalidArgument,
+			supportedTickers: []string{"ABC", "BTC"},
+			code:             codes.InvalidArgument,
 		},
 		{
 			name: "negative unit",
@@ -171,7 +192,8 @@ func Test_validateTradeRequest(t *testing.T) {
 				Ticker:   &grpcoin.TradeRequest_Ticker{Ticker: "BTC"},
 				Quantity: &grpcoin.Amount{Units: -1},
 			},
-			code: codes.InvalidArgument,
+			supportedTickers: []string{"ABC", "BTC"},
+			code:             codes.InvalidArgument,
 		},
 		{
 			name: "negative nanos",
@@ -179,12 +201,13 @@ func Test_validateTradeRequest(t *testing.T) {
 				Ticker:   &grpcoin.TradeRequest_Ticker{Ticker: "BTC"},
 				Quantity: &grpcoin.Amount{Nanos: -1},
 			},
-			code: codes.InvalidArgument,
+			supportedTickers: []string{"ABC", "BTC"},
+			code:             codes.InvalidArgument,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := validateTradeRequest(tt.req); status.Code(err) != tt.code {
+			if err := validateTradeRequest(tt.req, tt.supportedTickers); status.Code(err) != tt.code {
 				t.Errorf("validateTradeRequest() error = %v, wantErr %s", err, tt.code)
 			}
 		})
@@ -192,9 +215,6 @@ func Test_validateTradeRequest(t *testing.T) {
 }
 
 func TestTrade(t *testing.T) {
-	if testing.Short() {
-		t.Skip("makes calls to coinbase")
-	}
 	tp := trace.NewNoopTracerProvider().Tracer("")
 	fs := firestoreutil.StartTestEmulator(t, context.TODO())
 	udb := &userdb.UserDB{DB: fs, T: tp}
@@ -206,15 +226,14 @@ func TestTrade(t *testing.T) {
 	}
 	ctx, stop := context.WithCancel(context.Background())
 	t.Cleanup(func() { stop() })
-	cb := &coinbase.QuoteProvider{}
-	go cb.Sync(ctx)
-	pt := &tradingService{udb: udb, tp: cb, tr: tp}
+	qp := &mockQuoteProvider{a: &grpcoin.Amount{Units: 30_000}}
+	pt := &tradingService{udb: udb, quoteProvider: qp, tracer: tp, supportedTickers: []string{"BTC"}}
 
 	ctx = auth.WithUser(ctx, au)
 	ctx = userdb.WithUserRecord(ctx, user)
 
 	// wait until we get a quote (it can take several seconds)
-	_, err = cb.GetQuote(context.TODO(), "BTC")
+	_, err = qp.GetQuote(context.TODO(), "BTC")
 	if err != nil {
 		t.Fatal(err)
 	}

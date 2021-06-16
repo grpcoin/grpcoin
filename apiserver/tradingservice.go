@@ -17,6 +17,7 @@ package main
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/otel/trace"
@@ -30,15 +31,16 @@ import (
 )
 
 type tradingService struct {
-	udb *userdb.UserDB
-	tp  realtimequote.QuoteProvider
-	tr  trace.Tracer
+	udb              *userdb.UserDB
+	quoteProvider    realtimequote.QuoteProvider
+	tracer           trace.Tracer
+	supportedTickers []string
 
 	grpcoin.UnimplementedPaperTradeServer
 }
 
 func (t *tradingService) Portfolio(ctx context.Context, req *grpcoin.PortfolioRequest) (*grpcoin.PortfolioResponse, error) {
-	ctx, span := t.tr.Start(ctx, "portfolio read")
+	ctx, span := t.tracer.Start(ctx, "portfolio read")
 	defer span.End()
 	user, ok := userdb.UserRecordFromContext(ctx)
 	if !ok {
@@ -67,16 +69,16 @@ func (t *tradingService) Trade(ctx context.Context, req *grpcoin.TradeRequest) (
 	if !ok {
 		return nil, status.Error(codes.Internal, "could not find user record in request context")
 	}
-	if err := validateTradeRequest(req); err != nil {
+	if err := validateTradeRequest(req, t.supportedTickers); err != nil {
 		return nil, err
 	}
 
 	// get a real-time market quote
 	// TODO use oteltrace.WithAttributes for sub-spans
-	subCtx, s := t.tr.Start(ctx, "get quote")
+	subCtx, s := t.tracer.Start(ctx, "get quote")
 	quoteCtx, cancel := context.WithTimeout(subCtx, quoteDeadline)
 	defer cancel()
-	quote, err := t.tp.GetQuote(quoteCtx, req.GetTicker().Ticker)
+	quote, err := t.quoteProvider.GetQuote(quoteCtx, req.GetTicker().Ticker)
 	if errors.Is(err, context.DeadlineExceeded) {
 		return nil, status.Errorf(codes.Unavailable, "could not get real-time market quote for %s in %v",
 			req.GetTicker().GetTicker(), quoteDeadline)
@@ -86,7 +88,7 @@ func (t *tradingService) Trade(ctx context.Context, req *grpcoin.TradeRequest) (
 	s.End()
 
 	// TODO add a timeout for tx to be executed
-	subCtx, s = t.tr.Start(ctx, "execute trade")
+	subCtx, s = t.tracer.Start(ctx, "execute trade")
 	defer s.End()
 	tradeCtx, cancel2 := context.WithTimeout(subCtx, tradeExecutionDeadline)
 	defer cancel2()
@@ -107,7 +109,7 @@ func (t *tradingService) Trade(ctx context.Context, req *grpcoin.TradeRequest) (
 	}, nil
 }
 
-func validateTradeRequest(req *grpcoin.TradeRequest) error {
+func validateTradeRequest(req *grpcoin.TradeRequest, supportedTickers []string) error {
 	if req.Action != grpcoin.TradeAction_BUY && req.Action != grpcoin.TradeAction_SELL {
 		return status.Errorf(codes.InvalidArgument, "invalid trade action: %s", req.GetAction().Enum().String())
 	}
@@ -123,9 +125,9 @@ func validateTradeRequest(req *grpcoin.TradeRequest) error {
 	if req.GetTicker().GetTicker() == "" {
 		return status.Error(codes.InvalidArgument, "ticker not specified")
 	}
-	if !realtimequote.IsSupported(realtimequote.SupportedTickers, req.GetTicker().GetTicker()) {
-		return status.Errorf(codes.InvalidArgument, "ticker '%s' is not supported, must be %#v", req.Ticker.Ticker,
-			realtimequote.SupportedTickers)
+	if !realtimequote.IsSupported(supportedTickers, req.GetTicker().GetTicker()) {
+		return status.Errorf(codes.InvalidArgument, "ticker '%s' is not supported, must be [%s]", req.Ticker.Ticker,
+			strings.Join(supportedTickers, ", "))
 	}
 	return nil
 }

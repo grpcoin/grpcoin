@@ -21,24 +21,24 @@ import "google/protobuf/timestamp.proto";
 
 service TickerInfo {
     // Watch returns real-time quotes of the ticker.
-    // The only supported tickers are "BTC-USD", "ETH-USD" and "DOGE-USD"
+    // The only supported tickers are "BTC", "ETH", "DOGE"
     //
-    // The stream might return error (if it fails to get prices) or
-    // time out if you stream it for over 15 minutes.
-    // If the stream terminates, please reconnect.
+    // This stream terminates after 15 minutes, so expect being
+    // abruptly disconnected and need to reconnect.
     //
-    // Unauthenticated.
+    // No authentication required.
     rpc Watch(QuoteTicker) returns (stream Quote){}
 }
 
 // QuoteTicker represents a quote request for a coin.
 message QuoteTicker {
-    string ticker = 1; // e.g. BTC-USD, ETH-USD, DOGE-USD
+    string ticker = 1; // e.g. BTC, ETH, DOGE
 }
 
 // Quote represents a real-time coin price.
 message Quote{
     google.protobuf.Timestamp t = 10;
+
     Amount price = 20;
 }
 

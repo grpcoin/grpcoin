@@ -113,8 +113,10 @@ func main() {
 
 	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	for ctx.Err() == nil {
-		log.Printf("connecting to stream real-time ETH quotes, hit Ctrl-C to quit anytime")
-		stream, err := grpcoin.NewTickerInfoClient(conn).Watch(ctx, &grpcoin.QuoteTicker{Ticker: "ETH-USD"})
+		log.Printf("\n\nconnecting to stream real-time ETH quotes, hit Ctrl-C to quit anytime")
+		stream, err := grpcoin.NewTickerInfoClient(conn).Watch(ctx,
+			&grpcoin.QuoteTicker{
+				Ticker: "ETH"})
 		if err != nil {
 			log.Fatal(err)
 		}

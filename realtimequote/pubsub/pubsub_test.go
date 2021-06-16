@@ -12,25 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package realtimequote
+package pubsub
 
 import (
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/grpcoin/grpcoin/realtimequote"
 )
 
 func TestPubSub(t *testing.T) {
-	src := make(chan Quote)
+	src := make(chan realtimequote.Quote)
 
 	var stopCalled int64
 	stop := func() { atomic.AddInt64(&stopCalled, 1) }
 
 	send := func(n int) {
 		for i := 0; i < n; i++ {
-			src <- Quote{}
+			src <- realtimequote.Quote{}
 			time.Sleep(time.Millisecond * 1) // if we send too fast, all is discarded
-			t.Logf("sent%d", i)
 		}
 	}
 
@@ -38,17 +40,17 @@ func TestPubSub(t *testing.T) {
 
 	send(1)
 
-	var recv1, recv2 int
-	ch1, ch2 := make(chan Quote), make(chan Quote)
+	var recv1, recv2 int64
+	ch1, ch2 := make(chan realtimequote.Quote), make(chan realtimequote.Quote)
 	go func() {
 		for range ch1 {
-			recv1++
+			atomic.AddInt64(&recv1, 1)
 			t.Logf("recv1")
 		}
 	}()
 	go func() {
 		for range ch2 {
-			recv2++
+			atomic.AddInt64(&recv2, 1)
 			t.Logf("recv2")
 		}
 	}()
@@ -71,25 +73,31 @@ func TestPubSub(t *testing.T) {
 	if _, ok := <-ch2; ok {
 		t.Fatalf("ch2 should be closed")
 	}
-	if stopCalled != 1 {
-		t.Fatalf("stop called %d times, expected 1", stopCalled)
+	stopCalls := atomic.LoadInt64(&stopCalled)
+	if stopCalls != 1 {
+		t.Fatalf("stop called %d times, expected 1", stopCalls)
 	}
 
-	if recv1 == 0 {
+	if atomic.LoadInt64(&recv1) == 0 {
 		t.Fatalf("received nothing at ch1")
 	}
-	if recv2 == 0 {
+	if atomic.LoadInt64(&recv2) == 0 {
 		t.Fatalf("received nothing at ch2")
 	}
 }
 
 func TestPubSubOnSourceClose(t *testing.T) {
-	src := make(chan Quote)
+	src := make(chan realtimequote.Quote)
 
+	var mu sync.Mutex
 	var stopCalled bool
-	stop := func() { stopCalled = true }
+	stop := func() {
+		mu.Lock()
+		stopCalled = true
+		mu.Unlock()
+	}
 	bus := NewPubSub(src, stop)
-	ch1, ch2 := make(chan Quote), make(chan Quote)
+	ch1, ch2 := make(chan realtimequote.Quote), make(chan realtimequote.Quote)
 	bus.Sub(ch1)
 	bus.Sub(ch2)
 
@@ -100,6 +108,8 @@ func TestPubSubOnSourceClose(t *testing.T) {
 	if _, ok := <-ch2; ok {
 		t.Fatalf("ch2 should be closed")
 	}
+	mu.Lock()
+	defer mu.Unlock()
 	if !stopCalled {
 		t.Fatalf("stop() should have been called")
 	}

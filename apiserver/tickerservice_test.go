@@ -26,32 +26,46 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/grpc/test/bufconn"
 )
 
-func TestWatch(t *testing.T) {
-	if testing.Short() {
-		t.Skip("makes calls to coinbase")
-	}
-	l, err := net.Listen("tcp", "localhost:0")
-	if err != nil {
-		t.Fatal(err)
-	}
+func prepTickerService(t *testing.T) *grpc.ClientConn {
+	t.Helper()
+	l := bufconn.Listen(1024)
 	srv := grpc.NewServer()
-	grpcoin.RegisterTickerInfoServer(srv, new(tickerService))
-	go srv.Serve(l)
-	defer srv.Stop()
-	defer l.Close()
-
-	cc, err := grpc.Dial(l.Addr().String(), grpc.WithInsecure())
+	ts := &tickerService{
+		maxRate:          time.Millisecond,
+		supportedTickers: []string{"BTC"},
+		quoteStream: mockQuoteStream{
+			product: "BTC",
+			n:       10,
+			price:   &grpcoin.Amount{Units: 35_000}}}
+	grpcoin.RegisterTickerInfoServer(srv, ts)
+	go func() {
+		if err := srv.Serve(l); err != nil {
+			t.Fatal(err)
+		}
+	}()
+	t.Cleanup(func() {
+		srv.Stop()
+		l.Close()
+	})
+	cc, err := grpc.DialContext(context.TODO(), "bufnet", grpc.WithInsecure(), grpc.WithContextDialer(func(_ context.Context, _ string) (net.Conn, error) {
+		return l.Dial()
+	}))
 	if err != nil {
 		t.Fatal(err)
 	}
-	client := grpcoin.NewTickerInfoClient(cc)
+	return cc
+}
+
+func TestWatch(t *testing.T) {
+	client := grpcoin.NewTickerInfoClient(prepTickerService(t))
 	count := 0
-	ctx, cleanup := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cleanup := context.WithTimeout(context.Background(), time.Second)
 	defer cleanup()
 
-	stream, err := client.Watch(ctx, &grpcoin.QuoteTicker{Ticker: "BTC-USD"})
+	stream, err := client.Watch(ctx, &grpcoin.QuoteTicker{Ticker: "BTC"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -59,10 +73,8 @@ func TestWatch(t *testing.T) {
 		var m grpcoin.Quote
 		err = stream.RecvMsg(&m)
 		if err != nil {
-			if e := status.Convert(err); e != nil {
-				if e.Code() == codes.DeadlineExceeded {
-					break
-				}
+			if status.Code(err) == codes.DeadlineExceeded || status.Code(err) == codes.Canceled {
+				break
 			}
 			t.Logf("received so far %d", count)
 			t.Fatal(err)
@@ -76,29 +88,11 @@ func TestWatch(t *testing.T) {
 }
 
 func TestWatchReconnect(t *testing.T) {
-	if testing.Short() {
-		t.Skip("makes calls to coinbase")
-	}
-	l, err := net.Listen("tcp", "localhost:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	srv := grpc.NewServer()
-	grpcoin.RegisterTickerInfoServer(srv, new(tickerService))
-	go srv.Serve(l)
-	defer srv.Stop()
-	defer l.Close()
-
-	cc, err := grpc.Dial(l.Addr().String(), grpc.WithInsecure())
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	client := grpcoin.NewTickerInfoClient(cc)
-	ctx, cleanup := context.WithTimeout(context.Background(), time.Second*5)
+	client := grpcoin.NewTickerInfoClient(prepTickerService(t))
+	ctx, cleanup := context.WithTimeout(context.Background(), time.Second)
 	defer cleanup()
 
-	stream, err := client.Watch(ctx, &grpcoin.QuoteTicker{Ticker: "BTC-USD"})
+	stream, err := client.Watch(ctx, &grpcoin.QuoteTicker{Ticker: "BTC"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -107,7 +101,7 @@ func TestWatchReconnect(t *testing.T) {
 		err = stream.RecvMsg(&m)
 		if err != nil {
 			if e := status.Convert(err); e != nil {
-				if e.Code() == codes.DeadlineExceeded || e.Code() == codes.Canceled {
+				if status.Code(err) == codes.DeadlineExceeded || status.Code(err) == codes.Canceled {
 					break
 				}
 			}
@@ -115,11 +109,11 @@ func TestWatchReconnect(t *testing.T) {
 		}
 	}
 
-	ctx, cleanup2 := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cleanup2 := context.WithTimeout(context.Background(), time.Second)
 	defer cleanup2()
 
 	count := 0
-	stream, err = client.Watch(ctx, &grpcoin.QuoteTicker{Ticker: "BTC-USD"})
+	stream, err = client.Watch(ctx, &grpcoin.QuoteTicker{Ticker: "BTC"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -143,18 +137,7 @@ func TestWatchReconnect(t *testing.T) {
 }
 
 func TestWatchMulti(t *testing.T) {
-	if testing.Short() {
-		t.Skip("makes calls to coinbase")
-	}
-	l, err := net.Listen("tcp", "localhost:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	srv := grpc.NewServer()
-	grpcoin.RegisterTickerInfoServer(srv, new(tickerService))
-	go srv.Serve(l)
-	defer srv.Stop()
-	defer l.Close()
+	client := grpcoin.NewTickerInfoClient(prepTickerService(t))
 	var wg sync.WaitGroup
 	k := 20
 	c := make([]int, k)
@@ -162,14 +145,9 @@ func TestWatchMulti(t *testing.T) {
 		wg.Add(1)
 		go func(j int) {
 			defer wg.Done()
-			cc, err := grpc.Dial(l.Addr().String(), grpc.WithInsecure())
-			if err != nil {
-				panic(err)
-			}
-			client := grpcoin.NewTickerInfoClient(cc)
-			ctx, cleanup := context.WithTimeout(context.Background(), time.Second*5)
+			ctx, cleanup := context.WithTimeout(context.Background(), time.Second)
 			defer cleanup()
-			stream, err := client.Watch(ctx, &grpcoin.QuoteTicker{Ticker: "BTC-USD"})
+			stream, err := client.Watch(ctx, &grpcoin.QuoteTicker{Ticker: "BTC"})
 			if err != nil {
 				panic(fmt.Sprintf("routine %d: dial: %v", j, err))
 			}
@@ -177,10 +155,8 @@ func TestWatchMulti(t *testing.T) {
 				var m grpcoin.Quote
 				err = stream.RecvMsg(&m)
 				if err != nil {
-					if e := status.Convert(err); e != nil {
-						if e.Code() == codes.DeadlineExceeded || e.Code() == codes.Canceled {
-							break
-						}
+					if status.Code(err) == codes.DeadlineExceeded || status.Code(err) == codes.Canceled {
+						break
 					}
 					panic(fmt.Sprintf("routine %d: recv: %v", j, err))
 				}

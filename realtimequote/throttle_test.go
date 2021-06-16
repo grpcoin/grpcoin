@@ -21,7 +21,7 @@ import (
 )
 
 func TestRateLimited(t *testing.T) {
-	ctx, cleanup := context.WithTimeout(context.Background(), time.Second*3)
+	ctx, cleanup := context.WithTimeout(context.Background(), time.Millisecond*450)
 	defer cleanup()
 
 	in := make(chan Quote)
@@ -35,8 +35,8 @@ func TestRateLimited(t *testing.T) {
 		}
 	}()
 
-	// 675*4=2700 < 3000
-	out := RateLimited(in, time.Millisecond*675)
+	// 100*4=400 < 450
+	out := RateLimited(in, time.Millisecond*100)
 	count := 0
 	for range out {
 		count++

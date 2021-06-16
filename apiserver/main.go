@@ -30,6 +30,8 @@ import (
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
+	"github.com/grpcoin/grpcoin/realtimequote"
+	"github.com/grpcoin/grpcoin/realtimequote/coinbase"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -40,7 +42,6 @@ import (
 	"github.com/grpcoin/grpcoin/apiserver/auth"
 	"github.com/grpcoin/grpcoin/apiserver/auth/github"
 	"github.com/grpcoin/grpcoin/apiserver/ratelimiter"
-	"github.com/grpcoin/grpcoin/realtimequote/coinbase"
 	"github.com/grpcoin/grpcoin/serverutil"
 	"github.com/grpcoin/grpcoin/userdb"
 )
@@ -84,19 +85,30 @@ func main() {
 		flTestData, onCloudRun, flRealData)
 	defer shutdown()
 
-	ac := &AccountCache{cache: rc}
+	accountCache := &AccountCache{cache: rc}
 	udb := &userdb.UserDB{DB: db, T: tp}
-	as := &accountService{cache: ac, udb: udb}
-	au := &github.GitHubAuthenticator{T: tp, Cache: rc}
-	cb := &coinbase.QuoteProvider{
-		Logger: log.With(zap.String("facility", "coinbase"))}
-	go cb.Sync(ctx)
-	ts := &tickerService{}
-	pt := &tradingService{udb: udb, tp: cb, tr: tp}
+	accountSvc := &accountService{cache: accountCache, udb: udb}
+	authenticator := &github.GitHubAuthenticator{T: tp, Cache: rc}
+
+	quoteStream := realtimequote.QuoteStreamFunc(coinbase.StartWatch)
+	supportedTickers := realtimequote.SupportedTickers
+	quoteProvider := realtimequote.NewReconnectingQuoteProvider(ctx,
+		log.With(zap.String("facility", "quotes")),
+		quoteStream,
+		supportedTickers...)
+	tickerSvc := &tickerService{
+		maxRate:          time.Millisecond * 100,
+		supportedTickers: supportedTickers,
+		quoteStream:      quoteStream}
+	tradingSvc := &tradingService{
+		udb:              udb,
+		quoteProvider:    quoteProvider,
+		supportedTickers: supportedTickers,
+		tracer:           tp}
 	rl := ratelimiter.New(rc, time.Now, tp)
-	grpcServer := prepServer(log, au, rl, udb, as, ts, pt)
-	listenHost := os.Getenv("LISTEN_ADDR")
-	addr := net.JoinHostPort(listenHost, port)
+	grpcServer := prepServer(log, authenticator, rl, udb, accountSvc, tickerSvc, tradingSvc)
+	host := os.Getenv("LISTEN_ADDR")
+	addr := net.JoinHostPort(host, port)
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		log.Fatal("tcp listen failed", zap.Error(err))

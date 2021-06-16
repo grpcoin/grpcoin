@@ -26,9 +26,10 @@ import (
 	"time"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
+	"github.com/grpcoin/grpcoin/realtimequote"
+	"github.com/grpcoin/grpcoin/realtimequote/coinbase"
 	"go.uber.org/zap"
 
-	"github.com/grpcoin/grpcoin/realtimequote/coinbase"
 	"github.com/grpcoin/grpcoin/serverutil"
 	"github.com/grpcoin/grpcoin/userdb"
 )
@@ -65,8 +66,11 @@ func main() {
 		flTestData, onCloudRun, flRealData)
 	defer shutdownDB()
 
-	coinbaseQuotes := &coinbase.QuoteProvider{Logger: log}
-	go coinbaseQuotes.Sync(ctx)
+	supportedTickers := realtimequote.SupportedTickers
+	quotes := realtimequote.NewReconnectingQuoteProvider(ctx,
+		log.With(zap.String("facility", "quotes")),
+		realtimequote.QuoteStreamFunc(coinbase.StartWatch),
+		supportedTickers...)
 
 	trace, flushTraces := serverutil.GetTracer("grpcoin-frontend", onCloudRun)
 	if err != nil {
@@ -74,7 +78,7 @@ func main() {
 	}
 	defer flushTraces(log.With(zap.String("facility", "tracing")))
 	fe := frontend{
-		QuoteProvider: coinbaseQuotes,
+		QuoteProvider: quotes,
 		QuoteDeadline: time.Second,
 		CronSAEmail:   os.Getenv("CRON_SERVICE_ACCOUNT"),
 		Trace:         trace,
