@@ -42,17 +42,22 @@ message Quote{
     Amount price = 20;
 }
 
+// Amount represents a fractional number precisely without
+// as opposed to losing precision due to float representation.
 message Amount {
-    // The whole units of the amount.
-    // For example if `currencyCode` is `"USD"`, then 1 unit is one US dollar.
+    // The integral part of the amount.
+    // For example, 3.50 will have `units`=3.
     int64 units = 1;
 
-    // Number of nano (10^-9) units of the amount.
-    // The value must be between -999,999,999 and +999,999,999 inclusive.
+    // Number of nano (10^-9) units that represent the fractional amount.
+    // For example, 3.5 is represented as `units`=3 and `nanos`=500,000,000.
+    //
+    // `nanos` must be between -999,999,999 and +999,999,999 inclusive.
+    //
     // If `units` is positive, `nanos` must be positive or zero.
     // If `units` is zero, `nanos` can be positive, zero, or negative.
     // If `units` is negative, `nanos` must be negative or zero.
-    // For example $-1.75 is represented as `units`=-1 and `nanos`=-750,000,000.
+    // For example, -1.75 is represented as `units`=-1 and `nanos`=-750,000,000.
     int32 nanos = 2;
 }
 
@@ -97,7 +102,6 @@ message PortfolioPosition {
     Ticker ticker = 1;
     Amount amount = 2;
 }
-
 
 enum TradeAction {
     UNDEFINED = 0;
