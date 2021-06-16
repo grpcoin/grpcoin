@@ -90,7 +90,7 @@ func main() {
 	accountSvc := &accountService{cache: accountCache, udb: udb}
 	authenticator := &github.GitHubAuthenticator{T: tp, Cache: rc}
 
-	quoteStream := realtimequote.QuoteStreamFunc(coinbase.StartWatch)
+	quoteStream := realtimequote.QuoteStreamFunc(coinbase.WatchSymbols)
 	supportedTickers := realtimequote.SupportedTickers
 	quoteProvider := realtimequote.NewReconnectingQuoteProvider(ctx,
 		log.With(zap.String("facility", "quotes")),

@@ -27,7 +27,7 @@ import (
 
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"github.com/grpcoin/grpcoin/realtimequote"
-	"github.com/grpcoin/grpcoin/realtimequote/coinbase"
+	"github.com/grpcoin/grpcoin/realtimequote/binance"
 	"go.uber.org/zap"
 
 	"github.com/grpcoin/grpcoin/serverutil"
@@ -69,7 +69,7 @@ func main() {
 	supportedTickers := realtimequote.SupportedTickers
 	quotes := realtimequote.NewReconnectingQuoteProvider(ctx,
 		log.With(zap.String("facility", "quotes")),
-		realtimequote.QuoteStreamFunc(coinbase.StartWatch),
+		realtimequote.QuoteStreamFunc(binance.WatchSymbols),
 		supportedTickers...)
 
 	trace, flushTraces := serverutil.GetTracer("grpcoin-frontend", onCloudRun)

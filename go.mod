@@ -5,6 +5,7 @@ go 1.16
 require (
 	cloud.google.com/go/firestore v1.5.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v0.20.0
+	github.com/adshao/go-binance/v2 v2.2.2
 	github.com/alicebob/miniredis/v2 v2.14.4
 	github.com/blendle/zapdriver v1.3.1
 	github.com/dustin/go-humanize v1.0.0

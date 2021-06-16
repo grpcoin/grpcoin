@@ -18,17 +18,19 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strconv"
 	"strings"
 
 	ws "github.com/gorilla/websocket"
-	"github.com/grpcoin/grpcoin/api/grpcoin"
 	"github.com/grpcoin/grpcoin/realtimequote"
+	"github.com/grpcoin/grpcoin/realtimequote/common"
 	"github.com/preichenberger/go-coinbasepro/v2"
 )
 
-func StartWatch(ctx context.Context, products ...string) (<-chan realtimequote.Quote, error) {
-	products = ensureUSDSuffix(products)
+func WatchSymbols(ctx context.Context, products ...string) (<-chan realtimequote.Quote, error) {
+	symbols := make([]string, len(products))
+	for i, v := range products {
+		symbols[i] = v + "-USD"
+	}
 
 	var wsDialer ws.Dialer
 	wsConn, _, err := wsDialer.Dial("wss://ws-feed.pro.coinbase.com", nil)
@@ -40,7 +42,7 @@ func StartWatch(ctx context.Context, products ...string) (<-chan realtimequote.Q
 		Channels: []coinbasepro.MessageChannel{
 			{
 				Name:       "ticker",
-				ProductIds: products,
+				ProductIds: symbols,
 			},
 		},
 	}
@@ -67,36 +69,9 @@ func StartWatch(ctx context.Context, products ...string) (<-chan realtimequote.Q
 			}
 			ch <- realtimequote.Quote{
 				Product: strings.TrimSuffix(message.ProductID, "-USD"),
-				Price:   convertPrice(message.Price),
+				Price:   common.ParsePrice(message.Price),
 				Time:    message.Time.Time()}
 		}
 	}()
 	return ch, nil
-}
-
-func convertPrice(p string) *grpcoin.Amount {
-	out := strings.SplitN(p, ".", 2)
-	if len(out) == 0 {
-		return &grpcoin.Amount{}
-	}
-	if out[0] == "" {
-		out[0] = "0"
-	}
-	i, _ := strconv.ParseInt(out[0], 10, 64)
-	if len(out) == 1 {
-		return &grpcoin.Amount{Units: i}
-	}
-	out[1] += strings.Repeat("0", 9-len(out[1]))
-	j, _ := strconv.Atoi(out[1])
-	return &grpcoin.Amount{Units: i, Nanos: int32(j)}
-}
-
-func ensureUSDSuffix(products []string) []string {
-	out := make([]string, len(products))
-	for i, v := range products {
-		if !strings.HasSuffix(v, "-USD") {
-			out[i] = v + "-USD"
-		}
-	}
-	return out
 }
