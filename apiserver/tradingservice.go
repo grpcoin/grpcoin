@@ -105,6 +105,7 @@ func (t *tradingService) Trade(ctx context.Context, req *grpcoin.TradeRequest) (
 		T:             timestamppb.Now(), // TODO read from tx
 		Action:        req.Action,
 		ExecutedPrice: quote,
+		Ticker:        &grpcoin.TradeResponse_Ticker{Symbol: req.GetTicker().GetTicker()},
 		Quantity:      req.Quantity,
 	}, nil
 }

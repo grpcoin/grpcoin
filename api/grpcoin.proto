@@ -121,6 +121,10 @@ message TradeRequest{
 message TradeResponse{
     google.protobuf.Timestamp t = 1;
     TradeAction action = 2;
+    message Ticker {
+        string symbol = 1; // e.g. BTC
+    }
+    Ticker ticker = 5;
     Amount quantity = 3;
     Amount executed_price = 4;
 }

@@ -232,12 +232,17 @@ func TestTrade(t *testing.T) {
 	ctx = auth.WithUser(ctx, au)
 	ctx = userdb.WithUserRecord(ctx, user)
 
-	// wait until we get a quote (it can take several seconds)
-	_, err = qp.GetQuote(context.TODO(), "BTC")
-	if err != nil {
-		t.Fatal(err)
+	// insufficient funds
+	_, err = pt.Trade(ctx, &grpcoin.TradeRequest{
+		Action:   grpcoin.TradeAction_BUY,
+		Ticker:   &grpcoin.TradeRequest_Ticker{Ticker: "BTC"},
+		Quantity: &grpcoin.Amount{Units: 100_000_000},
+	})
+	if status.Code(err) != codes.InvalidArgument {
+		t.Fatalf("expected InvalidArgument for wrong trade request (insufficient funds): %v", err)
 	}
 
+	// good trade
 	resp, err := pt.Trade(ctx, &grpcoin.TradeRequest{
 		Action:   grpcoin.TradeAction_BUY,
 		Ticker:   &grpcoin.TradeRequest_Ticker{Ticker: "BTC"},
@@ -246,14 +251,17 @@ func TestTrade(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_ = resp
-
-	_, err = pt.Trade(ctx, &grpcoin.TradeRequest{
-		Action:   grpcoin.TradeAction_BUY,
-		Ticker:   &grpcoin.TradeRequest_Ticker{Ticker: "BTC"},
-		Quantity: &grpcoin.Amount{Units: 100_000_000},
-	})
-	if status.Code(err) != codes.InvalidArgument {
-		t.Fatalf("expected InvalidArgument for wrong trade request (insufficient funds): %v", err)
+	expected := &grpcoin.TradeResponse{
+		T:             nil,
+		Action:        grpcoin.TradeAction_BUY,
+		Ticker:        &grpcoin.TradeResponse_Ticker{Symbol: "BTC"},
+		Quantity:      &grpcoin.Amount{Units: 1, Nanos: 500_000_000},
+		ExecutedPrice: &grpcoin.Amount{Units: 30_000},
+	}
+	if diff := cmp.Diff(*expected, *resp,
+		cmpopts.IgnoreUnexported(grpcoin.TradeResponse{}, grpcoin.TradeResponse_Ticker{}, grpcoin.Amount{}),
+		cmpopts.IgnoreFields(grpcoin.TradeResponse{}, "T"),
+	); diff != "" {
+		t.Fatalf(diff)
 	}
 }
