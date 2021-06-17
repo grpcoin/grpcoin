@@ -87,7 +87,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("trade order failed: %v", err)
 	}
-	log.Printf("ORDER EXECUTED: %s [%s] BTC coins at USD[%s]", order.Action, order.Quantity, order.ExecutedPrice)
+	log.Printf("ORDER EXECUTED: %s [%s] %s at USD[%s]", order.Action,
+		order.Quantity, order.Ticker.Symbol, order.ExecutedPrice)
 
 	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	for ctx.Err() == nil {
