@@ -25,19 +25,21 @@ import (
 
 func TestWatch(t *testing.T) {
 	qf := realtimequote.QuoteStreamFunc(WatchSymbols)
-	timedCtx, done := context.WithTimeout(context.Background(), time.Second*7)
+	timedCtx, done := context.WithTimeout(context.Background(), time.Second*6)
 	defer done()
 	ctx, cancel := context.WithCancel(timedCtx)
 	defer cancel()
 
-	ch, err := qf.Watch(ctx, "BTC", "DOGE", "ETH")
+	ch, err := qf.Watch(ctx, "BTC", "DOGE", "ETH", "DOT")
 	if err != nil {
 		t.Fatal(err)
 	}
 	m := map[string][]realtimequote.Quote{
 		"DOGE": nil,
 		"BTC":  nil,
-		"ETH":  nil}
+		"ETH":  nil,
+		"DOT":  nil,
+	}
 
 	recvQuotesForAll := false
 	var wg sync.WaitGroup
@@ -47,6 +49,9 @@ func TestWatch(t *testing.T) {
 		for q := range ch {
 			if q.Price.Units == 0 && q.Price.Nanos == 0 {
 				t.Fatalf("zero price recvd on Quote:%#v", q)
+			}
+			if x := time.Now().Sub(q.Time); x > 5*time.Second || x < -5*time.Second {
+				t.Fatalf("t=%v (%s) > +-5 seconds", x, q.Time)
 			}
 			m[q.Product] = append(m[q.Product], q)
 			allReady := true

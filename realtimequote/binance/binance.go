@@ -38,8 +38,7 @@ func WatchSymbols(ctx context.Context, products ...string) (<-chan realtimequote
 		out <- realtimequote.Quote{
 			Product: strings.ToUpper(strings.TrimSuffix(event.Symbol, "USDT")),
 			Price:   common.ParsePrice(event.Price),
-			Time:    time.Unix(event.TradeTime, 0),
-		}
+			Time:    time.Unix(event.Time/1000, event.Time%1000*1_000_000)}
 	}, func(err error) {
 		log.Print(err)
 	})
