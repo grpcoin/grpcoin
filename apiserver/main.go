@@ -31,7 +31,7 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	"github.com/grpcoin/grpcoin/realtimequote"
-	"github.com/grpcoin/grpcoin/realtimequote/coinbase"
+	"github.com/grpcoin/grpcoin/realtimequote/binance"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -90,7 +90,7 @@ func main() {
 	accountSvc := &accountService{cache: accountCache, udb: udb}
 	authenticator := &github.GitHubAuthenticator{T: tp, Cache: rc}
 
-	quoteStream := realtimequote.QuoteStreamFunc(coinbase.WatchSymbols)
+	quoteStream := realtimequote.QuoteStreamFunc(binance.WatchSymbols)
 	supportedTickers := realtimequote.SupportedTickers
 	quoteProvider := realtimequote.NewReconnectingQuoteProvider(ctx,
 		log.With(zap.String("facility", "quotes")),
