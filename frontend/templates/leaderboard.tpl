@@ -1,5 +1,4 @@
 {{ template "header.tpl" "Leaderboard" }}
-
 <main class="container">
     <div class="pt-5 text-center text-white">
         <h2>gRPCOIN</h2>
@@ -18,25 +17,24 @@
                 <tbody>
                     {{ range .users }}
                     <tr class="position-relative">
-                        <td>
-                        </td>
+                        <td></td>
                         <td>
                             {{ with (profilePic .User.ProfileURL) }}
-                            <img src="{{.}}" width=24 height=auto />
+                            <img src="{{.}}" width="24" height="auto" />
                             {{ end }}
-                            <a href="/user/{{.User.ID}}">
-                                {{.User.DisplayName}}</a>
+                            <a href="/user/{{.User.ID}}" id="{{.User.ID}}">
+                            {{.User.DisplayName}}</a
+                                >
                         </td>
                         <td id="price-{{.User.ID}}">    
                             USD {{fmtPrice .Valuation}}
                         </td>
 
                         {{ end }}
+                    </tr>
                 </tbody>
             </table>
         </div>
     </div>
-
 </main>
-
 {{ template "footer.tpl" }}

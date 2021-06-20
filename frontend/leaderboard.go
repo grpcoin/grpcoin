@@ -17,6 +17,7 @@ package main
 import (
 	"context"
 	_ "embed"
+	"errors"
 	"net/http"
 	"sort"
 	"sync"
@@ -62,7 +63,9 @@ func (fe *frontend) getQuotes(ctx context.Context) (map[string]userdb.Amount, er
 		quote := quotes[i] // capture for closure
 		eg.Go(func() error {
 			v, err := fe.QuoteProvider.GetQuote(quoteCtx, quote)
-			if err != nil {
+			if errors.Is(err, context.DeadlineExceeded) {
+				return status.Errorf(codes.Unavailable, "could not get real-time market quote for %s in %v", quote, fe.QuoteDeadline)
+			} else if err != nil {
 				return status.Errorf(codes.Internal, "failed to retrieve a quote: %v", err)
 			}
 			mu.Lock()
