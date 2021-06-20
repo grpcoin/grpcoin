@@ -7,7 +7,7 @@
     </div>
     <div class="card mx-auto bg-color-black col-12 col-lg-6 p-0">
         <div class="card-body p-1 m-0">
-            <table class="table table-borderless table-hover text-white m-0 leaderboard">
+            <table class="table table-borderless table-hover text-white m-0 leaderboard" id="LeaderTable">
                 <thead class="card-header">
                     <tr class="text-white">
                         <th scope="col" class="p-3 fs-5">#</th>
@@ -27,7 +27,7 @@
                             <a href="/user/{{.User.ID}}">
                                 {{.User.DisplayName}}</a>
                         </td>
-                        <td>
+                        <td id="price-{{.User.ID}}">    
                             USD {{fmtPrice .Valuation}}
                         </td>
 
@@ -38,4 +38,5 @@
     </div>
 
 </main>
+
 {{ template "footer.tpl" }}

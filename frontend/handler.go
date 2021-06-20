@@ -29,7 +29,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/grpcoin/grpcoin/realtimequote"
+	"github.com/grpcoin/grpcoin/userdb"
 	"github.com/purini-to/zapmw"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
 	"go.opentelemetry.io/otel/trace"
@@ -37,9 +40,6 @@ import (
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-
-	"github.com/grpcoin/grpcoin/realtimequote"
-	"github.com/grpcoin/grpcoin/userdb"
 )
 
 var (
@@ -48,6 +48,12 @@ var (
 	tpl        = template.Must(template.New("").Funcs(funcs).ParseFS(templateFS,
 		"templates/*.tpl"))
 )
+
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
 
 type frontend struct {
 	QuoteProvider realtimequote.QuoteProvider
@@ -60,7 +66,8 @@ type frontend struct {
 	Redis *redis.Client
 }
 
-func (_ *frontend) health(w http.ResponseWriter, r *http.Request) {
+//
+func health(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "ok")
 }
 func (fe *frontend) Handler(log *zap.Logger) http.Handler {
@@ -71,11 +78,14 @@ func (fe *frontend) Handler(log *zap.Logger) http.Handler {
 		zapmw.WithZap(log, withStackdriverFields),
 		zapmw.Request(zapcore.InfoLevel, "request"),
 		zapmw.Recoverer(zapcore.ErrorLevel, "recover", zapmw.RecovererDefault))
-	m.HandleFunc("/health", fe.health)
+	m.HandleFunc("/health", health)
 	m.HandleFunc("/_cron/pv", toHandler(fe.calcPortfolioHistory))
 	m.HandleFunc("/api/portfolioValuation/{id}", toHandler(fe.apiPortfolioHistory))
 	m.HandleFunc("/user/{id}", toHandler(fe.userProfile))
+	m.HandleFunc("/ws/tickers", fe.wsTickers)
 	m.HandleFunc("/", toHandler(fe.leaderboard))
+
+	go hub.run()
 	return m
 }
 
