@@ -1,7 +1,7 @@
 {{ template "header.tpl" (printf "User: %s" .u.DisplayName) }}
 
 {{ $tv := pv .u.Portfolio .quotes }}
-<div class="px-5">
+<div class="container">
     <div class="row py-5">
         <div class="col-lg-3">
             <div class="card bg-color-black mb-3">
@@ -84,27 +84,29 @@
                     <span class="text-white">Returns</span>
                 </h4>
                 <div class="card-body text-center p-0">
-                    <table class="table table-striped mb-0">
-                        <thead>
-                            <tr>
-                                {{ range .returns }}
-                                <th scope="col" class="text-white returns-tbl">{{.Label}}</th>
-                                {{ end }}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                {{ range .returns }}
-                                <td
-                                    class="{{ if isNegative .Percent }}gh-bg-color-red{{ else }}gh-bg-color-green{{end}} returns-tbl">
-                                    <b>
-                                        {{ fmtPercent .Percent }}
-                                    </b>
-                                </td>
-                                {{ end }}
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div class="table-responsive">
+                        <table class="table table-striped mb-0">
+                            <thead>
+                                <tr>
+                                    {{ range .returns }}
+                                    <th scope="col" class="text-white returns-tbl">{{.Label}}</th>
+                                    {{ end }}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    {{ range .returns }}
+                                    <td
+                                        class="{{ if isNegative .Percent }}gh-bg-color-red{{ else }}gh-bg-color-green{{end}} returns-tbl">
+                                        <b>
+                                            {{ fmtPercent .Percent }}
+                                        </b>
+                                    </td>
+                                    {{ end }}
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -245,7 +247,7 @@
                 <h4 class="card-header">
                     <span class="text-white">Orders</span>
                 </h4>
-                <div class="card-body overflow-scroll" style="max-height: 500px;">
+                <div class="card-body table-responsive" style="max-height: 500px;">
                     <table class="table table-striped table-hover text-white">
                         <thead>
                             <tr>
@@ -266,9 +268,7 @@
                                 <td>{{fmtPrice .Price}}</td>
                                 <td>{{fmtPriceFull (mul .Price .Size)}}</td>
                                 <td>
-                                    <time
-                                        datetime="{{fmtDateISO .Date}}"
-                                        alt="{{fmtDateISO .Date}}">
+                                    <time datetime="{{fmtDateISO .Date}}" alt="{{fmtDateISO .Date}}">
                                         {{fmtDuration (since .Date) 2}}
                                     </time>
                                 </td>
