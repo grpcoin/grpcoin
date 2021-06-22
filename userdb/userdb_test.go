@@ -194,7 +194,7 @@ func TestUserDB_Trade_OrderHistory(t *testing.T) {
 	}
 
 	// bad order
-	if err := udb.Trade(ctx, tu.DBKey(), "BTC",
+	if _, err := udb.Trade(ctx, tu.DBKey(), "BTC",
 		grpcoin.TradeAction_SELL,
 		&grpcoin.Amount{Units: 100},
 		&grpcoin.Amount{Units: 100}); status.Code(err) != codes.InvalidArgument {
@@ -202,30 +202,58 @@ func TestUserDB_Trade_OrderHistory(t *testing.T) {
 	}
 
 	// several good orders
-	if err := udb.Trade(ctx, tu.DBKey(), "BTC",
+	resultingPortfolio, err := udb.Trade(ctx, tu.DBKey(), "BTC",
 		grpcoin.TradeAction_BUY,
 		&grpcoin.Amount{Units: 100},
-		&grpcoin.Amount{Units: 25}); err != nil {
+		&grpcoin.Amount{Units: 25})
+	if err != nil {
 		t.Fatal(err)
 	}
-	if err := udb.Trade(ctx, tu.DBKey(), "BTC",
-		grpcoin.TradeAction_SELL,
-		&grpcoin.Amount{Units: 150},
-		&grpcoin.Amount{Units: 10}); err != nil {
+	if diff := cmp.Diff(Portfolio{
+		Positions: map[string]Amount{"BTC": {Units: 25}},
+		CashUSD:   Amount{Units: 97_500},
+	}, resultingPortfolio); diff != "" {
+		t.Fatal(diff)
+	}
+
+	resultingPortfolio, err = udb.Trade(ctx, tu.DBKey(), "ETH",
+		grpcoin.TradeAction_BUY,
+		&grpcoin.Amount{Units: 2000},
+		&grpcoin.Amount{Units: 5})
+
+	if err != nil {
 		t.Fatal(err)
 	}
-	if err := udb.Trade(ctx, tu.DBKey(), "BTC",
+	if diff := cmp.Diff(Portfolio{
+		Positions: map[string]Amount{
+			"BTC": {Units: 25},
+			"ETH": {Units: 5},
+		},
+		CashUSD: Amount{Units: 87_500},
+	}, resultingPortfolio); diff != "" {
+		t.Fatal(diff)
+	}
+
+	resultingPortfolio, err = udb.Trade(ctx, tu.DBKey(), "BTC",
 		grpcoin.TradeAction_SELL,
-		&grpcoin.Amount{Units: 80},
-		&grpcoin.Amount{Units: 10}); err != nil {
+		&grpcoin.Amount{Units: 200},
+		&grpcoin.Amount{Units: 25})
+	if err != nil {
 		t.Fatal(err)
+	}
+	if diff := cmp.Diff(Portfolio{
+		Positions: map[string]Amount{
+			"ETH": {Units: 5}},
+		CashUSD: Amount{Units: 92_500},
+	}, resultingPortfolio); diff != "" {
+		t.Fatal(diff)
 	}
 
 	// validate order history
 	expectedOrders := []Order{
 		{Ticker: "BTC", Action: grpcoin.TradeAction_BUY, Size: Amount{25, 0}, Price: Amount{100, 0}},
-		{Ticker: "BTC", Action: grpcoin.TradeAction_SELL, Size: Amount{10, 0}, Price: Amount{150, 0}},
-		{Ticker: "BTC", Action: grpcoin.TradeAction_SELL, Size: Amount{10, 0}, Price: Amount{80, 0}},
+		{Ticker: "ETH", Action: grpcoin.TradeAction_BUY, Size: Amount{5, 0}, Price: Amount{2000, 0}},
+		{Ticker: "BTC", Action: grpcoin.TradeAction_SELL, Size: Amount{25, 0}, Price: Amount{200, 0}},
 	}
 	got, err := udb.UserOrderHistory(ctx, "testuser")
 	if err != nil {

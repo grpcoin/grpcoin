@@ -257,9 +257,21 @@ func TestTrade(t *testing.T) {
 		Ticker:        &grpcoin.TradeResponse_Ticker{Symbol: "BTC"},
 		Quantity:      &grpcoin.Amount{Units: 1, Nanos: 500_000_000},
 		ExecutedPrice: &grpcoin.Amount{Units: 30_000},
+		ResultingPortfolio: &grpcoin.TradeResponse_Portfolio{
+			RemainingCash: &grpcoin.Amount{Units: 55_000, Nanos: 0},
+			Positions: []*grpcoin.PortfolioPosition{
+				{Ticker: &grpcoin.PortfolioPosition_Ticker{Ticker: "BTC"},
+					Amount: &grpcoin.Amount{Units: 1, Nanos: 500_000_000}},
+			},
+		},
 	}
 	if diff := cmp.Diff(*expected, *resp,
-		cmpopts.IgnoreUnexported(grpcoin.TradeResponse{}, grpcoin.TradeResponse_Ticker{}, grpcoin.Amount{}),
+		cmpopts.IgnoreUnexported(grpcoin.TradeResponse{},
+			grpcoin.TradeResponse_Ticker{},
+			grpcoin.Amount{},
+			grpcoin.PortfolioPosition{},
+			grpcoin.PortfolioPosition_Ticker{},
+			grpcoin.TradeResponse_Portfolio{}),
 		cmpopts.IgnoreFields(grpcoin.TradeResponse{}, "T"),
 	); diff != "" {
 		t.Fatalf(diff)

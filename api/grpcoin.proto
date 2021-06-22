@@ -109,7 +109,7 @@ enum TradeAction {
     SELL = 2; // Sell a cryptocurrency for cash holdings.
 }
 
-message TradeRequest{
+message TradeRequest {
     message Ticker {
         string ticker = 1; // e.g. BTC
     }
@@ -118,7 +118,7 @@ message TradeRequest{
     Amount quantity = 3;
 }
 
-message TradeResponse{
+message TradeResponse {
     google.protobuf.Timestamp t = 1;
     TradeAction action = 2;
     message Ticker {
@@ -127,6 +127,12 @@ message TradeResponse{
     Ticker ticker = 5;
     Amount quantity = 3;
     Amount executed_price = 4;
+
+    message Portfolio {
+        Amount remaining_cash = 1; // Cash left after trade in USD available to trade
+        repeated PortfolioPosition positions = 2; // Updated list of positions
+    }
+    Portfolio resulting_portfolio = 6;
 }
 
 message Empty {}
