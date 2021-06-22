@@ -17,10 +17,12 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"io"
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -78,17 +80,20 @@ func main() {
 		log.Printf("-> coin position: %s", p.String())
 	}
 
-	// buy 0.05 btc
+	// buy 1.05 dogecoin
 	order, err := grpcoin.NewPaperTradeClient(conn).Trade(authCtx, &grpcoin.TradeRequest{
 		Action:   grpcoin.TradeAction_BUY,
-		Ticker:   &grpcoin.TradeRequest_Ticker{Ticker: "BTC"},
-		Quantity: &grpcoin.Amount{Units: 0, Nanos: 50_000_000},
+		Ticker:   &grpcoin.TradeRequest_Ticker{Ticker: "DOGE"},
+		Quantity: &grpcoin.Amount{Units: 1, Nanos: 50_000_000},
 	})
 	if err != nil {
 		log.Fatalf("trade order failed: %v", err)
 	}
-	log.Printf("ORDER EXECUTED: %s [%s] %s at USD[%s]", order.Action,
-		order.Quantity, order.Ticker.Symbol, order.ExecutedPrice)
+	log.Printf("ORDER EXECUTED: %s [%s] %s at USD[%s]! (cash left: %s USD)", order.Action,
+		fmtAmount(order.Quantity),
+		order.Ticker.Symbol,
+		fmtAmount(order.ExecutedPrice),
+		fmtAmount(order.Result.CashUsd))
 
 	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	for ctx.Err() == nil {
@@ -119,4 +124,8 @@ func main() {
 		time.Sleep(time.Second)
 	}
 
+}
+
+func fmtAmount(a *grpcoin.Amount) string {
+	return strings.TrimSuffix(fmt.Sprintf("%d.%09d", a.GetUnits(), a.GetNanos()), "00000")
 }

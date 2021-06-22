@@ -39,6 +39,19 @@ type tradingService struct {
 	grpcoin.UnimplementedPaperTradeServer
 }
 
+func toPortfolioResponse(p userdb.Portfolio) *grpcoin.PortfolioResponse {
+	var pp []*grpcoin.PortfolioPosition
+	for k, v := range p.Positions {
+		pp = append(pp, &grpcoin.PortfolioPosition{
+			Ticker: &grpcoin.PortfolioPosition_Ticker{Ticker: k},
+			Amount: v.V(),
+		})
+	}
+	return &grpcoin.PortfolioResponse{
+		CashUsd:   p.CashUSD.V(),
+		Positions: pp}
+}
+
 func (t *tradingService) Portfolio(ctx context.Context, req *grpcoin.PortfolioRequest) (*grpcoin.PortfolioResponse, error) {
 	ctx, span := t.tracer.Start(ctx, "portfolio read")
 	defer span.End()
@@ -46,17 +59,7 @@ func (t *tradingService) Portfolio(ctx context.Context, req *grpcoin.PortfolioRe
 	if !ok {
 		return nil, status.Error(codes.Internal, "could not find user record in request context")
 	}
-	var pp []*grpcoin.PortfolioPosition
-	for k, v := range user.Portfolio.Positions {
-		pp = append(pp, &grpcoin.PortfolioPosition{
-			Ticker: &grpcoin.PortfolioPosition_Ticker{Ticker: k},
-			Amount: v.V(),
-		})
-	}
-	return &grpcoin.PortfolioResponse{
-		CashUsd:   user.Portfolio.CashUSD.V(),
-		Positions: pp,
-	}, nil
+	return toPortfolioResponse(user.Portfolio), nil
 }
 
 const (
@@ -92,7 +95,7 @@ func (t *tradingService) Trade(ctx context.Context, req *grpcoin.TradeRequest) (
 	defer s.End()
 	tradeCtx, cancel2 := context.WithTimeout(subCtx, tradeExecutionDeadline)
 	defer cancel2()
-	err = t.udb.Trade(tradeCtx, user.ID, req.GetTicker().Ticker, req.Action, quote, req.Quantity)
+	resultingPortfolio, err := t.udb.Trade(tradeCtx, user.ID, req.GetTicker().Ticker, req.Action, quote, req.Quantity)
 	if errors.Is(err, context.DeadlineExceeded) {
 		return nil, status.Errorf(codes.Unavailable, "could not execute trade in a timely manner: %v", err)
 	} else if status.Code(err) == codes.InvalidArgument {
@@ -107,6 +110,7 @@ func (t *tradingService) Trade(ctx context.Context, req *grpcoin.TradeRequest) (
 		ExecutedPrice: quote,
 		Ticker:        &grpcoin.TradeResponse_Ticker{Symbol: req.GetTicker().GetTicker()},
 		Quantity:      req.Quantity,
+		Result:        toPortfolioResponse(resultingPortfolio),
 	}, nil
 }
 
