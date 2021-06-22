@@ -75,9 +75,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("portfolio request failed: %v", err)
 	}
-	log.Printf("cash position: %#v", portfolio.CashUsd.String())
+	log.Printf("cash position: USD %s", fmtAmount(portfolio.CashUsd))
 	for _, p := range portfolio.Positions {
-		log.Printf("-> coin position: %s", p.String())
+		log.Printf("-> coin position: %s (%s)", p.GetTicker().GetTicker(), fmtAmount(p.Amount))
 	}
 
 	// buy 0.05 btc
@@ -90,8 +90,8 @@ func main() {
 		log.Fatalf("trade order failed: %v", err)
 	}
 	log.Printf("ORDER EXECUTED: %s [%s] %s at USD[%s] (cash remaining: %s)", order.Action,
-		fmtPrice(order.Quantity), order.Ticker.Symbol, fmtPrice(order.ExecutedPrice),
-		fmtPrice(order.ResultingPortfolio.RemainingCash))
+		fmtAmount(order.Quantity), order.Ticker.Symbol, fmtAmount(order.ExecutedPrice),
+		fmtAmount(order.ResultingPortfolio.RemainingCash))
 
 	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	for ctx.Err() == nil {
@@ -123,7 +123,7 @@ func main() {
 	}
 }
 
-func fmtPrice(a *grpcoin.Amount) string {
+func fmtAmount(a *grpcoin.Amount) string {
 	s := fmt.Sprintf("%d.%09d", a.Units, a.Nanos)
 	s = strings.TrimSuffix(s, "0000000")
 	return s
