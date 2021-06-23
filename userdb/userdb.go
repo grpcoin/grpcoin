@@ -197,9 +197,11 @@ func (u *UserDB) EnsureAccountExistsInterceptor() grpc_auth.AuthFunc {
 	}
 }
 
-func (u *UserDB) Trade(ctx context.Context, uid string, ticker string, action grpcoin.TradeAction, quote, quantity *grpcoin.Amount) error {
+func (u *UserDB) Trade(ctx context.Context, uid string, ticker string, action grpcoin.TradeAction,
+	quote, quantity *grpcoin.Amount) (Portfolio, error) {
 	subCtx, s := u.T.Start(ctx, "trade tx")
 	ref := u.DB.Collection("users").Doc(uid)
+	var resultingPortfolio Portfolio
 	err := u.DB.RunTransaction(subCtx, func(ctx context.Context, tx *firestore.Transaction) error {
 		doc, err := tx.Get(ref)
 		if err != nil {
@@ -212,12 +214,13 @@ func (u *UserDB) Trade(ctx context.Context, uid string, ticker string, action gr
 		if err := makeTrade(&u.Portfolio, action, ticker, quote, quantity); err != nil {
 			return err
 		}
+		resultingPortfolio = u.Portfolio
 		return tx.Set(ref, u)
 	}, firestore.MaxAttempts(1))
 	s.End()
 
 	if err != nil {
-		return err
+		return resultingPortfolio, err
 	}
 
 	subCtx, s = u.T.Start(ctx, "log order")
@@ -238,7 +241,7 @@ func (u *UserDB) Trade(ctx context.Context, uid string, ticker string, action gr
 			ctxzap.Extract(ctx).Warn("failed to rotate order history", zap.Error(err))
 		}
 	}
-	return nil // do not block trades on order history bookkeeping
+	return resultingPortfolio, nil // do not block trades on order history bookkeeping
 }
 
 func (u *UserDB) recordOrderHistory(ctx context.Context, uid string,
