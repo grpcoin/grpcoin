@@ -42,6 +42,7 @@ import (
 	"github.com/grpcoin/grpcoin/apiserver/auth"
 	"github.com/grpcoin/grpcoin/apiserver/auth/github"
 	"github.com/grpcoin/grpcoin/apiserver/ratelimiter"
+	"github.com/grpcoin/grpcoin/realtimequote/coinbase"
 	"github.com/grpcoin/grpcoin/serverutil"
 	"github.com/grpcoin/grpcoin/userdb"
 )

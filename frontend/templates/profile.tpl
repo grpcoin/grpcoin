@@ -44,18 +44,20 @@
                         justify-content-between d-flex bg-color-black bg-hover">
                         <div>
                             <b class="text-white">{{$tick}}</b><br />
-                            <span class="text-muted">
+                            <span class="text-muted" id="{{$tick}}-stream">
                                 {{ if not (isZero $amount) }}
                                 x{{ fmtAmount $amount }}
                                 <small>at {{ fmtPrice (index $.quotes $tick ) }} </small></span>
                             {{end}}
                         </div>
                         <div class="text-end text-white">
-                            {{ fmtPrice (mul $amount (index $.quotes $tick )) }}<br />
+                            <span id="{{$tick}}"> {{ fmtPrice (mul $amount (index $.quotes $tick )) }}</span><br />
                             <span class="text-white-50">
                                 {{ fmtPercent ( toPercent (div (mul $amount (index $.quotes $tick )) $tv )) }}
                             </span>
+
                         </div>
+
                     </li>
                     {{ end }}
                 </ul>
@@ -63,7 +65,7 @@
                     <div>
                         <b class="text-white">Total value</b>
                     </div>
-                    <div class="text-end text-white">
+                    <div class="text-end text-white" id="total">
                         {{fmtPrice $tv }}
                     </div>
                 </div>
@@ -280,5 +282,52 @@
         </div>
     </div>
     <hr />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/decimal.js/9.0.0/decimal.min.js"></script>
+<script>
+const socket = new WebSocket("ws://localhost:8081/ws/tickers");
+     
+     // Connection opened
+     socket.addEventListener("open", function(event) {
+       socket.send("Hi grpco.in websocket server!");
+     });
+     
+     const quotes = {};     
+     const users = {{.users}}
+     const portfolio = {{.u.Portfolio.Positions }};
+     const cash = {{.u.Portfolio.CashUSD}};
+     const cash_total =  new Decimal(cash.Units).plus( new Decimal(cash.Nanos).times( new Decimal(10).pow(-9) ) )
 
+     const usersData = {};
+
+     socket.onmessage = function(evt) {
+         const data = JSON.parse(evt.data)
+
+         for(const [key, value] of Object.entries(data)){
+             const nanos = new Decimal(value.Nanos)
+             const units = new Decimal(value.Units)
+             quotes[key] = units.plus(nanos.times( new Decimal(10).pow(-9))).toString()
+
+            for(const [coin, value] of Object.entries(portfolio)){
+                const val = new Decimal(value.Units).plus(new Decimal(value.Nanos).times(new Decimal(10).pow(-9)))
+                usersData[coin] = val;
+                const quoteprice = '$' + usersData[coin].times(quotes[coin]).toNumber().toFixed(2).toLocaleString('en-US')
+                document.getElementById(coin).innerHTML = quoteprice;
+            }
+
+            if(document.getElementById(`${key}-stream`))
+                document.getElementById(`${key}-stream`).innerHTML = `x${usersData[key]} at <small>$ ${parseFloat(quotes[key]).toLocaleString()}</small>`
+            
+            const total = [usersData, quotes].reduce((a, b) => {
+                for(const k in a){
+                    if(b.hasOwnProperty(k))
+                        a[k] = new Decimal(a[k]).times(b[k])
+                }
+                a = Object.values(a).reduce((n, now) => n.plus(now))
+                return a
+            });
+
+            document.getElementById("total").innerHTML = '$' + total.plus(cash_total).toNumber().toLocaleString();
+         }
+     }
+</script>
     {{ template "footer.tpl" }}

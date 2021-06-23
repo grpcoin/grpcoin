@@ -83,7 +83,7 @@ func (t *tradingService) Trade(ctx context.Context, req *grpcoin.TradeRequest) (
 	quoteCtx, cancel := context.WithTimeout(subCtx, quoteDeadline)
 	defer cancel()
 	quote, err := t.quoteProvider.GetQuote(quoteCtx, req.GetTicker().Ticker)
-	if errors.Is(err, context.DeadlineExceeded) {
+	if err == context.DeadlineExceeded {
 		return nil, status.Errorf(codes.Unavailable, "could not get real-time market quote for %s in %v",
 			req.GetTicker().GetTicker(), quoteDeadline)
 	} else if err != nil {
