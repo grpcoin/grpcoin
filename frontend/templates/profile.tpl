@@ -42,14 +42,13 @@
                     {{ range $tick, $amount := .u.Portfolio.Positions }}
                         <li class="list-group-item
                         justify-content-between d-flex bg-color-black bg-hover">
-                            <div>
+                            <div class="text-muted">
                                 <b class="text-white">{{$tick}}</b><br/>
                                 {{ if not (isZero $amount) }}
                                     x{{ fmtAmount $amount }}
-                                    <small>
+                                    <small class>
                                         at
-                                        <span class="text-muted"
-                                              id="price-{{$tick}}">{{ fmtPrice (index $.quotes $tick ) }}</span>
+                                        <span id="price-{{$tick}}">{{ fmtPrice (index $.quotes $tick ) }}</span>
                                     </small>
                                 {{end}}
                             </div>

@@ -17,7 +17,7 @@ func (fe *frontend) wsTickers(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 	defer cancel()
-	ch = realtimequote.RateLimited(ch, time.Millisecond*500)
+	ch = realtimequote.PerSymbolRateLimited(ch, time.Second)
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
