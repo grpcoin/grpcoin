@@ -19,64 +19,22 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/grpcoin/grpcoin/api/grpcoin"
 	"github.com/grpcoin/grpcoin/realtimequote"
-	"github.com/grpcoin/grpcoin/realtimequote/pubsub"
+	"github.com/grpcoin/grpcoin/realtimequote/fanout"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type tickerService struct {
-	quoteStream      realtimequote.QuoteStream
 	supportedTickers []string
 	maxRate          time.Duration
-
-	lock sync.Mutex
-	bus  *pubsub.PubSub
+	fanout           *fanout.QuoteFanoutService
 
 	grpcoin.UnimplementedTickerInfoServer
-}
-
-func (ts *tickerService) initWatch() error {
-	ts.lock.Lock()
-	if ts.bus != nil {
-		ts.lock.Unlock()
-		return nil
-	}
-
-	ctx, stop := context.WithCancel(context.Background())
-	go func() {
-		<-ctx.Done()
-		ts.lock.Lock()
-		ts.bus = nil
-		ts.lock.Unlock()
-	}()
-	quotes, err := ts.quoteStream.Watch(ctx, ts.supportedTickers...)
-	if err != nil {
-		stop()
-		ts.lock.Unlock()
-		return err
-	}
-	ts.bus = pubsub.NewPubSub(quotes, stop)
-	ts.lock.Unlock()
-	return nil
-}
-
-func (ts *tickerService) registerWatch(ctx context.Context) (<-chan realtimequote.Quote, error) {
-	ch := make(chan realtimequote.Quote)
-	if err := ts.initWatch(); err != nil {
-		return nil, err
-	}
-	ts.bus.Sub(ch)
-	go func() {
-		<-ctx.Done()
-		ts.bus.Unsub(ch)
-	}()
-	return ch, nil
 }
 
 func filterByProduct(ch <-chan realtimequote.Quote, product string) <-chan realtimequote.Quote {
@@ -99,7 +57,7 @@ func (ts *tickerService) Watch(req *grpcoin.QuoteTicker, stream grpcoin.TickerIn
 	if !realtimequote.IsSupported(ts.supportedTickers, req.GetTicker()) {
 		return status.Errorf(codes.InvalidArgument, "only supported tickers are %#v", ts.supportedTickers)
 	}
-	ch, err := ts.registerWatch(stream.Context())
+	ch, err := ts.fanout.RegisterWatch(stream.Context())
 	if err != nil {
 		return status.Error(codes.Internal, fmt.Sprintf("failed to register ticker watch: %v", err))
 	}

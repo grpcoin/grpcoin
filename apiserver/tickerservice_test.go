@@ -23,6 +23,8 @@ import (
 	"time"
 
 	"github.com/grpcoin/grpcoin/api/grpcoin"
+	"github.com/grpcoin/grpcoin/realtimequote"
+	"github.com/grpcoin/grpcoin/realtimequote/fanout"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -36,10 +38,13 @@ func prepTickerService(t *testing.T) *grpc.ClientConn {
 	ts := &tickerService{
 		maxRate:          time.Millisecond,
 		supportedTickers: []string{"BTC"},
-		quoteStream: mockQuoteStream{
-			product: "BTC",
-			n:       10,
-			price:   &grpcoin.Amount{Units: 35_000}}}
+		fanout: fanout.NewQuoteFanoutService(func(ctx context.Context) (<-chan realtimequote.Quote, error) {
+			return (mockQuoteStream{
+				product: "BTC",
+				n:       10,
+				price:   &grpcoin.Amount{Units: 35_000}}).Watch(ctx)
+		}),
+	}
 	grpcoin.RegisterTickerInfoServer(srv, ts)
 	go func() {
 		if err := srv.Serve(l); err != nil {

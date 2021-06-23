@@ -6,8 +6,8 @@
         <div class="col-lg-3">
             <div class="card bg-color-black mb-3">
                 {{ with (profilePic .u.ProfileURL) }}
-                <img src="{{.}}" class="card-image-top img-thumbnail
-                    d-none d-lg-block" />
+                    <img src="{{.}}" class="card-image-top img-thumbnail
+                    d-none d-lg-block"/>
                 {{ end }}
                 <div class="card-body">
                     <h3 class="card-title display-6">
@@ -33,32 +33,35 @@
                             <b class="text-white">CASH</b>
                         </div>
                         <div class="text-end text-white">
-                            {{fmtPrice .u.Portfolio.CashUSD -}}<br />
+                            {{fmtPrice .u.Portfolio.CashUSD -}}<br/>
                             <span class="text-white-50">
                                 {{ fmtPercent (toPercent ( div .u.Portfolio.CashUSD $tv ) ) }}
                             </span>
                         </div>
                     </li>
                     {{ range $tick, $amount := .u.Portfolio.Positions }}
-                    <li class="list-group-item
+                        <li class="list-group-item
                         justify-content-between d-flex bg-color-black bg-hover">
-                        <div>
-                            <b class="text-white">{{$tick}}</b><br />
-                            <span class="text-muted" id="{{$tick}}-stream">
+                            <div>
+                                <b class="text-white">{{$tick}}</b><br/>
                                 {{ if not (isZero $amount) }}
-                                x{{ fmtAmount $amount }}
-                                <small>at {{ fmtPrice (index $.quotes $tick ) }} </small></span>
-                            {{end}}
-                        </div>
-                        <div class="text-end text-white">
-                            <span id="{{$tick}}"> {{ fmtPrice (mul $amount (index $.quotes $tick )) }}</span><br />
-                            <span class="text-white-50">
+                                    x{{ fmtAmount $amount }}
+                                    <small>
+                                        at
+                                        <span class="text-muted"
+                                              id="price-{{$tick}}">{{ fmtPrice (index $.quotes $tick ) }}</span>
+                                    </small>
+                                {{end}}
+                            </div>
+                            <div class="text-end text-white">
+                                <span id="posValue-{{$tick}}">{{ fmtPrice (mul $amount (index $.quotes $tick )) }}</span><br/>
+                                <span class="text-white-50">
                                 {{ fmtPercent ( toPercent (div (mul $amount (index $.quotes $tick )) $tv )) }}
                             </span>
 
-                        </div>
+                            </div>
 
-                    </li>
+                        </li>
                     {{ end }}
                 </ul>
                 <div class="card-footer justify-content-between d-flex bg-hover">
@@ -86,23 +89,23 @@
                 <div class="card-body text-center p-0">
                     <table class="table table-striped mb-0">
                         <thead>
-                            <tr>
-                                {{ range .returns }}
+                        <tr>
+                            {{ range .returns }}
                                 <th scope="col" class="text-white returns-tbl">{{.Label}}</th>
-                                {{ end }}
-                            </tr>
+                            {{ end }}
+                        </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                {{ range .returns }}
+                        <tr>
+                            {{ range .returns }}
                                 <td
-                                    class="{{ if isNegative .Percent }}gh-bg-color-red{{ else }}gh-bg-color-green{{end}} returns-tbl">
+                                        class="{{ if isNegative .Percent }}gh-bg-color-red{{ else }}gh-bg-color-green{{end}} returns-tbl">
                                     <b>
                                         {{ fmtPercent .Percent }}
                                     </b>
                                 </td>
-                                {{ end }}
-                            </tr>
+                            {{ end }}
+                        </tr>
                         </tbody>
                     </table>
                 </div>
@@ -124,7 +127,10 @@
                         }
                     </style>
                     <script>
-                        var formatUSD = val => Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val)
+                        var formatUSD = val => Intl.NumberFormat('en-US', {
+                            style: 'currency',
+                            currency: 'USD'
+                        }).format(val)
                         var options = {
                             chart: {
                                 id: 'area-datetime',
@@ -154,13 +160,13 @@
                                 borderColor: '#000',
                                 labels: {
                                     datetimeUTC: false,
-                                    style: { colors: "#ffffff" },
+                                    style: {colors: "#ffffff"},
                                 }
                             },
                             yaxis: {
                                 labels: {
                                     formatter: formatUSD,
-                                    style: { colors: "#ffffff" },
+                                    style: {colors: "#ffffff"},
                                 },
                             },
                             tooltip: {
@@ -193,40 +199,40 @@
                                 })
                                 .then(data => {
                                     data.push([new Date().getTime(), {{ fmtAmountRaw $tv }} ]);
-                            options.series = [{
-                                name: 'Portfolio',
-                                data: data,
-                            }];
-                        }).catch(e => console.log(e));
+                                    options.series = [{
+                                        name: 'Portfolio',
+                                        data: data,
+                                    }];
+                                }).catch(e => console.log(e));
 
-                        var tl = document.getElementById("chart-timeline");
-                        options.chart.height = tl.offsetHeight;
-                        var chart = new ApexCharts(tl, options);
-                        chart.render();
+                            var tl = document.getElementById("chart-timeline");
+                            options.chart.height = tl.offsetHeight;
+                            var chart = new ApexCharts(tl, options);
+                            chart.render();
 
-                        Date.prototype.subDays = function (days) {
-                            var date = new Date(this.valueOf());
-                            date.setDate(date.getDate() - days);
-                            return date;
-                        }
-                        var resetButtonStyles = function (activeEl) {
-                            document.querySelectorAll('#chart button').forEach(el => el.classList.remove('btn-primary'));
-                            document.querySelectorAll('#chart button').forEach(el => el.classList.add('btn-secondary'));
-                            activeEl.target.classList.remove('btn-secondary');
-                            activeEl.target.classList.add('btn-primary');
-                        }
-                        document.getElementById('one_month').addEventListener('click', function (e) {
-                            resetButtonStyles(e);
-                            chart.zoomX(new Date().subDays(31).getTime(), new Date().getTime());
-                        })
-                        document.getElementById('one_week').addEventListener('click', function (e) {
-                            resetButtonStyles(e);
-                            chart.zoomX(new Date().subDays(7).getTime(), new Date().getTime());
-                        })
-                        document.getElementById('one_day').addEventListener('click', function (e) {
-                            resetButtonStyles(e);
-                            chart.zoomX(new Date().subDays(1).getTime(), new Date().getTime());
-                        })
+                            Date.prototype.subDays = function (days) {
+                                var date = new Date(this.valueOf());
+                                date.setDate(date.getDate() - days);
+                                return date;
+                            }
+                            var resetButtonStyles = function (activeEl) {
+                                document.querySelectorAll('#chart button').forEach(el => el.classList.remove('btn-primary'));
+                                document.querySelectorAll('#chart button').forEach(el => el.classList.add('btn-secondary'));
+                                activeEl.target.classList.remove('btn-secondary');
+                                activeEl.target.classList.add('btn-primary');
+                            }
+                            document.getElementById('one_month').addEventListener('click', function (e) {
+                                resetButtonStyles(e);
+                                chart.zoomX(new Date().subDays(31).getTime(), new Date().getTime());
+                            })
+                            document.getElementById('one_week').addEventListener('click', function (e) {
+                                resetButtonStyles(e);
+                                chart.zoomX(new Date().subDays(7).getTime(), new Date().getTime());
+                            })
+                            document.getElementById('one_day').addEventListener('click', function (e) {
+                                resetButtonStyles(e);
+                                chart.zoomX(new Date().subDays(1).getTime(), new Date().getTime());
+                            })
                         });
                     </script>
                     <div id="chart">
@@ -241,13 +247,13 @@
             </div>
 
             {{ with .orders }}
-            <div class="card mt-3 bg-color-black">
-                <h4 class="card-header">
-                    <span class="text-white">Orders</span>
-                </h4>
-                <div class="card-body overflow-scroll" style="max-height: 500px;">
-                    <table class="table table-striped table-hover text-white">
-                        <thead>
+                <div class="card mt-3 bg-color-black">
+                    <h4 class="card-header">
+                        <span class="text-white">Orders</span>
+                    </h4>
+                    <div class="card-body overflow-scroll" style="max-height: 500px;">
+                        <table class="table table-striped table-hover text-white">
+                            <thead>
                             <tr>
                                 <th>Action</th>
                                 <th>Ticker</th>
@@ -256,78 +262,74 @@
                                 <th>Total Cost</th>
                                 <th>Date</th>
                             </tr>
-                        </thead>
-                        <tbody>
+                            </thead>
+                            <tbody>
                             {{ range . }}
-                            <tr>
-                                <td>{{.Action}}</td>
-                                <td>{{.Ticker}}</td>
-                                <td>{{fmtAmount .Size}}</td>
-                                <td>{{fmtPrice .Price}}</td>
-                                <td>{{fmtPriceFull (mul .Price .Size)}}</td>
-                                <td>
-                                    <time
-                                        datetime="{{fmtDateISO .Date}}"
-                                        alt="{{fmtDateISO .Date}}">
-                                        {{fmtDuration (since .Date) 2}}
-                                    </time>
-                                </td>
-                            </tr>
+                                <tr>
+                                    <td>{{.Action}}</td>
+                                    <td>{{.Ticker}}</td>
+                                    <td>{{fmtAmount .Size}}</td>
+                                    <td>{{fmtPrice .Price}}</td>
+                                    <td>{{fmtPriceFull (mul .Price .Size)}}</td>
+                                    <td>
+                                        <time
+                                                datetime="{{fmtDateISO .Date}}"
+                                                alt="{{fmtDateISO .Date}}">
+                                            {{fmtDuration (since .Date) 2}}
+                                        </time>
+                                    </td>
+                                </tr>
                             {{ end }}
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
             {{ end }}
         </div>
     </div>
-    <hr />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/decimal.js/9.0.0/decimal.min.js"></script>
-<script>
-const socket = new WebSocket("ws://localhost:8081/ws/tickers");
-     
-     // Connection opened
-     socket.addEventListener("open", function(event) {
-       socket.send("Hi grpco.in websocket server!");
-     });
-     
-     const quotes = {};     
-     const users = {{.users}}
-     const portfolio = {{.u.Portfolio.Positions }};
-     const cash = {{.u.Portfolio.CashUSD}};
-     const cash_total =  new Decimal(cash.Units).plus( new Decimal(cash.Nanos).times( new Decimal(10).pow(-9) ) )
+    <hr/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/decimal.js/9.0.0/decimal.min.js"></script>
+    <script>
+        const socket = new WebSocket("ws://localhost:8081/ws/tickers");
 
-     const usersData = {};
+        socket.addEventListener("open", function (event) {
+            socket.send("Hi grpco.in websocket server!");
+        });
 
-     socket.onmessage = function(evt) {
-         const data = JSON.parse(evt.data)
+        const toDecimal = v => new Decimal(v.Units || v.units || 0).plus(new Decimal(v.Nanos || v.nanos || 0).times(new Decimal(10).pow(-9)))
+        const fmtPrice = v => v.toNumber().toLocaleString('en-US',{
+            maximumFractionDigits: 2,
+            minimumFractionDigits: 2,
+        });
 
-         for(const [key, value] of Object.entries(data)){
-             const nanos = new Decimal(value.Nanos)
-             const units = new Decimal(value.Units)
-             quotes[key] = units.plus(nanos.times( new Decimal(10).pow(-9))).toString()
+        const initialQuotes = {{.quotes}};
+        const quotes = {};
+        const portfolio = {{.u.Portfolio.Positions }};
+        const cash = toDecimal({{.u.Portfolio.CashUSD}});
 
-            for(const [coin, value] of Object.entries(portfolio)){
-                const val = new Decimal(value.Units).plus(new Decimal(value.Nanos).times(new Decimal(10).pow(-9)))
-                usersData[coin] = val;
-                const quoteprice = '$' + usersData[coin].times(quotes[coin]).toNumber().toFixed(2).toLocaleString('en-US')
-                document.getElementById(coin).innerHTML = quoteprice;
+        socket.onmessage = function (evt) {
+            const data = JSON.parse(evt.data)
+            const key = data.t
+            quotes[key] = toDecimal(data.p)
+
+            for (const [symbol, amount] of Object.entries(portfolio)) {
+                if (!quotes[symbol]) {
+                    continue
+                }
+                document.getElementById(`price-${symbol}`).innerHTML = fmtPrice(quotes[symbol])
+                const posValue = '$' + fmtPrice(toDecimal(amount).times(quotes[symbol]))
+                document.getElementById(`posValue-${symbol}`).innerHTML = posValue;
             }
 
-            if(document.getElementById(`${key}-stream`))
-                document.getElementById(`${key}-stream`).innerHTML = `x${usersData[key]} at <small>$ ${parseFloat(quotes[key]).toLocaleString()}</small>`
-            
-            const total = [usersData, quotes].reduce((a, b) => {
-                for(const k in a){
-                    if(b.hasOwnProperty(k))
-                        a[k] = new Decimal(a[k]).times(b[k])
-                }
-                a = Object.values(a).reduce((n, now) => n.plus(now))
-                return a
-            });
-
-            document.getElementById("total").innerHTML = '$' + total.plus(cash_total).toNumber().toLocaleString();
-         }
-     }
-</script>
+            const posValues = Object.entries(portfolio).map(pos => {
+                const symbol = pos[0]
+                const amount = toDecimal(pos[1])
+                const price = quotes[symbol] || toDecimal(initialQuotes[symbol])
+                const posValue = amount.times(price)
+                return posValue
+            })
+            const total = cash.plus(posValues.reduce((a, b) => a.plus(b)) || 0);
+            document.getElementById("total").innerHTML = '$' + fmtPrice(total)
+        }
+    </script>
     {{ template "footer.tpl" }}

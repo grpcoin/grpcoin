@@ -1,32 +1,48 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"time"
 
+	"github.com/grpcoin/grpcoin/api/grpcoin"
+	"github.com/grpcoin/grpcoin/realtimequote"
 	"go.uber.org/zap"
-	"golang.org/x/net/context"
 )
 
-func (fe *frontend) wsTickers(w http.ResponseWriter, r *http.Request) {
+func (fe *frontend) wsTickers(w http.ResponseWriter, r *http.Request) error {
+	ctx, cancel := context.WithCancel(r.Context())
+	ch, err := fe.QuoteFanout.RegisterWatch(ctx)
+	if err != nil {
+		return err
+	}
+	defer cancel()
+	ch = realtimequote.RateLimited(ch, time.Millisecond*500)
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		zap.Error(err)
+		return err
 	}
 	defer conn.Close()
 
-	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
-	client.hub.register <- client
+	type qr struct {
+		Ticker string          `json:"t"`
+		Price  *grpcoin.Amount `json:"p"`
+	}
 
-	for {
-		<-time.After(2 * time.Second)
-		quotes, err := fe.getQuotes(context.Background())
-		if err != nil {
-			zap.Error(err)
-		}
-
-		if err := conn.WriteJSON(&quotes); err != nil {
+	successiveWriteErrs := 0
+	for q := range ch {
+		if successiveWriteErrs >= 3 {
 			conn.Close()
+			loggerFrom(r.Context()).Debug("disconnecting client", zap.Error(err))
+			return nil
+		}
+		if err := conn.WriteJSON(qr{Ticker: q.Product, Price: q.Price}); err != nil {
+			successiveWriteErrs++
+			loggerFrom(r.Context()).Debug("ws write failed", zap.Error(err))
+		} else {
+			successiveWriteErrs = 0
 		}
 	}
+	return nil
 }

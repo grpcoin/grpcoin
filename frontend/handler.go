@@ -15,6 +15,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"embed"
 	_ "embed"
@@ -22,6 +23,7 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"net"
 	"net/http"
 	"time"
 
@@ -32,6 +34,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/grpcoin/grpcoin/realtimequote"
+	"github.com/grpcoin/grpcoin/realtimequote/fanout"
 	"github.com/grpcoin/grpcoin/userdb"
 	"github.com/purini-to/zapmw"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
@@ -58,6 +61,7 @@ var upgrader = websocket.Upgrader{
 type frontend struct {
 	QuoteProvider realtimequote.QuoteProvider
 	QuoteDeadline time.Duration
+	QuoteFanout   *fanout.QuoteFanoutService
 
 	CronSAEmail string // email for the SA allowed to run cron endpoints
 
@@ -82,10 +86,8 @@ func (fe *frontend) Handler(log *zap.Logger) http.Handler {
 	m.HandleFunc("/_cron/pv", toHandler(fe.calcPortfolioHistory))
 	m.HandleFunc("/api/portfolioValuation/{id}", toHandler(fe.apiPortfolioHistory))
 	m.HandleFunc("/user/{id}", toHandler(fe.userProfile))
-	m.HandleFunc("/ws/tickers", fe.wsTickers)
+	m.HandleFunc("/ws/tickers", toHandler(fe.wsTickers))
 	m.HandleFunc("/", toHandler(fe.leaderboard))
-
-	go hub.run()
 	return m
 }
 
@@ -152,4 +154,8 @@ func (bw *bufferedRespWriter) Write(d []byte) (int, error) {
 
 func (bw *bufferedRespWriter) WriteHeader(statusCode int) {
 	bw.status = statusCode
+}
+
+func (bw *bufferedRespWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	return bw.ResponseWriter.(http.Hijacker).Hijack()
 }
