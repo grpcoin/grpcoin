@@ -36,3 +36,29 @@ func RateLimited(ch <-chan Quote, d time.Duration) <-chan Quote {
 	}()
 	return out
 }
+
+// PerSymbolRateLimited limits per-symbol per d on the returned channel.
+func PerSymbolRateLimited(ch <-chan Quote, d time.Duration) <-chan Quote {
+	// TODO write tests
+	out := make(chan Quote)
+
+	limiters := make(map[string]*rate.Limiter)
+
+	go func() {
+		for m := range ch {
+			var l *rate.Limiter
+			if v, ok := limiters[m.Product]; !ok {
+				l = rate.NewLimiter(rate.Every(d), 1)
+				limiters[m.Product] = l
+			} else {
+				l = v
+			}
+			if l.Allow() {
+				out <- m
+			}
+			continue
+		}
+		close(out)
+	}()
+	return out
+}
