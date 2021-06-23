@@ -28,6 +28,7 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"github.com/grpcoin/grpcoin/realtimequote"
 	"github.com/grpcoin/grpcoin/realtimequote/binance"
+	"github.com/grpcoin/grpcoin/realtimequote/fanout"
 	"go.uber.org/zap"
 
 	"github.com/grpcoin/grpcoin/serverutil"
@@ -66,10 +67,11 @@ func main() {
 		flTestData, onCloudRun, flRealData)
 	defer shutdownDB()
 
+	quoteStream := realtimequote.QuoteStreamFunc(binance.WatchSymbols)
 	supportedTickers := realtimequote.SupportedTickers
 	quotes := realtimequote.NewReconnectingQuoteProvider(ctx,
 		log.With(zap.String("facility", "quotes")),
-		realtimequote.QuoteStreamFunc(binance.WatchSymbols),
+		quoteStream,
 		supportedTickers...)
 
 	trace, flushTraces := serverutil.GetTracer("grpcoin-frontend", onCloudRun)
@@ -80,9 +82,13 @@ func main() {
 	fe := frontend{
 		QuoteProvider: quotes,
 		QuoteDeadline: time.Second,
-		CronSAEmail:   os.Getenv("CRON_SERVICE_ACCOUNT"),
-		Trace:         trace,
-		Redis:         rc,
+		QuoteFanout: fanout.NewQuoteFanoutService(func(ctx context.Context) (<-chan realtimequote.Quote, error) {
+			log.With(zap.String("facility", "quote_fanout")).Debug("initializing conn to quote stream")
+			return quoteStream.Watch(ctx, supportedTickers...)
+		}),
+		CronSAEmail: os.Getenv("CRON_SERVICE_ACCOUNT"),
+		Trace:       trace,
+		Redis:       rc,
 		DB: &userdb.UserDB{
 			DB: db,
 			T:  trace}}

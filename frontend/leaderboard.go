@@ -57,7 +57,7 @@ func (fe *frontend) getQuotes(ctx context.Context) (map[string]userdb.Amount, er
 	var mu sync.Mutex
 	out := make(map[string]userdb.Amount)
 
-	quotes := realtimequote.SupportedTickers
+	quotes := realtimequote.SupportedTickers // TODO get it from fe.supportedTickers
 	eg, _ := errgroup.WithContext(quoteCtx)
 	for i := range quotes {
 		quote := quotes[i] // capture for closure

@@ -32,6 +32,7 @@ import (
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	"github.com/grpcoin/grpcoin/realtimequote"
 	"github.com/grpcoin/grpcoin/realtimequote/binance"
+	"github.com/grpcoin/grpcoin/realtimequote/fanout"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -42,7 +43,6 @@ import (
 	"github.com/grpcoin/grpcoin/apiserver/auth"
 	"github.com/grpcoin/grpcoin/apiserver/auth/github"
 	"github.com/grpcoin/grpcoin/apiserver/ratelimiter"
-	"github.com/grpcoin/grpcoin/realtimequote/coinbase"
 	"github.com/grpcoin/grpcoin/serverutil"
 	"github.com/grpcoin/grpcoin/userdb"
 )
@@ -100,7 +100,9 @@ func main() {
 	tickerSvc := &tickerService{
 		maxRate:          time.Millisecond * 100,
 		supportedTickers: supportedTickers,
-		quoteStream:      quoteStream}
+		fanout: fanout.NewQuoteFanoutService(func(ctx context.Context) (<-chan realtimequote.Quote, error) {
+			return quoteStream(ctx, supportedTickers...)
+		})}
 	tradingSvc := &tradingService{
 		udb:              udb,
 		quoteProvider:    quoteProvider,
