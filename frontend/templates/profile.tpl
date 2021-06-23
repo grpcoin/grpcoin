@@ -291,11 +291,7 @@
     <hr/>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/decimal.js/9.0.0/decimal.min.js"></script>
     <script>
-        const socket = new WebSocket("ws://localhost:8081/ws/tickers");
-
-        socket.addEventListener("open", function (event) {
-            socket.send("Hi grpco.in websocket server!");
-        });
+        const socket = new WebSocket((window.location.protocol == 'http:' ? "ws" : "wss")+ "://"+window.location.host+"/ws/tickers");
 
         const toDecimal = v => new Decimal(v.Units || v.units || 0).plus(new Decimal(v.Nanos || v.nanos || 0).times(new Decimal(10).pow(-9)))
         const fmtPrice = v => v.toNumber().toLocaleString('en-US',{
