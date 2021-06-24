@@ -49,7 +49,7 @@ var (
 	//go:embed templates/*
 	templateFS embed.FS
 	tpl        = template.Must(template.New("").Funcs(funcs).ParseFS(templateFS,
-		"templates/*.tpl"))
+		"templates/*.tmpl"))
 )
 
 var upgrader = websocket.Upgrader{

@@ -72,7 +72,7 @@ func (fe *frontend) userProfile(w http.ResponseWriter, r *http.Request) error {
 		{"1 week", findReturns(hist, pv, time.Hour*24*7)},
 		{"30 days", findReturns(hist, pv, time.Hour*24*30)},
 	}
-	return tpl.Funcs(funcs).ExecuteTemplate(w, "profile.tpl", map[string]interface{}{
+	return tpl.Funcs(funcs).ExecuteTemplate(w, "profile.tmpl", map[string]interface{}{
 		"u":       u,
 		"orders":  orders,
 		"returns": returnPercentages,
