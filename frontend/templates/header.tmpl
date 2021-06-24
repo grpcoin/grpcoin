@@ -63,19 +63,17 @@
             background-color: #218c74 !important;
         }
 
-        .returns-tbl:nth-of-type(even) {
-            border-right: #f1f2f6;
-            border-right-style: inset;
-            border-left: #f1f2f6;
-            border-left-style: inset;
-        }
-
-        .returns-tbl {
+        .returns-tbl td, .returns-tbl th {
             border-bottom: none;
+            border-right: 1px solid white;
         }
 
-        .returns-tbl:last-child {
-            border-right-style: none;
+        .returns-tbl td:last-child,.returns-tbl th:last-child  {
+            border-right: 0;
+        }
+
+        .returns-tbl thead {
+            border-bottom: 1px solid white;
         }
 
         .leaderboard tbody {

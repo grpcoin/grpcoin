@@ -86,12 +86,12 @@
                     <span class="text-white">Returns</span>
                 </h4>
                 <div class="card-body text-center p-0">
-                    <div class="table-responsive">
+                    <div class="table-responsive returns-tbl">
                         <table class="table table-striped mb-0" id="returns">
                             <thead>
                             <tr>
                                 {{ range .returns }}
-                                    <th scope="col" class="text-white returns-tbl">{{.Label}}</th>
+                                    <th scope="col" class="text-white">{{.Label}}</th>
                                 {{ end }}
                             </tr>
                             </thead>
@@ -99,7 +99,7 @@
                             <tr>
                                 {{ range .returns }}
                                     <td
-                                            class="{{ if isNegative .Percent }}bg-color-red{{ else }}bg-color-green{{end}} returns-tbl">
+                                            class="{{ if isNegative .Percent }}bg-color-red{{ else }}bg-color-green{{end}}">
                                         <b>
                                             {{ fmtPercent .Percent }}
                                         </b>
