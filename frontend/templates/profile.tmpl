@@ -292,46 +292,47 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/decimal.js/9.0.0/decimal.min.js"></script>
 <script>
-    const socket = new WebSocket((window.location.protocol == 'http:' ? "ws" : "wss") + "://" + window.location.host + "/ws/tickers");
-
     const toDecimal = v => new Decimal(v.Units || v.units || 0).plus(new Decimal(v.Nanos || v.nanos || 0).times(new Decimal(10).pow(-9)))
-    const fmtPrice = v => v.toNumber().toLocaleString('en-US', {
-        maximumFractionDigits: 2,
-        minimumFractionDigits: 2,
-    });
+    const fmtPrice = v => v.toNumber().toLocaleString('en-US', {maximumFractionDigits: 2, minimumFractionDigits: 2});
 
     const initialQuotes = {{.quotes}};
     const quotes = {};
     const portfolio = {{.u.Portfolio.Positions }};
     const cash = toDecimal({{.u.Portfolio.CashUSD}});
 
-    socket.onmessage = function (evt) {
-        const data = JSON.parse(evt.data)
-        const key = data.t
-        quotes[key] = toDecimal(data.p)
-
-        const posValues = new Map(Object.keys(portfolio).map((symbol,_) => {
-            const amount = portfolio[symbol];
-            const price = quotes[symbol] || toDecimal(initialQuotes[symbol])
-            const posValue = toDecimal(amount).times(price)
-            document.getElementById(`price-${symbol}`).innerHTML = fmtPrice(price)
-            document.getElementById(`posValue-${symbol}`).innerHTML = '$' + fmtPrice(posValue);
-            return [symbol,posValue]
-        }))
-
-        var totalValue = cash;
-        for (const [symbol, val] of posValues){
-            totalValue = totalValue.add(val)
+    function connectTickerWS() {
+        const socket = new WebSocket((window.location.protocol == 'http:' ? "ws" : "wss") + "://" + window.location.host + "/ws/tickers");
+        socket.onclose = function (evt) {
+            setTimeout(connectTickerWS, 2000);
         }
-        document.getElementById("total").innerHTML = '$' + fmtPrice(totalValue)
+        socket.onmessage = function (evt) {
+            const data = JSON.parse(evt.data)
+            const key = data.t
+            quotes[key] = toDecimal(data.p)
 
-        var posPercentages = {};
-        posValues.forEach((posValue, symbol) => {
-            posPercentages[symbol] = posValue.dividedBy(totalValue).times(100).toFixed(2)
-            document.getElementById(`percent-${symbol}`).innerText = posPercentages[symbol] + '%'
-        })
-        document.getElementById("percent-cash").innerHTML = cash.dividedBy(totalValue).times(100).toFixed(2) + '%'
+            const posValues = new Map(Object.keys(portfolio).map((symbol, _) => {
+                const amount = portfolio[symbol];
+                const price = quotes[symbol] || toDecimal(initialQuotes[symbol])
+                const posValue = toDecimal(amount).times(price)
+                document.getElementById(`price-${symbol}`).innerHTML = fmtPrice(price)
+                document.getElementById(`posValue-${symbol}`).innerHTML = '$' + fmtPrice(posValue);
+                return [symbol, posValue]
+            }))
 
+            var totalValue = cash;
+            for (const [symbol, val] of posValues) {
+                totalValue = totalValue.add(val)
+            }
+            document.getElementById("total").innerHTML = '$' + fmtPrice(totalValue)
+
+            var posPercentages = {};
+            posValues.forEach((posValue, symbol) => {
+                posPercentages[symbol] = posValue.dividedBy(totalValue).times(100).toFixed(2)
+                document.getElementById(`percent-${symbol}`).innerText = posPercentages[symbol] + '%'
+            })
+            document.getElementById("percent-cash").innerHTML = cash.dividedBy(totalValue).times(100).toFixed(2) + '%'
+        }
     }
+    connectTickerWS();
 </script>
 {{ template "footer.tmpl" }}
