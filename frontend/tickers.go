@@ -12,11 +12,13 @@ import (
 
 func (fe *frontend) wsTickers(w http.ResponseWriter, r *http.Request) error {
 	ctx, cancel := context.WithCancel(r.Context())
+	defer cancel()
+
 	ch, err := fe.QuoteFanout.RegisterWatch(ctx)
 	if err != nil {
 		return err
 	}
-	defer cancel()
+
 	ch = realtimequote.PerSymbolRateLimited(ch, time.Second)
 
 	conn, err := upgrader.Upgrade(w, r, nil)
