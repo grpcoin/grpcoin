@@ -299,7 +299,6 @@
     const portfolio = {{.u.Portfolio.Positions}};
     const cash = toDecimal({{.u.Portfolio.CashUSD}});
 
-    // USD-based prices of the cryptocurrencies we support
     const quotes = {};
 
     function connectTickerWS() {
@@ -313,11 +312,9 @@
             console.error(msg);
         }
         
-        // Listen for messages.
         socket.onmessage = function (evt) {
             const {t,p}= JSON.parse(evt.data)
 
-            // set the price of ticker
             quotes[t] = toDecimal(p)
 
             const posValues = new Map(Object.keys(portfolio).map((symbol) => {
