@@ -55,7 +55,7 @@ func (fe *frontend) getQuotes(ctx context.Context) (map[string]userdb.Amount, er
 	out := make(map[string]userdb.Amount)
 
 	eg, _ := errgroup.WithContext(ctx)
-	for _, s:= range fe.SupportedSymbols {
+	for _, s := range fe.SupportedSymbols {
 		quote := s // NB: needed to capture for the closure below
 		eg.Go(func() error {
 			v, err := fe.QuoteProvider.GetQuote(ctx, quote)
