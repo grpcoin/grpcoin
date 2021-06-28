@@ -35,10 +35,10 @@ func TestRateLimiter_Hit(t *testing.T) {
 	defer s.Close()
 
 	var tt time.Time
-	rl := rateLimiter{
-		R:     rc,
-		T:     func() time.Time { return tt },
-		Trace: trace.NewNoopTracerProvider().Tracer("")}
+	rl := New(rc,
+		func() time.Time { return tt },
+		trace.NewNoopTracerProvider().Tracer(""),
+		time.Minute)
 
 	origTime := time.Date(2020, 3, 21, 13, 00, 0, 0, time.UTC)
 	tt = origTime

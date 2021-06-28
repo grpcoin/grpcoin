@@ -32,6 +32,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/grpcoin/grpcoin/ratelimiter"
 	"github.com/grpcoin/grpcoin/realtimequote"
 	"github.com/grpcoin/grpcoin/realtimequote/fanout"
 	"github.com/grpcoin/grpcoin/userdb"
@@ -71,13 +72,16 @@ type frontend struct {
 }
 
 func (fe *frontend) Handler(log *zap.Logger) http.Handler {
+	rl := ratelimiter.New(fe.Redis, time.Now, fe.Trace, time.Minute)
+
 	m := mux.NewRouter()
 	m.Use(handlers.ProxyHeaders,
 		handlers.CompressHandler,
 		otelmux.Middleware("grpcoin-frontend"),
 		zapmw.WithZap(log, withStackdriverFields),
-		zapmw.Request(zapcore.InfoLevel, "request"),
-		zapmw.Recoverer(zapcore.ErrorLevel, "recover", zapmw.RecovererDefault))
+		zapmw.Request(zapcore.InfoLevel, "request complete"),
+		zapmw.Recoverer(zapcore.ErrorLevel, "recovered from panic", zapmw.RecovererDefault),
+		rateLimiting(rl, log.With(zap.String("facility", "rate"))))
 	m.HandleFunc("/_cron/pv", toHandler(fe.calcPortfolioHistory))
 	m.HandleFunc("/api/portfolioValuation/{id}", toHandler(fe.apiPortfolioHistory))
 	m.HandleFunc("/user/{id}", toHandler(fe.userProfile))
@@ -115,7 +119,6 @@ func handleErr(log *zap.Logger, w http.ResponseWriter, statusOverride int, err e
 	var outErr respErr
 	id := uuid.New().String()
 	grpcStatus, ok := status.FromError(err)
-	log.Error("request error", zap.Error(err), zap.String("error.id", id))
 	if !ok {
 		outErr = respErr{
 			ID:      id,
@@ -125,16 +128,21 @@ func handleErr(log *zap.Logger, w http.ResponseWriter, statusOverride int, err e
 		if statusOverride != 0 {
 			outErr.Status = statusOverride
 		}
+	} else {
+		outErr = respErr{
+			ID:      id,
+			Status:  runtime.HTTPStatusFromCode(grpcStatus.Code()),
+			Code:    grpcStatus.Code().String(),
+			Message: grpcStatus.Message()}
 	}
-	outErr = respErr{
-		ID:      id,
-		Status:  runtime.HTTPStatusFromCode(grpcStatus.Code()),
-		Code:    grpcStatus.Code().String(),
-		Message: grpcStatus.Message()}
 	w.WriteHeader(outErr.Status)
 	e := json.NewEncoder(w)
 	e.SetIndent("", "\t")
 	e.Encode(outErr)
+
+	if outErr.Status == http.StatusInternalServerError {
+		log.Error("request internal error", zap.Error(err), zap.String("error.id", id))
+	}
 }
 
 type bufferedRespWriter struct {

@@ -32,31 +32,32 @@ type RateLimiter interface {
 }
 
 type rateLimiter struct {
-	R     *redis.Client
-	T     TimeProvider
-	Trace trace.Tracer
+	R      *redis.Client
+	Trace  trace.Tracer
+	T      TimeProvider
+	Window time.Duration
 }
 
-func New(r *redis.Client, t TimeProvider, trace trace.Tracer) RateLimiter {
-	return &rateLimiter{R: r, T: t, Trace: trace}
+func New(r *redis.Client, t TimeProvider, trace trace.Tracer, windowSize time.Duration) RateLimiter {
+	return &rateLimiter{R: r, T: t, Trace: trace, Window: windowSize}
 }
 
-func (r *rateLimiter) Hit(ctx context.Context, id string, max int64) error {
+func (r *rateLimiter) Hit(ctx context.Context, key string, max int64) error {
 	ctx, s := r.Trace.Start(ctx, "rate limiter")
 	defer s.End()
 
-	bucket := r.T().Truncate(time.Minute)
-	k := RateKey(id, bucket)
+	bucket := r.T().Truncate(r.Window)
+	k := RateKey(key, bucket)
 	p := r.R.TxPipeline()
 	incr := p.Incr(ctx, k)
-	p.Expire(ctx, k, time.Minute*2)
+	p.Expire(ctx, k, r.Window*2) // no need for *2 here, but keep it for debugging
 	_, err := p.Exec(ctx)
 	if err != nil {
 		return status.Error(codes.Internal, fmt.Sprintf("failed to reach redis: %v", err))
 	}
 	cur := incr.Val()
 	if cur > max {
-		return status.Error(codes.ResourceExhausted, fmt.Sprintf("rate limited: %d requests in the past minute (max: %d)", cur, max))
+		return status.Error(codes.ResourceExhausted, fmt.Sprintf("rate limited: %d requests in the past %v (max: %d)", cur, r.Window, max))
 	}
 	return nil
 }

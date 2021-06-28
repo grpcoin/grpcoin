@@ -30,6 +30,7 @@ import (
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
+	ratelimiter2 "github.com/grpcoin/grpcoin/ratelimiter"
 	"github.com/grpcoin/grpcoin/realtimequote"
 	"github.com/grpcoin/grpcoin/realtimequote/binance"
 	"github.com/grpcoin/grpcoin/realtimequote/fanout"
@@ -42,7 +43,6 @@ import (
 	pb "github.com/grpcoin/grpcoin/api/grpcoin"
 	"github.com/grpcoin/grpcoin/apiserver/auth"
 	"github.com/grpcoin/grpcoin/apiserver/auth/github"
-	"github.com/grpcoin/grpcoin/apiserver/ratelimiter"
 	"github.com/grpcoin/grpcoin/serverutil"
 	"github.com/grpcoin/grpcoin/userdb"
 )
@@ -108,7 +108,7 @@ func main() {
 		quoteProvider:    quoteProvider,
 		supportedTickers: supportedTickers,
 		tracer:           tp}
-	rl := ratelimiter.New(rc, time.Now, tp)
+	rl := ratelimiter2.New(rc, time.Now, tp, time.Minute)
 	grpcServer := prepServer(log, authenticator, rl, udb, accountSvc, tickerSvc, tradingSvc)
 	host := os.Getenv("LISTEN_ADDR")
 	addr := net.JoinHostPort(host, port)
@@ -130,7 +130,7 @@ func main() {
 	}
 }
 
-func prepServer(log *zap.Logger, au auth.Authenticator, rl ratelimiter.RateLimiter, udb *userdb.UserDB, as *accountService, ts *tickerService, pt *tradingService) *grpc.Server {
+func prepServer(log *zap.Logger, au auth.Authenticator, rl ratelimiter2.RateLimiter, udb *userdb.UserDB, as *accountService, ts *tickerService, pt *tradingService) *grpc.Server {
 	unaryInterceptors := grpc_middleware.WithUnaryServerChain(
 		otelgrpc.UnaryServerInterceptor(),
 		grpc_ctxtags.UnaryServerInterceptor(grpc_ctxtags.WithFieldExtractor(grpc_ctxtags.CodeGenRequestFieldExtractor)),
