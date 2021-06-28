@@ -44,6 +44,8 @@ func (fe *frontend) userProfile(w http.ResponseWriter, r *http.Request) error {
 	} else if !ok {
 		return status.Error(codes.NotFound, "user not found")
 	}
+
+	// TODO cache
 	orders, err := fe.DB.UserOrderHistory(r.Context(), uid)
 	if err != nil {
 		return err

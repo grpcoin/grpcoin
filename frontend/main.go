@@ -81,7 +81,7 @@ func main() {
 	defer flushTraces(log.With(zap.String("facility", "tracing")))
 	fe := frontend{
 		QuoteProvider: quotes,
-		QuoteDeadline: time.Second,
+		QuoteDeadline: time.Second*4,
 		QuoteFanout: fanout.NewQuoteFanoutService(func(ctx context.Context) (<-chan realtimequote.Quote, error) {
 			log.With(zap.String("facility", "quote_fanout")).Debug("initializing conn to quote stream")
 			return quoteStream.Watch(ctx, supportedTickers...)

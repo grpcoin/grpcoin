@@ -20,7 +20,6 @@ import (
 	"embed"
 	_ "embed"
 	"encoding/json"
-	"fmt"
 	"html/template"
 	"io"
 	"net"
@@ -70,10 +69,6 @@ type frontend struct {
 	Redis *redis.Client
 }
 
-//
-func health(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "ok")
-}
 func (fe *frontend) Handler(log *zap.Logger) http.Handler {
 	m := mux.NewRouter()
 	m.Use(handlers.ProxyHeaders,
@@ -82,7 +77,6 @@ func (fe *frontend) Handler(log *zap.Logger) http.Handler {
 		zapmw.WithZap(log, withStackdriverFields),
 		zapmw.Request(zapcore.InfoLevel, "request"),
 		zapmw.Recoverer(zapcore.ErrorLevel, "recover", zapmw.RecovererDefault))
-	m.HandleFunc("/health", health)
 	m.HandleFunc("/_cron/pv", toHandler(fe.calcPortfolioHistory))
 	m.HandleFunc("/api/portfolioValuation/{id}", toHandler(fe.apiPortfolioHistory))
 	m.HandleFunc("/user/{id}", toHandler(fe.userProfile))

@@ -152,22 +152,23 @@ resource "google_cloud_run_service" "apiserver" {
   depends_on = [
     google_project_service.run
   ]
-  project  = var.project
-  location = var.region
-  name     = "grpcoin-main"
+  project                    = var.project
+  location                   = var.region
+  name                       = "grpcoin-main"
+  autogenerate_revision_name = true
 
   template {
     metadata {
       annotations = {
         "run.googleapis.com/vpc-access-connector" : google_vpc_access_connector.default.name
-        "run.googleapis.com/vpc-access-egress": "private-ranges-only"
-        "autoscaling.knative.dev/maxScale" : "10"
+        "run.googleapis.com/vpc-access-egress" : "private-ranges-only"
+        "autoscaling.knative.dev/maxScale" : "20"
       }
     }
     spec {
       service_account_name  = google_service_account.sa.email
-      container_concurrency = 20
-      timeout_seconds       = 900
+      container_concurrency = 30
+      timeout_seconds       = 900 // impacts Watch() timeout, defined on its api contract
 
       containers {
         image = var.apiserver-image
@@ -210,26 +211,29 @@ resource "google_cloud_run_service" "frontend" {
   depends_on = [
     google_project_service.run
   ]
-  project  = var.project
-  location = var.region
-  name     = "grpcoin-frontend"
+  project                    = var.project
+  location                   = var.region
+  name                       = "grpcoin-frontend"
+  autogenerate_revision_name = true
 
   template {
     metadata {
       annotations = {
-        "autoscaling.knative.dev/maxScale" : "10",
+        "autoscaling.knative.dev/maxScale" : "100",
+        "autoscaling.knative.dev/minScale" : "0",
         "run.googleapis.com/vpc-access-connector" : google_vpc_access_connector.default.name
-        "run.googleapis.com/vpc-access-egress": "private-ranges-only"
+        "run.googleapis.com/vpc-access-egress" : "private-ranges-only"
       }
     }
     spec {
-      service_account_name = google_service_account.fe-sa.email
+      service_account_name  = google_service_account.fe-sa.email
+      container_concurrency = 80
       containers {
         image = var.frontend-image
         resources {
           limits = {
             cpu    = "1"
-            memory = "128Mi"
+            memory = "512Mi"
           }
         }
         env {

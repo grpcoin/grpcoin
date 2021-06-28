@@ -18,7 +18,7 @@ resource "google_compute_global_address" "default" {
   depends_on = [
     google_project_service.compute
   ]
-  name = "lb-ip"
+  name        = "lb-ip"
   description = "load balancer ip"
 }
 
@@ -62,10 +62,10 @@ resource "google_compute_managed_ssl_certificate" "default" {
 }
 
 resource "google_compute_backend_service" "frontend" {
-  name      = "grpcoin-frontend"
+  name = "grpcoin-frontend"
 
-  protocol  = "HTTP"
-  port_name = "http"
+  protocol    = "HTTP"
+  port_name   = "http"
   timeout_sec = 30
 
   backend {
@@ -74,7 +74,7 @@ resource "google_compute_backend_service" "frontend" {
 }
 
 resource "google_compute_backend_service" "apiserver" {
-  name      = "grpcoin-apiserver"
+  name = "grpcoin-apiserver"
 
   protocol  = "HTTP"
   port_name = "http"
@@ -84,8 +84,8 @@ resource "google_compute_backend_service" "apiserver" {
 }
 
 resource "google_compute_url_map" "default" {
-  project         = var.project
-  name            = "grpcoin-urlmap"
+  project = var.project
+  name    = "grpcoin-urlmap"
 
   default_service = google_compute_backend_service.frontend.self_link
   host_rule {
@@ -99,24 +99,24 @@ resource "google_compute_url_map" "default" {
 }
 
 resource "google_compute_target_https_proxy" "default" {
-  name   = "lb-https-proxy"
+  name = "lb-https-proxy"
 
-  url_map          = google_compute_url_map.default.id
+  url_map = google_compute_url_map.default.id
   ssl_certificates = [
     google_compute_managed_ssl_certificate.default.id
   ]
 }
 
 resource "google_compute_global_forwarding_rule" "default" {
-  name   = "lb-https-fwdrule"
+  name = "lb-https-fwdrule"
 
   port_range = "443"
   ip_address = google_compute_global_address.default.address
-  target = google_compute_target_https_proxy.default.id
+  target     = google_compute_target_https_proxy.default.id
 }
 
 resource "google_compute_url_map" "https_redirect" {
-  name            = "grpcoin-https-redirect"
+  name = "grpcoin-https-redirect"
 
   default_url_redirect {
     https_redirect         = true
@@ -126,14 +126,14 @@ resource "google_compute_url_map" "https_redirect" {
 }
 
 resource "google_compute_target_http_proxy" "https_redirect" {
-  name   = "lb-http-proxy"
-  url_map          = google_compute_url_map.https_redirect.id
+  name    = "lb-http-proxy"
+  url_map = google_compute_url_map.https_redirect.id
 }
 
 resource "google_compute_global_forwarding_rule" "https_redirect" {
-  name   = "lb-http-fwdrule"
+  name = "lb-http-fwdrule"
 
   port_range = "80"
   ip_address = google_compute_global_address.default.address
-  target = google_compute_target_http_proxy.https_redirect.id
+  target     = google_compute_target_http_proxy.https_redirect.id
 }
