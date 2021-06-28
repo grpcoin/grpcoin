@@ -20,7 +20,7 @@
                         <td></td>
                         <td>
                             {{ with (profilePic .User.ProfileURL) }}
-                            <img src="{{.}}" width="24" height="auto" />
+                                <img src="{{if .}} {{.}} {{else}} /static/profile.png {{end}}" width="24" height="auto" />
                             {{ end }}
                             <a href="/user/{{.User.ID}}" id="{{.User.ID}}">
                             {{.User.DisplayName}}</a

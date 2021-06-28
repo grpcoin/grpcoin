@@ -86,7 +86,9 @@ func (fe *frontend) Handler(log *zap.Logger) http.Handler {
 	m.HandleFunc("/api/portfolioValuation/{id}", toHandler(fe.apiPortfolioHistory))
 	m.HandleFunc("/user/{id}", toHandler(fe.userProfile))
 	m.HandleFunc("/ws/tickers", toHandler(fe.wsTickers))
+	m.PathPrefix("/static").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./frontend/static"))))
 	m.HandleFunc("/", toHandler(fe.leaderboard))
+
 	return m
 }
 

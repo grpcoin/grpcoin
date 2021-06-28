@@ -6,8 +6,8 @@
         <div class="col-lg-3">
             <div class="card bg-color-black mb-3">
                 {{ with (profilePic .u.ProfileURL) }}
-                    <img src="{{.}}" class="card-image-top img-thumbnail
-                    d-none d-lg-block"/>
+                    <img src="{{if  .}} {{.}} {{else}} /static/profile.png {{end}}" 
+                    class="card-image-top img-thumbnail d-none d-lg-block"/>                
                 {{ end }}
                 <div class="card-body">
                     <h3 class="card-title display-6">
