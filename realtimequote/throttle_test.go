@@ -45,3 +45,38 @@ func TestRateLimited(t *testing.T) {
 		t.Fatalf("wrong msg recv count:%d expected:%d", count, expected)
 	}
 }
+
+func TestRateLimitedPerSymbol(t *testing.T) {
+	ctx, cleanup := context.WithTimeout(context.Background(), time.Millisecond*450)
+	defer cleanup()
+
+	in := make(chan Quote)
+	go func() {
+		for {
+			if ctx.Err() != nil {
+				close(in)
+				return
+			}
+			in <- Quote{Product: "X"}
+			in <- Quote{Product: "Y"}
+		}
+	}()
+
+	// 100*4=400 < 450
+	out := RateLimited(in, time.Millisecond*100)
+	xCount, yCount := 0, 0
+	for v := range out {
+		switch v.Product {
+		case "X":
+			xCount++
+		case "Y":
+			yCount++
+		}
+	}
+	if expected := 5; xCount != expected {
+		t.Fatalf("wrong X msg recv count:%d expected:%d", xCount, expected)
+	}
+	if expected := 5; yCount != expected {
+		t.Fatalf("wrong Y msg recv count:%d expected:%d", xCount, expected)
+	}
+}

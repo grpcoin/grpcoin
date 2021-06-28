@@ -33,7 +33,7 @@ func (fe *frontend) wsTickers(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	ch = realtimequote.PerSymbolRateLimited(ch, time.Second)
+	ch = realtimequote.RateLimited(ch, time.Second)
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
