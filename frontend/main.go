@@ -80,8 +80,9 @@ func main() {
 	}
 	defer flushTraces(log.With(zap.String("facility", "tracing")))
 	fe := frontend{
-		QuoteProvider: quotes,
-		QuoteDeadline: time.Second*4,
+		QuoteProvider:    quotes,
+		SupportedSymbols: supportedTickers,
+		QuoteDeadline:    time.Second * 4,
 		QuoteFanout: fanout.NewQuoteFanoutService(func(ctx context.Context) (<-chan realtimequote.Quote, error) {
 			log.With(zap.String("facility", "quote_fanout")).Debug("initializing conn to quote stream")
 			return quoteStream.Watch(ctx, supportedTickers...)
@@ -93,13 +94,21 @@ func main() {
 			DB: db,
 			T:  trace}}
 
+	// wait for initial set of quote prices to arrive
+	quoteCtx, cancel := context.WithTimeout(ctx, time.Second*10)
+	defer cancel()
+	log.Debug("waiting for initial quote prices")
+	if _, err := fe.getQuotes(quoteCtx); err != nil {
+		log.Fatal("quote prices did not arrive", zap.Error(err))
+	}
+	log.Debug("initial quote prices have arrived")
+
 	listenHost := os.Getenv("LISTEN_ADDR")
 	port := os.Getenv("PORT")
 	addr := net.JoinHostPort(listenHost, port)
 	server := &http.Server{
 		Handler: fe.Handler(log),
-		Addr:    addr,
-	}
+		Addr:    addr}
 	log.Debug("starting to listen", zap.String("addr", addr))
 	go func() {
 		<-ctx.Done()

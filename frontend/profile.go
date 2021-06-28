@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	_ "embed"
 	"net/http"
 	"time"
@@ -53,7 +54,10 @@ func (fe *frontend) userProfile(w http.ResponseWriter, r *http.Request) error {
 	for i := 0; i < len(orders)/2; i++ {
 		orders[i], orders[len(orders)-1-i] = orders[len(orders)-1-i], orders[i]
 	}
-	quotes, err := fe.getQuotes(r.Context())
+
+	quoteCtx, cancel := context.WithTimeout(r.Context(), fe.QuoteDeadline)
+	defer cancel()
+	quotes, err := fe.getQuotes(quoteCtx)
 	if err != nil {
 		return err
 	}

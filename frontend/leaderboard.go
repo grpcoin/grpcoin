@@ -26,7 +26,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/grpcoin/grpcoin/realtimequote"
 	"github.com/grpcoin/grpcoin/userdb"
 )
 
@@ -49,20 +48,17 @@ func (l leaderboardResp) Less(i int, j int) bool {
 }
 
 func (fe *frontend) getQuotes(ctx context.Context) (map[string]userdb.Amount, error) {
-	subCtx, s := fe.Trace.Start(ctx, "realtime quote")
+	ctx, s := fe.Trace.Start(ctx, "realtime quote")
 	defer s.End()
-	quoteCtx, cancel := context.WithTimeout(subCtx, fe.QuoteDeadline)
-	defer cancel()
 
 	var mu sync.Mutex
 	out := make(map[string]userdb.Amount)
 
-	quotes := realtimequote.SupportedTickers // TODO get it from fe.supportedTickers or needed tickers
-	eg, _ := errgroup.WithContext(quoteCtx)
-	for i := range quotes {
-		quote := quotes[i] // capture for closure
+	eg, _ := errgroup.WithContext(ctx)
+	for _, s:= range fe.SupportedSymbols {
+		quote := s // NB: needed to capture for the closure below
 		eg.Go(func() error {
-			v, err := fe.QuoteProvider.GetQuote(quoteCtx, quote)
+			v, err := fe.QuoteProvider.GetQuote(ctx, quote)
 			if errors.Is(err, context.DeadlineExceeded) {
 				return status.Errorf(codes.Unavailable, "could not get real-time market quote for %s in %v", quote, fe.QuoteDeadline)
 			} else if err != nil {
@@ -78,7 +74,9 @@ func (fe *frontend) getQuotes(ctx context.Context) (map[string]userdb.Amount, er
 }
 
 func (fe *frontend) leaderboard(w http.ResponseWriter, r *http.Request) error {
-	quotes, err := fe.getQuotes(r.Context())
+	quoteCtx, cancel := context.WithTimeout(r.Context(), fe.QuoteDeadline)
+	defer cancel()
+	quotes, err := fe.getQuotes(quoteCtx)
 	if err != nil {
 		return err
 	}

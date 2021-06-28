@@ -58,9 +58,10 @@ var upgrader = websocket.Upgrader{
 }
 
 type frontend struct {
-	QuoteProvider realtimequote.QuoteProvider
-	QuoteDeadline time.Duration
-	QuoteFanout   *fanout.QuoteFanoutService
+	QuoteProvider    realtimequote.QuoteProvider
+	QuoteDeadline    time.Duration
+	QuoteFanout      *fanout.QuoteFanoutService
+	SupportedSymbols []string
 
 	CronSAEmail string // email for the SA allowed to run cron endpoints
 
