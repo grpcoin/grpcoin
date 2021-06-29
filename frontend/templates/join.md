@@ -70,7 +70,7 @@ This file defines the API endpoints and how they work. It's worth noting:
    access token][pat] by adding `authorization` header (gRPC calls headers
    "metadata"). Prefix the value with string `"Bearer "`, e.g.:
 
-       authentication: Bearer YOUR_PERSONAL_ACCESS_TOKEN
+       authorization: Bearer YOUR_PERSONAL_ACCESS_TOKEN
 
 1. Make API requests using the client libraries you generated with gRPC.
 
