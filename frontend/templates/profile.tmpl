@@ -44,15 +44,13 @@
                         justify-content-between d-flex bg-color-black bg-hover">
                             <div>
                                 <b>{{$tick}}</b><br/>
-                                {{ if not (isZero $amount) }}
-                                    <span class="text-muted">
-                                        x{{ fmtAmount $amount }}
-                                        <small class>
-                                            at
-                                            <span id="price-{{$tick}}">{{ fmtPrice (index $.quotes $tick ) }}</span>
-                                        </small>
-                                    </span>
-                                {{end}}
+                                <span class="text-muted">
+                                    x{{ fmtAmount $amount }}
+                                    <small class>
+                                        at
+                                        <span id="price-{{$tick}}">{{ fmtPrice (index $.quotes $tick ) }}</span>
+                                    </small>
+                                </span>
                             </div>
                             <div class="text-end">
                                 <span id="posValue-{{$tick}}">{{ fmtPrice (mul $amount (index $.quotes $tick )) }}</span><br/>
