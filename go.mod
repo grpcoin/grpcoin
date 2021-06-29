@@ -24,6 +24,7 @@ require (
 	github.com/preichenberger/go-coinbasepro/v2 v2.0.5
 	github.com/purini-to/zapmw v1.1.0
 	github.com/shopspring/decimal v1.2.0
+	github.com/yuin/goldmark v1.3.9 // indirect
 	go.opencensus.io v0.23.0
 	go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux v0.20.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.20.0

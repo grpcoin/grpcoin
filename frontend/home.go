@@ -14,8 +14,44 @@
 
 package main
 
-import "net/http"
+import (
+	"bytes"
+	_ "embed"
+	"fmt"
+	"html/template"
+	"net/http"
+	"sync"
+
+	"github.com/yuin/goldmark"
+)
 
 func (fe *frontend) home(w http.ResponseWriter, _ *http.Request) error {
 	return tpl.ExecuteTemplate(w, "home.tmpl", nil)
+}
+
+var (
+	//go:embed templates/join.md
+	joinContent []byte
+
+	joinRender   sync.Once
+	joinRendered string
+)
+
+func (fe *frontend) join(w http.ResponseWriter, _ *http.Request) error {
+	var b bytes.Buffer
+	var err error
+	joinRender.Do(func() {
+		err = goldmark.Convert(joinContent, &b)
+		joinRendered = b.String()
+	})
+	if err != nil {
+		return fmt.Errorf("markdown rendering error: %w", err)
+	}
+	if joinRendered == "" {
+		return fmt.Errorf("markdown didn't render for this page")
+	}
+	return tpl.ExecuteTemplate(w, "join.tmpl",
+		struct {
+			Content template.HTML
+		}{Content: template.HTML(joinRendered)})
 }
