@@ -324,8 +324,14 @@
                 const amount = portfolio[symbol];
                 const price = quotes[symbol] || toDecimal(initialQuotes[symbol])
                 const posValue = toDecimal(amount).times(price)
-                document.getElementById(`price-${symbol}`).innerHTML = fmtPrice(price);
-                document.getElementById(`posValue-${symbol}`).innerHTML = '$' + fmtPrice(posValue);
+                
+                try {
+                    document.getElementById(`price-${symbol}`).innerHTML = fmtPrice(price)
+                    document.getElementById(`posValue-${symbol}`).innerHTML = '$' + fmtPrice(posValue)
+                } catch (error) {
+                    console.error(error)
+                }
+
                 return [symbol, posValue]
             }))
 
