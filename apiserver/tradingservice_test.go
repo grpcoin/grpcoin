@@ -276,4 +276,15 @@ func TestTrade(t *testing.T) {
 	); diff != "" {
 		t.Fatalf(diff)
 	}
+
+	u, _, err := udb.Get(ctx, user.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if expected, trades := 1, u.TradeStats.TradeCount; trades != expected {
+		t.Fatalf("expected trade count=%d, got=%d", expected, trades)
+	}
+	if s := time.Since(u.TradeStats.LastTrade); s > time.Second {
+		t.Fatalf("more than 1s (%d) since last trade date", s)
+	}
 }

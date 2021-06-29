@@ -70,6 +70,10 @@ type User struct {
 	ProfileURL  string
 	CreatedAt   time.Time
 	Portfolio   Portfolio
+	TradeStats  struct {
+		LastTrade  time.Time
+		TradeCount int
+	}
 }
 
 type Portfolio struct {
@@ -214,6 +218,8 @@ func (u *UserDB) Trade(ctx context.Context, uid string, ticker string, action gr
 		if err := makeTrade(&u.Portfolio, action, ticker, quote, quantity); err != nil {
 			return err
 		}
+		u.TradeStats.LastTrade = time.Now()
+		u.TradeStats.TradeCount++
 		resultingPortfolio = u.Portfolio
 		return tx.Set(ref, u)
 	}, firestore.MaxAttempts(1))
