@@ -44,6 +44,7 @@ var (
 		"mul":          mul,
 		"div":          div,
 		"profilePic":   profilePic,
+		"comma":        comma,
 	}
 )
 
@@ -110,6 +111,8 @@ func since(t time.Time) time.Duration { return time.Since(t) }
 func fmtDuration(t time.Duration, maxUnits int) string {
 	return durafmt.Parse(t).LimitFirstN(maxUnits).String()
 }
+
+func comma(i int) string {return humanize.Comma(int64(i)) }
 
 func profilePic(id string) string {
 	if strings.HasPrefix(id, "github_") {
