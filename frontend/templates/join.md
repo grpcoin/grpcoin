@@ -31,9 +31,9 @@ $100,000 cash available to trade. So all you need is a GitHub account.
 
    ```text
    export TOKEN=...
-   grpcoin buy ETH 2            # buy 2 ETH
-   grpcoin sell ETH 1.500000000 # sell 1.5 ETH (fractional part must have 9 digits)
-   grpcoin watch DOGE           # watch DOGE prices
+   grpcoin buy ETH 2    # buy 2 ETH
+   grpcoin sell ETH 1.5 # sell 1.5 ETH
+   grpcoin watch DOGE   # watch DOGE prices
    ```
 
 ### Option 2: Fork from an existing bot implementation
