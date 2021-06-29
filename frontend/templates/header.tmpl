@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
+          integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
     <title>{{.}}</title>
     <style>
         body, ul, li, td, th, .btn {
@@ -40,12 +40,12 @@
         }
 
 
-        table>tbody>tr:nth-of-type(odd) {
+        table > tbody > tr:nth-of-type(odd) {
             color: whitesmoke !important;
             background-color: #2C313D;
         }
 
-        table>tbody>tr:nth-of-type(even) {
+        table > tbody > tr:nth-of-type(even) {
             color: whitesmoke !important;
             background-color: #373C47;
         }
@@ -72,7 +72,7 @@
             border-right: 1px solid white;
         }
 
-        .returns-tbl td:last-child,.returns-tbl th:last-child  {
+        .returns-tbl td:last-child, .returns-tbl th:last-child {
             border-right: 0;
         }
 
@@ -103,3 +103,20 @@
 </head>
 
 <body>
+<nav class="navbar navbar-expand navbar-dark bg-dark">
+    <div class="container-fluid">
+        <a href="/" rel="home" class="navbar-brand h1">gRPCOIN</a>
+
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" href="/leaderboard">Leaderboard</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#">Join via API</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="https://github.com/grpcoin/grpcoin" target="_blank">Source</a>
+            </li>
+        </ul>
+    </div>
+</nav>

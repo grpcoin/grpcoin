@@ -107,7 +107,7 @@ func main() {
 	port := os.Getenv("PORT")
 	addr := net.JoinHostPort(listenHost, port)
 	server := &http.Server{
-		Handler: fe.Handler(log),
+		Handler: fe.Handlers(log),
 		Addr:    addr}
 	log.Debug("starting to listen", zap.String("addr", addr))
 	go func() {

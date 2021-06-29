@@ -19,10 +19,17 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/grpcoin/grpcoin/api/grpcoin"
 	"github.com/grpcoin/grpcoin/realtimequote"
 	"go.uber.org/zap"
 )
+
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
 
 func (fe *frontend) wsTickers(w http.ResponseWriter, r *http.Request) error {
 	ctx, cancel := context.WithCancel(r.Context())

@@ -30,7 +30,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	"github.com/gorilla/websocket"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/grpcoin/grpcoin/ratelimiter"
 	"github.com/grpcoin/grpcoin/realtimequote"
@@ -52,12 +51,6 @@ var (
 		"templates/*.tmpl"))
 )
 
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-}
-
 type frontend struct {
 	QuoteProvider    realtimequote.QuoteProvider
 	QuoteDeadline    time.Duration
@@ -71,7 +64,7 @@ type frontend struct {
 	Redis *redis.Client
 }
 
-func (fe *frontend) Handler(log *zap.Logger) http.Handler {
+func (fe *frontend) Handlers(log *zap.Logger) http.Handler {
 	rl := ratelimiter.New(fe.Redis, time.Now, fe.Trace, time.Minute)
 
 	m := mux.NewRouter()
@@ -82,11 +75,13 @@ func (fe *frontend) Handler(log *zap.Logger) http.Handler {
 		zapmw.Request(zapcore.InfoLevel, "request complete"),
 		zapmw.Recoverer(zapcore.ErrorLevel, "recovered from panic", zapmw.RecovererDefault),
 		rateLimiting(rl, log.With(zap.String("facility", "rate"))))
+
+	m.HandleFunc("/", toHandler(fe.home))
 	m.HandleFunc("/_cron/pv", toHandler(fe.calcPortfolioHistory))
 	m.HandleFunc("/api/portfolioValuation/{id}", toHandler(fe.apiPortfolioHistory))
 	m.HandleFunc("/user/{id}", toHandler(fe.userProfile))
 	m.HandleFunc("/ws/tickers", toHandler(fe.wsTickers))
-	m.HandleFunc("/", toHandler(fe.leaderboard))
+	m.HandleFunc("/leaderboard", toHandler(fe.leaderboard))
 	return m
 }
 

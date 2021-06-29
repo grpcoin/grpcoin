@@ -1,7 +1,7 @@
 {{ template "header.tmpl" (printf "User: %s" .u.DisplayName) }}
 
 {{ $tv := pv .u.Portfolio .quotes }}
-<div class="container">
+<div class="container-fluid">
     <div class="row py-5">
         <div class="col-lg-3">
             <div class="card bg-color-black mb-3">

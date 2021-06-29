@@ -55,7 +55,7 @@ const (
 	fsOrdersCol    = "orders"     // sub-collection for user
 	fsValueHistCol = "valuations" // sub-collection for user's portolio value over time
 
-	maxOrderHistoryRecords  = 300 // keep latest N order history records
+	maxOrderHistoryRecords  = 300  // keep latest N order history records
 	orderHistoryRotateCheck = 0.01 // probability of checking & purging excess order history records
 )
 

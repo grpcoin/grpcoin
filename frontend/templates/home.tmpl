@@ -1,0 +1,90 @@
+{{ template "header.tmpl" "gRPCOIN - Paper trading cryptocurrencies" }}
+<div class="container">
+    <h4 class="display-1 fw-lighter text-center">
+        API-driven cryptocurrency paper trading&nbsp;platform
+    </h4>
+</div>
+<div class="container-fluid px-3">
+    <div class="row">
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card bg-transparent">
+                <div class="card-body">
+                    <h4 class="card-title fw-light">
+                        Real-time prices, fake money...
+                    </h4>
+                    <p class="card-text">
+                        Every player starts with $100,000 cash to
+                        trade coins like BTC, ETH, DOGE or DOT
+                        with real time prices from the Binance Exchange.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card bg-transparent">
+                <div class="card-body">
+                    <h4 class="card-title fw-light">
+                        The best bot wins!
+                    </h4>
+                    <p class="card-text">
+                        Code your own trading bot on top of the high-frequency
+                        trading API and compete with other bot developers.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!--rowbreak-->
+
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card bg-transparent">
+                <div class="card-body">
+                    <h4 class="card-title fw-light">
+                        Use any language
+                    </h4>
+                    <p class="card-text">
+                        <a href="https://github.com/grpcoin/grpcoin/blob/main/api/grpcoin.proto">
+                            The trading API
+                        </a> uses <a href="https://grpc.io">gRPC</a> and
+                        <a href="https://developers.google.com/protocol-buffers">Google Protobuf</a>
+                        so your bot can use the API in any programming language.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!--rowbreak-->
+
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card bg-transparent">
+                <div class="card-body">
+                    <h4 class="card-title fw-light">
+                        Get started quickly
+                    </h4>
+                    <p class="card-text">
+                        No need to sign up: Prove your identity with a GitHub token
+                        when you make API requests. Fork an
+                        <a href="https://github.com/grpcoin/grpcoin#example-bot-implementations">
+                            example bot
+                        </a> implementation and start coding!
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col text-end">
+            <a href="/leaderboard" class="btn btn-lg btn-secondary">
+                Leaderboard
+            </a>
+        </div>
+        <div class="col text-start">
+            <a href="#" class="btn btn-lg btn-secondary">
+                Join via the API
+            </a>
+        </div>
+    </div>
+
+</div>
+{{ template "footer.tmpl" }}

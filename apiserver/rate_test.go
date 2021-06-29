@@ -81,6 +81,6 @@ func Test_findIP(t *testing.T) {
 }
 
 type fakeNetAddr string
-func (f fakeNetAddr) Network() string {return "fake"}
-func (f fakeNetAddr) String() string {return string(f)}
 
+func (f fakeNetAddr) Network() string { return "fake" }
+func (f fakeNetAddr) String() string  { return string(f) }

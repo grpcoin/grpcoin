@@ -47,7 +47,7 @@ func rateLimitInterceptor(rl ratelimiter2.RateLimiter) grpc_auth.AuthFunc {
 		if err != nil {
 			return rpcCtx, err
 		} else if ip != "" {
-			key := "api_ip__"+ip
+			key := "api_ip__" + ip
 			return rpcCtx, rl.Hit(rpcCtx, key, unauthenticatedRateLimitPerMinute)
 		}
 		lg.Warn("no ip or uid found in req ctx")

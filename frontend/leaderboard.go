@@ -92,7 +92,6 @@ func (fe *frontend) leaderboard(w http.ResponseWriter, r *http.Request) error {
 	}
 	sort.Sort(sort.Reverse(resp))
 
-	// TODO do not parse on every request
 	return tpl.ExecuteTemplate(w, "leaderboard.tmpl", map[string]interface{}{
 		"users": resp})
 }
