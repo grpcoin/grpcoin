@@ -5,7 +5,7 @@
     <div class="row py-5">
         <div class="col-lg-3">
             <div class="card bg-color-black mb-3">
-                {{ with (profilePic .u.ProfileURL) }}
+                {{ with (profilePic .u.ID) }}
                     <img src="{{.}}" class="card-image-top img-thumbnail
                     d-none d-lg-block"/>
                 {{ end }}
