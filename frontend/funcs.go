@@ -111,9 +111,10 @@ func fmtDuration(t time.Duration, maxUnits int) string {
 	return durafmt.Parse(t).LimitFirstN(maxUnits).String()
 }
 
-func profilePic(profileURL string) string {
-	if strings.HasPrefix(profileURL, "https://github.com/") {
-		return profileURL + ".png?s=512"
+func profilePic(id string) string {
+	if strings.HasPrefix(id, "github_") {
+		id := strings.TrimPrefix(id, "github_")
+		return "https://avatars.githubusercontent.com/u/" + id + "?s=512"
 	}
 	return ""
 }

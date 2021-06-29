@@ -19,7 +19,7 @@
                     <tr class="position-relative">
                         <td></td>
                         <td>
-                            {{ with (profilePic .User.ProfileURL) }}
+                            {{ with (profilePic .User.ID) }}
                             <img src="{{.}}" width="24" height="auto" />
                             {{ end }}
                             <a href="/user/{{.User.ID}}" id="{{.User.ID}}">
