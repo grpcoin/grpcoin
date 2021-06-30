@@ -63,5 +63,5 @@ func (r *rateLimiter) Hit(ctx context.Context, key string, max int64) error {
 }
 
 func RateKey(id string, t time.Time) string {
-	return fmt.Sprintf("%s::%d", id, t.Unix())
+	return fmt.Sprintf("rate::%s::%d", id, t.Unix())
 }

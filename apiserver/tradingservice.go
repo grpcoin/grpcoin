@@ -39,17 +39,6 @@ type tradingService struct {
 	grpcoin.UnimplementedPaperTradeServer
 }
 
-func toPortfolioPositions(pos map[string]userdb.Amount) []*grpcoin.PortfolioPosition {
-	var pp []*grpcoin.PortfolioPosition
-	for k, v := range pos {
-		pp = append(pp, &grpcoin.PortfolioPosition{
-			Currency: &grpcoin.Currency{Symbol: k},
-			Amount:   v.V(),
-		})
-	}
-	return pp
-}
-
 func (t *tradingService) Portfolio(ctx context.Context, req *grpcoin.PortfolioRequest) (*grpcoin.PortfolioResponse, error) {
 	ctx, span := t.tracer.Start(ctx, "portfolio read")
 	defer span.End()
@@ -67,6 +56,15 @@ const (
 	quoteDeadline          = time.Second * 2
 	tradeExecutionDeadline = time.Second * 1
 )
+
+func (t *tradingService) ListSupportedCurrencies(ctx context.Context,
+	_ *grpcoin.ListSupportedCurrenciesRequest) (*grpcoin.ListSupportedCurrenciesResponse, error) {
+	var out []*grpcoin.Currency
+	for _, v := range t.supportedTickers {
+		out = append(out, &grpcoin.Currency{Symbol: v})
+	}
+	return &grpcoin.ListSupportedCurrenciesResponse{SupportedCurrencies: out}, nil
+}
 
 func (t *tradingService) Trade(ctx context.Context, req *grpcoin.TradeRequest) (*grpcoin.TradeResponse, error) {
 	user, ok := userdb.UserRecordFromContext(ctx)
@@ -140,4 +138,15 @@ func validateTradeRequest(req *grpcoin.TradeRequest, supportedTickers []string) 
 			strings.Join(supportedTickers, ", "))
 	}
 	return nil
+}
+
+func toPortfolioPositions(pos map[string]userdb.Amount) []*grpcoin.PortfolioPosition {
+	var pp []*grpcoin.PortfolioPosition
+	for k, v := range pos {
+		pp = append(pp, &grpcoin.PortfolioPosition{
+			Currency: &grpcoin.Currency{Symbol: k},
+			Amount:   v.V(),
+		})
+	}
+	return pp
 }
