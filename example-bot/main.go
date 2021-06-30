@@ -77,28 +77,27 @@ func main() {
 	}
 	log.Printf("cash position: USD %s", fmtAmount(portfolio.CashUsd))
 	for _, p := range portfolio.Positions {
-		log.Printf("-> coin position: %s (%s)", p.GetTicker().GetTicker(), fmtAmount(p.Amount))
+		log.Printf("-> coin position: %s (%s)", p.Currency.Symbol, fmtAmount(p.Amount))
 	}
 
 	// buy 0.05 btc
 	order, err := grpcoin.NewPaperTradeClient(conn).Trade(authCtx, &grpcoin.TradeRequest{
 		Action:   grpcoin.TradeAction_BUY,
-		Ticker:   &grpcoin.TradeRequest_Ticker{Ticker: "BTC"},
+		Currency: &grpcoin.Currency{Symbol: "BTC"},
 		Quantity: &grpcoin.Amount{Units: 0, Nanos: 50_000_000},
 	})
 	if err != nil {
 		log.Fatalf("trade order failed: %v", err)
 	}
 	log.Printf("ORDER EXECUTED: %s [%s] %s at USD[%s] (cash remaining: %s)", order.Action,
-		fmtAmount(order.Quantity), order.Ticker.Symbol, fmtAmount(order.ExecutedPrice),
+		fmtAmount(order.Quantity), order.Currency.Symbol, fmtAmount(order.ExecutedPrice),
 		fmtAmount(order.ResultingPortfolio.RemainingCash))
 
 	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	for ctx.Err() == nil {
 		log.Printf("\n\nconnecting to stream real-time ETH quotes, hit Ctrl-C to quit anytime")
 		stream, err := grpcoin.NewTickerInfoClient(conn).Watch(ctx,
-			&grpcoin.QuoteTicker{
-				Ticker: "ETH"})
+			&grpcoin.TickerWatchRequest{Currency: &grpcoin.Currency{Symbol: "ETH"}})
 		if err != nil {
 			log.Fatal(err)
 		}

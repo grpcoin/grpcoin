@@ -50,18 +50,19 @@ func filterByProduct(ch <-chan realtimequote.Quote, product string) <-chan realt
 	return outCh
 }
 
-func (ts *tickerService) Watch(req *grpcoin.QuoteTicker, stream grpcoin.TickerInfo_WatchServer) error {
+func (ts *tickerService) Watch(req *grpcoin.TickerWatchRequest, stream grpcoin.TickerInfo_WatchServer) error {
 	// -USD suffix is now obsolete, keepin for back-compat with old clients
-	req.Ticker = strings.TrimSuffix(req.GetTicker(), "-USD")
 
-	if !realtimequote.IsSupported(ts.supportedTickers, req.GetTicker()) {
+	req.Currency.Symbol = strings.TrimSuffix(req.GetCurrency().GetSymbol(), "-USD")
+
+	if !realtimequote.IsSupported(ts.supportedTickers, req.Currency.Symbol) {
 		return status.Errorf(codes.InvalidArgument, "only supported tickers are %#v", ts.supportedTickers)
 	}
 	ch, err := ts.fanout.RegisterWatch(stream.Context())
 	if err != nil {
 		return status.Error(codes.Internal, fmt.Sprintf("failed to register ticker watch: %v", err))
 	}
-	ch = filterByProduct(ch, req.Ticker)
+	ch = filterByProduct(ch, req.Currency.Symbol)
 	ch = realtimequote.RateLimited(ch, ts.maxRate)
 	for m := range ch {
 		err = stream.Send(&grpcoin.Quote{

@@ -27,19 +27,25 @@ service TickerInfo {
     // abruptly disconnected and need to reconnect.
     //
     // No authentication required.
-    rpc Watch(QuoteTicker) returns (stream Quote){}
+    rpc Watch (TickerWatchRequest) returns (stream Quote) {}
 }
 
-// QuoteTicker represents a quote request for a coin.
-message QuoteTicker {
-    string ticker = 1; // e.g. BTC
+service PaperTrade {
+    // Returns authenticated user's portfolio.
+    rpc Portfolio (PortfolioRequest) returns (PortfolioResponse) {}
+
+    // Executes a trade in authenticated user's portfolio.
+    // All trades are executed immediately with the real-time market
+    // price provided on TickerInfo.Watch endpoint.
+    rpc Trade (TradeRequest) returns (TradeResponse) {}
+
+    // Returns symbols supported by Trade or Watch methods.
+    rpc ListSupportedCurrencies (ListSupportedCurrenciesRequest) returns (ListSupportedCurrenciesResponse) {}
 }
 
-// Quote represents a real-time coin price.
-message Quote{
-    google.protobuf.Timestamp t = 10;
-
-    Amount price = 20;
+// Currency represents a cryptocurrency.
+message Currency {
+    string symbol = 1; // e.g. 'BTC' see ListSupportedCurrencies API for a full list.
 }
 
 // Amount represents a fractional number precisely without
@@ -61,28 +67,29 @@ message Amount {
     int32 nanos = 2;
 }
 
+message TickerWatchRequest {
+    Currency currency = 1;
+}
+
+// Quote represents a real-time coin price.
+message Quote {
+    google.protobuf.Timestamp t = 10;
+    Amount price = 20;
+}
+
 service Account {
     // Tests if your token works.
     //
     // Send a header (gRPC metadata) named "Authorization"
     // with value "Bearer XXX" where XXX is a GitHub Personal Access token
     // from https://github.com/settings/tokens (no permissions needed).
-    rpc TestAuth(TestAuthRequest) returns (TestAuthResponse) {}
+    rpc TestAuth (TestAuthRequest) returns (TestAuthResponse) {}
 }
 
 message TestAuthRequest {}
+
 message TestAuthResponse {
     string user_id = 10;
-}
-
-service PaperTrade {
-    // Returns authenticated user's portfolio.
-    rpc Portfolio(PortfolioRequest) returns (PortfolioResponse) {}
-
-    // Executes a trade in authenticated user's portfolio.
-    // All trades are executed immediately with the real-time market
-    // price provided on TickerInfo.Watch endpoint.
-    rpc Trade(TradeRequest) returns (TradeResponse) {}
 }
 
 message PortfolioRequest {}
@@ -96,35 +103,26 @@ message PortfolioResponse {
 }
 
 message PortfolioPosition {
-    message Ticker {
-        string ticker = 1; // e.g. BTC
-    }
-    Ticker ticker = 1;
+    Currency currency = 1;
     Amount amount = 2;
 }
 
 enum TradeAction {
     UNDEFINED = 0;
-    BUY = 1;  // Buy a cryptocurrency using cash holdings.
+    BUY = 1; // Buy a cryptocurrency using cash holdings.
     SELL = 2; // Sell a cryptocurrency for cash holdings.
 }
 
 message TradeRequest {
-    message Ticker {
-        string ticker = 1; // e.g. BTC
-    }
     TradeAction action = 1;
-    Ticker ticker = 2;
+    Currency currency = 2;
     Amount quantity = 3;
 }
 
 message TradeResponse {
     google.protobuf.Timestamp t = 1;
     TradeAction action = 2;
-    message Ticker {
-        string symbol = 1; // e.g. BTC
-    }
-    Ticker ticker = 5;
+    Currency currency = 5;
     Amount quantity = 3;
     Amount executed_price = 4;
 
@@ -135,4 +133,7 @@ message TradeResponse {
     Portfolio resulting_portfolio = 6;
 }
 
-message Empty {}
+message ListSupportedCurrenciesRequest {}
+message ListSupportedCurrenciesResponse {
+    repeated Currency supported_currencies = 1;
+}

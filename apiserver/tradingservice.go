@@ -43,8 +43,8 @@ func toPortfolioPositions(pos map[string]userdb.Amount) []*grpcoin.PortfolioPosi
 	var pp []*grpcoin.PortfolioPosition
 	for k, v := range pos {
 		pp = append(pp, &grpcoin.PortfolioPosition{
-			Ticker: &grpcoin.PortfolioPosition_Ticker{Ticker: k},
-			Amount: v.V(),
+			Currency: &grpcoin.Currency{Symbol: k},
+			Amount:   v.V(),
 		})
 	}
 	return pp
@@ -76,16 +76,17 @@ func (t *tradingService) Trade(ctx context.Context, req *grpcoin.TradeRequest) (
 	if err := validateTradeRequest(req, t.supportedTickers); err != nil {
 		return nil, err
 	}
+	product := req.GetCurrency().GetSymbol()
 
 	// get a real-time market quote
 	// TODO use oteltrace.WithAttributes for sub-spans
 	subCtx, s := t.tracer.Start(ctx, "get quote")
 	quoteCtx, cancel := context.WithTimeout(subCtx, quoteDeadline)
 	defer cancel()
-	quote, err := t.quoteProvider.GetQuote(quoteCtx, req.GetTicker().Ticker)
+	quote, err := t.quoteProvider.GetQuote(quoteCtx, product)
 	if errors.Is(err, context.DeadlineExceeded) {
 		return nil, status.Errorf(codes.Unavailable, "could not get real-time market quote for %s in %v",
-			req.GetTicker().GetTicker(), quoteDeadline)
+			product, quoteDeadline)
 	} else if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to retrieve a quote: %v", err)
 	}
@@ -96,7 +97,7 @@ func (t *tradingService) Trade(ctx context.Context, req *grpcoin.TradeRequest) (
 	defer s.End()
 	tradeCtx, cancel2 := context.WithTimeout(subCtx, tradeExecutionDeadline)
 	defer cancel2()
-	newPortfolio, err := t.udb.Trade(tradeCtx, user.ID, req.GetTicker().Ticker, req.Action, quote, req.Quantity)
+	newPortfolio, err := t.udb.Trade(tradeCtx, user.ID, product, req.Action, quote, req.Quantity)
 	if errors.Is(err, context.DeadlineExceeded) {
 		return nil, status.Errorf(codes.Unavailable, "could not execute trade in a timely manner: %v", err)
 	} else if status.Code(err) == codes.InvalidArgument {
@@ -109,7 +110,7 @@ func (t *tradingService) Trade(ctx context.Context, req *grpcoin.TradeRequest) (
 		T:             timestamppb.Now(), // TODO read from tx
 		Action:        req.Action,
 		ExecutedPrice: quote,
-		Ticker:        &grpcoin.TradeResponse_Ticker{Symbol: req.GetTicker().GetTicker()},
+		Currency:      &grpcoin.Currency{Symbol: product},
 		Quantity:      req.Quantity,
 		ResultingPortfolio: &grpcoin.TradeResponse_Portfolio{
 			RemainingCash: newPortfolio.CashUSD.V(),
@@ -131,11 +132,11 @@ func validateTradeRequest(req *grpcoin.TradeRequest, supportedTickers []string) 
 	if req.GetQuantity().Nanos < 0 {
 		return status.Errorf(codes.InvalidArgument, "negative quantity nanos (%d)", req.GetQuantity().GetNanos())
 	}
-	if req.GetTicker().GetTicker() == "" {
+	if req.GetCurrency().GetSymbol() == "" {
 		return status.Error(codes.InvalidArgument, "ticker not specified")
 	}
-	if !realtimequote.IsSupported(supportedTickers, req.GetTicker().GetTicker()) {
-		return status.Errorf(codes.InvalidArgument, "ticker '%s' is not supported, must be [%s]", req.Ticker.Ticker,
+	if !realtimequote.IsSupported(supportedTickers, req.GetCurrency().GetSymbol()) {
+		return status.Errorf(codes.InvalidArgument, "ticker '%s' is not supported, must be [%s]", req.GetCurrency().GetSymbol(),
 			strings.Join(supportedTickers, ", "))
 	}
 	return nil

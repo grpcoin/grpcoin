@@ -70,7 +70,8 @@ func TestWatch(t *testing.T) {
 	ctx, cleanup := context.WithTimeout(context.Background(), time.Second)
 	defer cleanup()
 
-	stream, err := client.Watch(ctx, &grpcoin.QuoteTicker{Ticker: "BTC"})
+	stream, err := client.Watch(ctx,
+		&grpcoin.TickerWatchRequest{Currency: &grpcoin.Currency{Symbol: "BTC"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,7 +98,8 @@ func TestWatchReconnect(t *testing.T) {
 	ctx, cleanup := context.WithTimeout(context.Background(), time.Second)
 	defer cleanup()
 
-	stream, err := client.Watch(ctx, &grpcoin.QuoteTicker{Ticker: "BTC"})
+	stream, err := client.Watch(ctx,
+		&grpcoin.TickerWatchRequest{Currency: &grpcoin.Currency{Symbol: "BTC"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -118,7 +120,8 @@ func TestWatchReconnect(t *testing.T) {
 	defer cleanup2()
 
 	count := 0
-	stream, err = client.Watch(ctx, &grpcoin.QuoteTicker{Ticker: "BTC"})
+	stream, err = client.Watch(ctx,
+		&grpcoin.TickerWatchRequest{Currency: &grpcoin.Currency{Symbol: "BTC"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -152,7 +155,8 @@ func TestWatchMulti(t *testing.T) {
 			defer wg.Done()
 			ctx, cleanup := context.WithTimeout(context.Background(), time.Second)
 			defer cleanup()
-			stream, err := client.Watch(ctx, &grpcoin.QuoteTicker{Ticker: "BTC"})
+			stream, err := client.Watch(ctx,
+				&grpcoin.TickerWatchRequest{Currency: &grpcoin.Currency{Symbol: "BTC"}})
 			if err != nil {
 				panic(fmt.Sprintf("routine %d: dial: %v", j, err))
 			}

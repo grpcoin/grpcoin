@@ -93,7 +93,7 @@ func TestPortfolio(t *testing.T) {
 
 	diff := cmp.Diff(resp, expected, cmpopts.IgnoreUnexported(
 		grpcoin.PortfolioPosition{},
-		grpcoin.PortfolioPosition_Ticker{},
+		grpcoin.Currency{},
 		grpcoin.PortfolioResponse{},
 		grpcoin.Amount{},
 	))
@@ -125,7 +125,7 @@ func TestTradeQuotePrices(t *testing.T) {
 
 	_, err = pt.Trade(ctx, &grpcoin.TradeRequest{
 		Action:   grpcoin.TradeAction_BUY,
-		Ticker:   &grpcoin.TradeRequest_Ticker{Ticker: "BTC"},
+		Currency: &grpcoin.Currency{Symbol: "BTC"},
 		Quantity: &grpcoin.Amount{Units: 1},
 	})
 	if status.Code(err) != codes.Unavailable {
@@ -135,7 +135,7 @@ func TestTradeQuotePrices(t *testing.T) {
 	pt.quoteProvider = &mockQuoteProvider{a: &grpcoin.Amount{Units: 50_000}}
 	resp, err := pt.Trade(ctx, &grpcoin.TradeRequest{
 		Action:   grpcoin.TradeAction_BUY,
-		Ticker:   &grpcoin.TradeRequest_Ticker{Ticker: "BTC"},
+		Currency: &grpcoin.Currency{Symbol: "BTC"},
 		Quantity: &grpcoin.Amount{Units: 1},
 	})
 	if err != nil {
@@ -167,21 +167,21 @@ func Test_validateTradeRequest(t *testing.T) {
 		{
 			name: "wrong ticker",
 			req: &grpcoin.TradeRequest{Action: grpcoin.TradeAction_SELL,
-				Ticker: &grpcoin.TradeRequest_Ticker{Ticker: "XXX"}},
+				Currency: &grpcoin.Currency{Symbol: "XXX"}},
 			supportedTickers: []string{},
 			code:             codes.InvalidArgument,
 		},
 		{
 			name: "missing quantity",
 			req: &grpcoin.TradeRequest{Action: grpcoin.TradeAction_SELL,
-				Ticker: &grpcoin.TradeRequest_Ticker{Ticker: "BTC"}},
+				Currency: &grpcoin.Currency{Symbol: "BTC"}},
 			supportedTickers: []string{"ABC", "BTC"},
 			code:             codes.InvalidArgument,
 		},
 		{
 			name: "zero quantity",
 			req: &grpcoin.TradeRequest{Action: grpcoin.TradeAction_SELL,
-				Ticker:   &grpcoin.TradeRequest_Ticker{Ticker: "BTC"},
+				Currency: &grpcoin.Currency{Symbol: "BTC"},
 				Quantity: &grpcoin.Amount{}},
 			supportedTickers: []string{"ABC", "BTC"},
 			code:             codes.InvalidArgument,
@@ -189,7 +189,7 @@ func Test_validateTradeRequest(t *testing.T) {
 		{
 			name: "negative unit",
 			req: &grpcoin.TradeRequest{Action: grpcoin.TradeAction_SELL,
-				Ticker:   &grpcoin.TradeRequest_Ticker{Ticker: "BTC"},
+				Currency: &grpcoin.Currency{Symbol: "BTC"},
 				Quantity: &grpcoin.Amount{Units: -1},
 			},
 			supportedTickers: []string{"ABC", "BTC"},
@@ -198,7 +198,7 @@ func Test_validateTradeRequest(t *testing.T) {
 		{
 			name: "negative nanos",
 			req: &grpcoin.TradeRequest{Action: grpcoin.TradeAction_SELL,
-				Ticker:   &grpcoin.TradeRequest_Ticker{Ticker: "BTC"},
+				Currency: &grpcoin.Currency{Symbol: "BTC"},
 				Quantity: &grpcoin.Amount{Nanos: -1},
 			},
 			supportedTickers: []string{"ABC", "BTC"},
@@ -235,7 +235,7 @@ func TestTrade(t *testing.T) {
 	// insufficient funds
 	_, err = pt.Trade(ctx, &grpcoin.TradeRequest{
 		Action:   grpcoin.TradeAction_BUY,
-		Ticker:   &grpcoin.TradeRequest_Ticker{Ticker: "BTC"},
+		Currency: &grpcoin.Currency{Symbol: "BTC"},
 		Quantity: &grpcoin.Amount{Units: 100_000_000},
 	})
 	if status.Code(err) != codes.InvalidArgument {
@@ -245,7 +245,7 @@ func TestTrade(t *testing.T) {
 	// good trade
 	resp, err := pt.Trade(ctx, &grpcoin.TradeRequest{
 		Action:   grpcoin.TradeAction_BUY,
-		Ticker:   &grpcoin.TradeRequest_Ticker{Ticker: "BTC"},
+		Currency: &grpcoin.Currency{Symbol: "BTC"},
 		Quantity: &grpcoin.Amount{Units: 1, Nanos: 500_000_000},
 	})
 	if err != nil {
@@ -254,23 +254,22 @@ func TestTrade(t *testing.T) {
 	expected := &grpcoin.TradeResponse{
 		T:             nil,
 		Action:        grpcoin.TradeAction_BUY,
-		Ticker:        &grpcoin.TradeResponse_Ticker{Symbol: "BTC"},
+		Currency:      &grpcoin.Currency{Symbol: "BTC"},
 		Quantity:      &grpcoin.Amount{Units: 1, Nanos: 500_000_000},
 		ExecutedPrice: &grpcoin.Amount{Units: 30_000},
 		ResultingPortfolio: &grpcoin.TradeResponse_Portfolio{
 			RemainingCash: &grpcoin.Amount{Units: 55_000, Nanos: 0},
 			Positions: []*grpcoin.PortfolioPosition{
-				{Ticker: &grpcoin.PortfolioPosition_Ticker{Ticker: "BTC"},
+				{Currency: &grpcoin.Currency{Symbol: "BTC"},
 					Amount: &grpcoin.Amount{Units: 1, Nanos: 500_000_000}},
 			},
 		},
 	}
-	if diff := cmp.Diff(*expected, *resp,
+	if diff := cmp.Diff(expected, resp,
 		cmpopts.IgnoreUnexported(grpcoin.TradeResponse{},
-			grpcoin.TradeResponse_Ticker{},
 			grpcoin.Amount{},
 			grpcoin.PortfolioPosition{},
-			grpcoin.PortfolioPosition_Ticker{},
+			grpcoin.Currency{},
 			grpcoin.TradeResponse_Portfolio{}),
 		cmpopts.IgnoreFields(grpcoin.TradeResponse{}, "T"),
 	); diff != "" {

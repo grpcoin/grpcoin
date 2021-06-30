@@ -25,7 +25,7 @@ type TickerInfoClient interface {
 	// abruptly disconnected and need to reconnect.
 	//
 	// No authentication required.
-	Watch(ctx context.Context, in *QuoteTicker, opts ...grpc.CallOption) (TickerInfo_WatchClient, error)
+	Watch(ctx context.Context, in *TickerWatchRequest, opts ...grpc.CallOption) (TickerInfo_WatchClient, error)
 }
 
 type tickerInfoClient struct {
@@ -36,7 +36,7 @@ func NewTickerInfoClient(cc grpc.ClientConnInterface) TickerInfoClient {
 	return &tickerInfoClient{cc}
 }
 
-func (c *tickerInfoClient) Watch(ctx context.Context, in *QuoteTicker, opts ...grpc.CallOption) (TickerInfo_WatchClient, error) {
+func (c *tickerInfoClient) Watch(ctx context.Context, in *TickerWatchRequest, opts ...grpc.CallOption) (TickerInfo_WatchClient, error) {
 	stream, err := c.cc.NewStream(ctx, &TickerInfo_ServiceDesc.Streams[0], "/grpcoin.TickerInfo/Watch", opts...)
 	if err != nil {
 		return nil, err
@@ -79,7 +79,7 @@ type TickerInfoServer interface {
 	// abruptly disconnected and need to reconnect.
 	//
 	// No authentication required.
-	Watch(*QuoteTicker, TickerInfo_WatchServer) error
+	Watch(*TickerWatchRequest, TickerInfo_WatchServer) error
 	mustEmbedUnimplementedTickerInfoServer()
 }
 
@@ -87,7 +87,7 @@ type TickerInfoServer interface {
 type UnimplementedTickerInfoServer struct {
 }
 
-func (UnimplementedTickerInfoServer) Watch(*QuoteTicker, TickerInfo_WatchServer) error {
+func (UnimplementedTickerInfoServer) Watch(*TickerWatchRequest, TickerInfo_WatchServer) error {
 	return status.Errorf(codes.Unimplemented, "method Watch not implemented")
 }
 func (UnimplementedTickerInfoServer) mustEmbedUnimplementedTickerInfoServer() {}
@@ -104,7 +104,7 @@ func RegisterTickerInfoServer(s grpc.ServiceRegistrar, srv TickerInfoServer) {
 }
 
 func _TickerInfo_Watch_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(QuoteTicker)
+	m := new(TickerWatchRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
@@ -138,6 +138,174 @@ var TickerInfo_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
+	Metadata: "grpcoin.proto",
+}
+
+// PaperTradeClient is the client API for PaperTrade service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type PaperTradeClient interface {
+	// Returns authenticated user's portfolio.
+	Portfolio(ctx context.Context, in *PortfolioRequest, opts ...grpc.CallOption) (*PortfolioResponse, error)
+	// Executes a trade in authenticated user's portfolio.
+	// All trades are executed immediately with the real-time market
+	// price provided on TickerInfo.Watch endpoint.
+	Trade(ctx context.Context, in *TradeRequest, opts ...grpc.CallOption) (*TradeResponse, error)
+	// Returns symbols supported by Trade or Watch methods.
+	ListSupportedCurrencies(ctx context.Context, in *ListSupportedCurrenciesRequest, opts ...grpc.CallOption) (*ListSupportedCurrenciesResponse, error)
+}
+
+type paperTradeClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewPaperTradeClient(cc grpc.ClientConnInterface) PaperTradeClient {
+	return &paperTradeClient{cc}
+}
+
+func (c *paperTradeClient) Portfolio(ctx context.Context, in *PortfolioRequest, opts ...grpc.CallOption) (*PortfolioResponse, error) {
+	out := new(PortfolioResponse)
+	err := c.cc.Invoke(ctx, "/grpcoin.PaperTrade/Portfolio", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *paperTradeClient) Trade(ctx context.Context, in *TradeRequest, opts ...grpc.CallOption) (*TradeResponse, error) {
+	out := new(TradeResponse)
+	err := c.cc.Invoke(ctx, "/grpcoin.PaperTrade/Trade", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *paperTradeClient) ListSupportedCurrencies(ctx context.Context, in *ListSupportedCurrenciesRequest, opts ...grpc.CallOption) (*ListSupportedCurrenciesResponse, error) {
+	out := new(ListSupportedCurrenciesResponse)
+	err := c.cc.Invoke(ctx, "/grpcoin.PaperTrade/ListSupportedCurrencies", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// PaperTradeServer is the server API for PaperTrade service.
+// All implementations must embed UnimplementedPaperTradeServer
+// for forward compatibility
+type PaperTradeServer interface {
+	// Returns authenticated user's portfolio.
+	Portfolio(context.Context, *PortfolioRequest) (*PortfolioResponse, error)
+	// Executes a trade in authenticated user's portfolio.
+	// All trades are executed immediately with the real-time market
+	// price provided on TickerInfo.Watch endpoint.
+	Trade(context.Context, *TradeRequest) (*TradeResponse, error)
+	// Returns symbols supported by Trade or Watch methods.
+	ListSupportedCurrencies(context.Context, *ListSupportedCurrenciesRequest) (*ListSupportedCurrenciesResponse, error)
+	mustEmbedUnimplementedPaperTradeServer()
+}
+
+// UnimplementedPaperTradeServer must be embedded to have forward compatible implementations.
+type UnimplementedPaperTradeServer struct {
+}
+
+func (UnimplementedPaperTradeServer) Portfolio(context.Context, *PortfolioRequest) (*PortfolioResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Portfolio not implemented")
+}
+func (UnimplementedPaperTradeServer) Trade(context.Context, *TradeRequest) (*TradeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Trade not implemented")
+}
+func (UnimplementedPaperTradeServer) ListSupportedCurrencies(context.Context, *ListSupportedCurrenciesRequest) (*ListSupportedCurrenciesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListSupportedCurrencies not implemented")
+}
+func (UnimplementedPaperTradeServer) mustEmbedUnimplementedPaperTradeServer() {}
+
+// UnsafePaperTradeServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to PaperTradeServer will
+// result in compilation errors.
+type UnsafePaperTradeServer interface {
+	mustEmbedUnimplementedPaperTradeServer()
+}
+
+func RegisterPaperTradeServer(s grpc.ServiceRegistrar, srv PaperTradeServer) {
+	s.RegisterService(&PaperTrade_ServiceDesc, srv)
+}
+
+func _PaperTrade_Portfolio_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PortfolioRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PaperTradeServer).Portfolio(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/grpcoin.PaperTrade/Portfolio",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PaperTradeServer).Portfolio(ctx, req.(*PortfolioRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PaperTrade_Trade_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TradeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PaperTradeServer).Trade(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/grpcoin.PaperTrade/Trade",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PaperTradeServer).Trade(ctx, req.(*TradeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PaperTrade_ListSupportedCurrencies_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListSupportedCurrenciesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PaperTradeServer).ListSupportedCurrencies(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/grpcoin.PaperTrade/ListSupportedCurrencies",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PaperTradeServer).ListSupportedCurrencies(ctx, req.(*ListSupportedCurrenciesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// PaperTrade_ServiceDesc is the grpc.ServiceDesc for PaperTrade service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var PaperTrade_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "grpcoin.PaperTrade",
+	HandlerType: (*PaperTradeServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Portfolio",
+			Handler:    _PaperTrade_Portfolio_Handler,
+		},
+		{
+			MethodName: "Trade",
+			Handler:    _PaperTrade_Trade_Handler,
+		},
+		{
+			MethodName: "ListSupportedCurrencies",
+			Handler:    _PaperTrade_ListSupportedCurrencies_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "grpcoin.proto",
 }
 
@@ -231,136 +399,6 @@ var Account_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "TestAuth",
 			Handler:    _Account_TestAuth_Handler,
-		},
-	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: "grpcoin.proto",
-}
-
-// PaperTradeClient is the client API for PaperTrade service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type PaperTradeClient interface {
-	// Returns authenticated user's portfolio.
-	Portfolio(ctx context.Context, in *PortfolioRequest, opts ...grpc.CallOption) (*PortfolioResponse, error)
-	// Executes a trade in authenticated user's portfolio.
-	// All trades are executed immediately with the real-time market
-	// price provided on TickerInfo.Watch endpoint.
-	Trade(ctx context.Context, in *TradeRequest, opts ...grpc.CallOption) (*TradeResponse, error)
-}
-
-type paperTradeClient struct {
-	cc grpc.ClientConnInterface
-}
-
-func NewPaperTradeClient(cc grpc.ClientConnInterface) PaperTradeClient {
-	return &paperTradeClient{cc}
-}
-
-func (c *paperTradeClient) Portfolio(ctx context.Context, in *PortfolioRequest, opts ...grpc.CallOption) (*PortfolioResponse, error) {
-	out := new(PortfolioResponse)
-	err := c.cc.Invoke(ctx, "/grpcoin.PaperTrade/Portfolio", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *paperTradeClient) Trade(ctx context.Context, in *TradeRequest, opts ...grpc.CallOption) (*TradeResponse, error) {
-	out := new(TradeResponse)
-	err := c.cc.Invoke(ctx, "/grpcoin.PaperTrade/Trade", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// PaperTradeServer is the server API for PaperTrade service.
-// All implementations must embed UnimplementedPaperTradeServer
-// for forward compatibility
-type PaperTradeServer interface {
-	// Returns authenticated user's portfolio.
-	Portfolio(context.Context, *PortfolioRequest) (*PortfolioResponse, error)
-	// Executes a trade in authenticated user's portfolio.
-	// All trades are executed immediately with the real-time market
-	// price provided on TickerInfo.Watch endpoint.
-	Trade(context.Context, *TradeRequest) (*TradeResponse, error)
-	mustEmbedUnimplementedPaperTradeServer()
-}
-
-// UnimplementedPaperTradeServer must be embedded to have forward compatible implementations.
-type UnimplementedPaperTradeServer struct {
-}
-
-func (UnimplementedPaperTradeServer) Portfolio(context.Context, *PortfolioRequest) (*PortfolioResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Portfolio not implemented")
-}
-func (UnimplementedPaperTradeServer) Trade(context.Context, *TradeRequest) (*TradeResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Trade not implemented")
-}
-func (UnimplementedPaperTradeServer) mustEmbedUnimplementedPaperTradeServer() {}
-
-// UnsafePaperTradeServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to PaperTradeServer will
-// result in compilation errors.
-type UnsafePaperTradeServer interface {
-	mustEmbedUnimplementedPaperTradeServer()
-}
-
-func RegisterPaperTradeServer(s grpc.ServiceRegistrar, srv PaperTradeServer) {
-	s.RegisterService(&PaperTrade_ServiceDesc, srv)
-}
-
-func _PaperTrade_Portfolio_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PortfolioRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(PaperTradeServer).Portfolio(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/grpcoin.PaperTrade/Portfolio",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PaperTradeServer).Portfolio(ctx, req.(*PortfolioRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _PaperTrade_Trade_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TradeRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(PaperTradeServer).Trade(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/grpcoin.PaperTrade/Trade",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PaperTradeServer).Trade(ctx, req.(*TradeRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-// PaperTrade_ServiceDesc is the grpc.ServiceDesc for PaperTrade service.
-// It's only intended for direct use with grpc.RegisterService,
-// and not to be introspected or modified (even as a copy)
-var PaperTrade_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "grpcoin.PaperTrade",
-	HandlerType: (*PaperTradeServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "Portfolio",
-			Handler:    _PaperTrade_Portfolio_Handler,
-		},
-		{
-			MethodName: "Trade",
-			Handler:    _PaperTrade_Trade_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
