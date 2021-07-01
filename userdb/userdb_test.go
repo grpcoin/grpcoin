@@ -249,18 +249,18 @@ func TestUserDB_Trade_OrderHistory(t *testing.T) {
 		t.Fatal(diff)
 	}
 
-	// validate order history
-	expectedOrders := []Order{
+	// validate trade history
+	expectedTrades := []TradeRecord{
 		{Ticker: "BTC", Action: grpcoin.TradeAction_BUY, Size: Amount{25, 0}, Price: Amount{100, 0}},
 		{Ticker: "ETH", Action: grpcoin.TradeAction_BUY, Size: Amount{5, 0}, Price: Amount{2000, 0}},
 		{Ticker: "BTC", Action: grpcoin.TradeAction_SELL, Size: Amount{25, 0}, Price: Amount{200, 0}},
 	}
-	got, err := udb.UserOrderHistory(ctx, "testuser")
+	got, err := udb.UserTrades(ctx, "testuser")
 	if err != nil {
 		t.Fatal(err)
 	}
-	diff := cmp.Diff(got, expectedOrders,
-		cmpopts.IgnoreFields(Order{}, "Date"))
+	diff := cmp.Diff(got, expectedTrades,
+		cmpopts.IgnoreFields(TradeRecord{}, "Date"))
 	if diff != "" {
 		t.Fatal(diff)
 	}
@@ -275,27 +275,27 @@ func TestRotateOrderHistory(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// empty order history
-	if err := udb.RotateOrderHistory(ctx, "testuser", 5); err != nil {
+	// empty trade history (ensure no leftover from other tests but also works with empty set)
+	if err := udb.RotateTradeHistory(ctx, "testuser", 5); err != nil {
 		t.Fatal(err)
 	}
 
 	// retain last orders
 	ti := time.Date(2020, 04, 15, 0, 0, 0, 0, time.UTC)
 	for i := 0; i < 20; i++ {
-		if err := udb.recordOrderHistory(ctx, "testuser",
+		if err := udb.recordTradeHistory(ctx, "testuser",
 			ti.Add(time.Second*time.Duration(i)), "", grpcoin.TradeAction_UNDEFINED, Amount{Units: int64(i)}, Amount{}); err != nil {
 			t.Fatal(err)
 		}
 	}
-	if err := udb.RotateOrderHistory(ctx, "testuser", 3); err != nil {
+	if err := udb.RotateTradeHistory(ctx, "testuser", 3); err != nil {
 		t.Fatal(err)
 	}
-	hist, err := udb.UserOrderHistory(ctx, "testuser")
+	hist, err := udb.UserTrades(ctx, "testuser")
 	if err != nil {
 		t.Fatal(err)
 	}
-	expected := []Order{
+	expected := []TradeRecord{
 		{Date: ti.Add(17 * time.Second), Size: Amount{Units: 17}},
 		{Date: ti.Add(18 * time.Second), Size: Amount{Units: 18}},
 		{Date: ti.Add(19 * time.Second), Size: Amount{Units: 19}},

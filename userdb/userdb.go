@@ -52,11 +52,11 @@ type ctxUserRecordKey struct{}
 
 const (
 	fsUserCol      = "users"      // users collection
-	fsOrdersCol    = "orders"     // sub-collection for user
+	fsTradesCol    = "orders"     // sub-collection for user
 	fsValueHistCol = "valuations" // sub-collection for user's portolio value over time
 
-	maxOrderHistoryRecords  = 300  // keep latest N order history records
-	orderHistoryRotateCheck = 0.01 // probability of checking & purging excess order history records
+	maxTradeHistory         = 300  // keep latest N trade history records
+	tradeHistoryRotateCheck = 0.01 // probability of checking & purging excess trade history records
 )
 
 var (
@@ -91,7 +91,8 @@ func (a Amount) IsZero() bool       { return a == Amount{} }
 func (a Amount) V() *grpcoin.Amount { return &grpcoin.Amount{Units: a.Units, Nanos: a.Nanos} }
 func (a Amount) F() decimal.Decimal { return toDecimal(a.V()) }
 
-type Order struct {
+// TradeRecord represents a trade user has made in the past.
+type TradeRecord struct {
 	Date   time.Time           `firestore:"date"`
 	Ticker string              `firestore:"ticker"`
 	Action grpcoin.TradeAction `firestore:"action"`
@@ -99,6 +100,7 @@ type Order struct {
 	Price  Amount              `firestore:"price"`
 }
 
+// ValuationHistory represents user's portfolio value at a particular time.
 type ValuationHistory struct {
 	Date  time.Time `firestore:"date"`
 	Value Amount    `firestore:"value"`
@@ -229,31 +231,31 @@ func (u *UserDB) Trade(ctx context.Context, uid string, ticker string, action gr
 		return resultingPortfolio, err
 	}
 
-	subCtx, s = u.T.Start(ctx, "log order")
-	err = u.recordOrderHistory(subCtx, uid, time.Now().UTC(), ticker, action,
+	subCtx, s = u.T.Start(ctx, "log trade")
+	err = u.recordTradeHistory(subCtx, uid, time.Now().UTC(), ticker, action,
 		ToAmount(toDecimal(quantity)), ToAmount(toDecimal(quote)))
 	if err != nil {
 		s.RecordError(err)
-		ctxzap.Extract(ctx).Warn("failed to record order history", zap.Error(err))
+		ctxzap.Extract(ctx).Warn("failed to record trade history", zap.Error(err))
 	}
 	s.End()
 
-	// probabilistically delete unnecessary order history records
-	if r.Float64() < orderHistoryRotateCheck {
-		subCtx, s := u.T.Start(ctx, "rotate order history")
+	// probabilistically delete unnecessary trade history records
+	if r.Float64() < tradeHistoryRotateCheck {
+		subCtx, s := u.T.Start(ctx, "rotate trade history")
 		defer s.End()
-		if err := u.RotateOrderHistory(subCtx, uid, maxOrderHistoryRecords); err != nil {
+		if err := u.RotateTradeHistory(subCtx, uid, maxTradeHistory); err != nil {
 			s.RecordError(err)
-			ctxzap.Extract(ctx).Warn("failed to rotate order history", zap.Error(err))
+			ctxzap.Extract(ctx).Warn("failed to rotate trade history", zap.Error(err))
 		}
 	}
-	return resultingPortfolio, nil // do not block trades on order history bookkeeping
+	return resultingPortfolio, nil // do not block trades on trade history bookkeeping
 }
 
-func (u *UserDB) recordOrderHistory(ctx context.Context, uid string,
+func (u *UserDB) recordTradeHistory(ctx context.Context, uid string,
 	t time.Time, ticker string, action grpcoin.TradeAction, size, price Amount) error {
 	id := t.Format(time.RFC3339Nano)
-	_, err := u.DB.Collection(fsUserCol).Doc(uid).Collection(fsOrdersCol).Doc(id).Create(ctx, Order{
+	_, err := u.DB.Collection(fsUserCol).Doc(uid).Collection(fsTradesCol).Doc(id).Create(ctx, TradeRecord{
 		Date:   t,
 		Ticker: ticker,
 		Action: action,
@@ -263,11 +265,11 @@ func (u *UserDB) recordOrderHistory(ctx context.Context, uid string,
 	return err
 }
 
-func (u *UserDB) UserOrderHistory(ctx context.Context, uid string) ([]Order, error) {
-	ctx, s := u.T.Start(ctx, "order history")
+func (u *UserDB) UserTrades(ctx context.Context, uid string) ([]TradeRecord, error) {
+	ctx, s := u.T.Start(ctx, "trade history")
 	defer s.End()
-	var out []Order
-	iter := u.DB.Collection(fsUserCol).Doc(uid).Collection(fsOrdersCol).Documents(ctx)
+	var out []TradeRecord
+	iter := u.DB.Collection(fsUserCol).Doc(uid).Collection(fsTradesCol).Documents(ctx)
 	for {
 		doc, err := iter.Next()
 		if err == iterator.Done {
@@ -277,7 +279,7 @@ func (u *UserDB) UserOrderHistory(ctx context.Context, uid string) ([]Order, err
 			s.RecordError(err)
 			return nil, err
 		}
-		var v Order
+		var v TradeRecord
 		if err := doc.DataTo(&v); err != nil {
 			s.RecordError(err)
 			return nil, err
@@ -287,8 +289,8 @@ func (u *UserDB) UserOrderHistory(ctx context.Context, uid string) ([]Order, err
 	return out, nil
 }
 
-func (u *UserDB) RotateOrderHistory(ctx context.Context, uid string, maxHist int) error {
-	it := u.DB.Collection(fsUserCol).Doc(uid).Collection(fsOrdersCol).
+func (u *UserDB) RotateTradeHistory(ctx context.Context, uid string, maxHist int) error {
+	it := u.DB.Collection(fsUserCol).Doc(uid).Collection(fsTradesCol).
 		OrderBy("date", firestore.Desc).Offset(maxHist).Documents(ctx)
 	return firestoreutil.BatchDeleteAll(ctx, u.DB, it)
 }

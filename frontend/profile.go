@@ -47,12 +47,12 @@ func (fe *frontend) userProfile(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	// TODO cache
-	orders, err := fe.DB.UserOrderHistory(r.Context(), uid)
+	trades, err := fe.DB.UserTrades(r.Context(), uid)
 	if err != nil {
 		return err
 	}
-	for i := 0; i < len(orders)/2; i++ {
-		orders[i], orders[len(orders)-1-i] = orders[len(orders)-1-i], orders[i]
+	for i := 0; i < len(trades)/2; i++ {
+		trades[i], trades[len(trades)-1-i] = trades[len(trades)-1-i], trades[i]
 	}
 
 	quoteCtx, cancel := context.WithTimeout(r.Context(), fe.QuoteDeadline)
@@ -80,7 +80,7 @@ func (fe *frontend) userProfile(w http.ResponseWriter, r *http.Request) error {
 	}
 	return tpl.Funcs(funcs).ExecuteTemplate(w, "profile.tmpl", map[string]interface{}{
 		"u":       u,
-		"orders":  orders,
+		"trades":  trades,
 		"returns": returnPercentages,
 		"quotes":  quotes})
 }

@@ -37,6 +37,10 @@ var (
 	joinRendered string
 )
 
+type JoinHandlerData struct {
+	Content template.HTML
+}
+
 func (fe *frontend) join(w http.ResponseWriter, _ *http.Request) error {
 	var b bytes.Buffer
 	var err error
@@ -50,8 +54,5 @@ func (fe *frontend) join(w http.ResponseWriter, _ *http.Request) error {
 	if joinRendered == "" {
 		return fmt.Errorf("markdown didn't render for this page")
 	}
-	return tpl.ExecuteTemplate(w, "join.tmpl",
-		struct {
-			Content template.HTML
-		}{Content: template.HTML(joinRendered)})
+	return tpl.ExecuteTemplate(w, "join.tmpl", JoinHandlerData{Content: template.HTML(joinRendered)})
 }
