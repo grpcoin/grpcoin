@@ -1,3 +1,4 @@
+{{- /*gotype:github.com/grpcoin/grpcoin/frontend.LeaderboardHandlerData*/ -}}
 {{ template "header.tmpl" "Leaderboard" }}
 <main class="container">
     <div class="text-center">
@@ -14,7 +15,7 @@
                 </tr>
                 </thead>
                 <tbody>
-                {{ range .users }}
+                {{ range .Users }}
                 <tr class="position-relative">
                     <td></td>
                     <td>
@@ -27,7 +28,6 @@
                     <td id="price-{{.User.ID}}">
                         USD {{fmtPrice .Valuation}}
                     </td>
-
                     {{ end }}
                 </tr>
                 </tbody>

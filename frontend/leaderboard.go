@@ -34,11 +34,11 @@ type leaderboardUser struct {
 	Valuation userdb.Amount
 }
 
-type leaderboardResp []leaderboardUser
+type leaderboardUsers []leaderboardUser
 
-func (l leaderboardResp) Len() int          { return len(l) }
-func (l leaderboardResp) Swap(i int, j int) { l[i], l[j] = l[j], l[i] }
-func (l leaderboardResp) Less(i int, j int) bool {
+func (l leaderboardUsers) Len() int          { return len(l) }
+func (l leaderboardUsers) Swap(i int, j int) { l[i], l[j] = l[j], l[i] }
+func (l leaderboardUsers) Less(i int, j int) bool {
 	if l[i].Valuation.Units < l[j].Valuation.Units {
 		return true
 	} else if l[i].Valuation.Units == l[j].Valuation.Units && l[i].Valuation.Nanos < l[j].Valuation.Nanos {
@@ -73,6 +73,10 @@ func (fe *frontend) getQuotes(ctx context.Context) (map[string]userdb.Amount, er
 	return out, eg.Wait()
 }
 
+type LeaderboardHandlerData struct {
+	Users []leaderboardUser
+}
+
 func (fe *frontend) leaderboard(w http.ResponseWriter, r *http.Request) error {
 	quoteCtx, cancel := context.WithTimeout(r.Context(), fe.QuoteDeadline)
 	defer cancel()
@@ -84,14 +88,12 @@ func (fe *frontend) leaderboard(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	var resp leaderboardResp
+	var out leaderboardUsers
 	for _, u := range users {
-		resp = append(resp, leaderboardUser{
+		out = append(out, leaderboardUser{
 			User:      u,
 			Valuation: valuation(u.Portfolio, quotes)})
 	}
-	sort.Sort(sort.Reverse(resp))
-
-	return tpl.ExecuteTemplate(w, "leaderboard.tmpl", map[string]interface{}{
-		"users": resp})
+	sort.Sort(sort.Reverse(out))
+	return tpl.ExecuteTemplate(w, "leaderboard.tmpl", LeaderboardHandlerData{Users: out})
 }

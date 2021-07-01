@@ -30,6 +30,17 @@ import (
 	"github.com/grpcoin/grpcoin/userdb"
 )
 
+type ProfileHandlerData struct {
+	Quotes  map[string]userdb.Amount
+	U       userdb.User
+	Returns []returns
+	Trades  []userdb.TradeRecord
+}
+type returns struct {
+	Label   string
+	Percent userdb.Amount
+}
+
 func (fe *frontend) userProfile(w http.ResponseWriter, r *http.Request) error {
 	uid := mux.Vars(r)["id"]
 	if uid == "" {
@@ -67,26 +78,20 @@ func (fe *frontend) userProfile(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 	pv := valuation(u.Portfolio, quotes)
-	type returns struct {
-		Label   string
-		Percent userdb.Amount
-	}
-	returnPercentages := []returns{
-		{"1 hour", findReturns(hist, pv, time.Hour)},
-		{"6 hours", findReturns(hist, pv, time.Hour*6)},
-		{"24 hours", findReturns(hist, pv, time.Hour*24)},
-		{"1 week", findReturns(hist, pv, time.Hour*24*7)},
-		{"30 days", findReturns(hist, pv, time.Hour*24*30)},
-	}
-	return tpl.Funcs(funcs).ExecuteTemplate(w, "profile.tmpl", map[string]interface{}{
-		"u":       u,
-		"trades":  trades,
-		"returns": returnPercentages,
-		"quotes":  quotes})
+	out := ProfileHandlerData{
+		Quotes: quotes,
+		U:      u,
+		Trades: trades,
+		Returns: []returns{
+			{"1 hour", findReturns(hist, pv, time.Hour)},
+			{"6 hours", findReturns(hist, pv, time.Hour*6)},
+			{"24 hours", findReturns(hist, pv, time.Hour*24)},
+			{"1 week", findReturns(hist, pv, time.Hour*24*7)},
+			{"30 days", findReturns(hist, pv, time.Hour*24*30)}}}
+	return tpl.Funcs(funcs).ExecuteTemplate(w, "profile.tmpl", out)
 }
 
 func findReturns(history []userdb.ValuationHistory, currentValue userdb.Amount, ago time.Duration) userdb.Amount {
-	// TODO decide whether to truncate here or not
 	h := portfolioSnapshotAt(history, ago, time.Now())
 	if h == nil {
 		return userdb.Amount{}

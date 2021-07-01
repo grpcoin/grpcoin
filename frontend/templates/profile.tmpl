@@ -1,23 +1,24 @@
-{{ template "header.tmpl" (printf "User: %s" .u.DisplayName) }}
+{{- /*gotype:github.com/grpcoin/grpcoin/frontend.ProfileHandlerData*/ -}}
+{{ template "header.tmpl" (printf "User: %s" .U.DisplayName) }}
 
-{{ $tv := pv .u.Portfolio .quotes }}
+{{ $tv := pv .U.Portfolio .Quotes }}
 <div class="container-fluid">
     <div class="row py-5">
         <div class="col-lg-3">
             <div class="card bg-color-black mb-3">
-                {{ with (profilePic .u.ID) }}
+                {{ with (profilePic .U.ID) }}
                     <img src="{{.}}" class="card-image-top img-thumbnail
                     d-none d-lg-block"/>
                 {{ end }}
                 <div class="card-body">
                     <h3 class="card-title display-6">
-                        <a href="{{.u.ProfileURL}}" class="card-link
+                        <a href="{{.U.ProfileURL}}" class="card-link
                         stretched-link">
-                            {{.u.DisplayName}}
+                            {{.U.DisplayName}}
                         </a>
                     </h3>
                     <p class="card-text">
-                        Joined {{ fmtDuration (since .u.CreatedAt) 1 }} ago.
+                        Joined {{ fmtDuration (since .U.CreatedAt) 1 }} ago.
                     </p>
                 </div>
             </div>
@@ -33,13 +34,13 @@
                             <b>CASH</b>
                         </div>
                         <div class="text-end">
-                            {{fmtPrice .u.Portfolio.CashUSD -}}<br/>
+                            {{fmtPrice .U.Portfolio.CashUSD -}}<br/>
                             <span class="text-muted" id="percent-cash">
-                                {{ fmtPercent (toPercent ( div .u.Portfolio.CashUSD $tv ) ) }}
+                                {{ fmtPercent (toPercent ( div .U.Portfolio.CashUSD $tv ) ) }}
                             </span>
                         </div>
                     </li>
-                    {{ range $tick, $amount := .u.Portfolio.Positions }}
+                    {{ range $tick, $amount := .U.Portfolio.Positions }}
                         <li class="list-group-item
                         justify-content-between d-flex bg-color-black bg-hover">
                             <div>
@@ -48,14 +49,14 @@
                                     x{{ fmtAmount $amount }}
                                     <small class>
                                         at
-                                        <span id="price-{{$tick}}">{{ fmtPrice (index $.quotes $tick ) }}</span>
+                                        <span id="price-{{$tick}}">{{ fmtPrice (index $.Quotes $tick ) }}</span>
                                     </small>
                                 </span>
                             </div>
                             <div class="text-end">
-                                <span id="posValue-{{$tick}}">{{ fmtPrice (mul $amount (index $.quotes $tick )) }}</span><br/>
+                                <span id="posValue-{{$tick}}">{{ fmtPrice (mul $amount (index $.Quotes $tick )) }}</span><br/>
                                 <span class="text-muted" id="percent-{{$tick}}">
-                                {{ fmtPercent ( toPercent (div (mul $amount (index $.quotes $tick )) $tv )) }}
+                                {{ fmtPercent ( toPercent (div (mul $amount (index $.Quotes $tick )) $tv )) }}
                             </span>
 
                             </div>
@@ -90,14 +91,14 @@
                         <table class="table table-striped mb-0" id="returns">
                             <thead>
                             <tr>
-                                {{ range .returns }}
+                                {{ range .Returns }}
                                     <th scope="col">{{.Label}}</th>
                                 {{ end }}
                             </tr>
                             </thead>
                             <tbody>
                             <tr>
-                                {{ range .returns }}
+                                {{ range .Returns }}
                                     <td
                                             class="{{ if isNegative .Percent }}bg-color-red{{ else }}bg-color-green{{end}}">
                                         <b>
@@ -119,10 +120,6 @@
                 <div class="card-body p-2">
                     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
                     <style>
-                        #chart {
-                            width: 100%;
-                        }
-
                         #chart-timeline {
                             height: 400px;
                         }
@@ -192,7 +189,7 @@
 
 
                         document.addEventListener('DOMContentLoaded', async () => {
-                            await fetch('/api/portfolioValuation/{{.u.ID}}')
+                            await fetch('/api/portfolioValuation/{{.U.ID}}')
                                 .then(resp => {
                                     if (!resp.ok) {
                                         throw new Error(`http status code: ${resp.status}`)
@@ -237,7 +234,7 @@
                             })
                         });
                     </script>
-                    <div id="chart">
+                    <div id="chart w-100">
                         <div class="toolbar text-end">
                             <button type="button" class="btn btn-sm btn-primary" id="one_month">1 month</button>
                             <button type="button" class="btn btn-sm btn-secondary" id="one_week">1 week</button>
@@ -248,11 +245,11 @@
                 </div>
             </div>
 
-            {{ with .trades }}
+            {{ with .Trades }}
                 <div class="card mt-3 bg-color-black">
                     <h4 class="card-header">
                         <span>Trades
-                        {{ with $.u.TradeStats.TradeCount }}
+                        {{ with $.U.TradeStats.TradeCount }}
                             ({{.}})
                         {{end}}
                         </span>
@@ -300,15 +297,15 @@
     const toDecimal = v => new Decimal(v.Units || v.units || 0).plus(new Decimal(v.Nanos || v.nanos || 0).times(new Decimal(10).pow(-9)))
     const fmtPrice = v => v.toNumber().toLocaleString('en-US', {maximumFractionDigits: 2, minimumFractionDigits: 2});
 
-    const initialQuotes = {{.quotes}};
-    const portfolio = {{.u.Portfolio.Positions}};
-    const cash = toDecimal({{.u.Portfolio.CashUSD}});
+    const initialQuotes = {{.Quotes}};
+    const portfolio = {{.U.Portfolio.Positions}};
+    const cash = toDecimal({{.U.Portfolio.CashUSD}});
 
     const quotes = {};
 
     function connectTickerWS() {
         const socket = new WebSocket((window.location.protocol == 'http:' ? "ws" : "wss") + "://" + window.location.host + "/ws/tickers");
-        
+
         socket.onclose = function (evt) {
             setTimeout(connectTickerWS, 2000);
         }
@@ -316,9 +313,9 @@
         socket.onerror = function (msg) {
             console.error(msg);
         }
-        
+
         socket.onmessage = function (evt) {
-            const {t,p}= JSON.parse(evt.data)
+            const {t, p} = JSON.parse(evt.data)
 
             quotes[t] = toDecimal(p)
 
@@ -342,7 +339,7 @@
                 posPercentages[symbol] = posValue.dividedBy(totalValue).times(100).toFixed(2)
                 document.getElementById(`percent-${symbol}`).innerText = posPercentages[symbol] + '%'
             })
-            
+
             document.getElementById("percent-cash").innerHTML = cash.dividedBy(totalValue).times(100).toFixed(2) + '%'
         }
     }
