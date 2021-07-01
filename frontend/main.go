@@ -91,8 +91,9 @@ func main() {
 		Trace:       trace,
 		Redis:       rc,
 		DB: &userdb.UserDB{
-			DB: db,
-			T:  trace}}
+			DB:    db,
+			Cache: userdb.UserDBCache{R: rc},
+			T:     trace}}
 
 	// wait for initial set of quote prices to arrive
 	quoteCtx, cancel := context.WithTimeout(ctx, time.Second*10)

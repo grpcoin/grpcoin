@@ -70,7 +70,7 @@ func (m *mockQuoteProvider) GetQuote(_ context.Context, _ string) (*grpcoin.Amou
 func TestPortfolio(t *testing.T) {
 	fs := firestoreutil.StartTestEmulator(t, context.TODO())
 	tp := trace.NewNoopTracerProvider().Tracer("")
-	udb := &userdb.UserDB{DB: fs, T: tp}
+	udb := &userdb.UserDB{DB: fs, T: tp, Cache: userdb.MockProfileCache{}}
 
 	au := &github.GitHubUser{ID: 1, Username: "abc"}
 	user, err := udb.EnsureAccountExists(context.TODO(), au)
@@ -105,7 +105,7 @@ func TestPortfolio(t *testing.T) {
 func TestTradeQuotePrices(t *testing.T) {
 	fs := firestoreutil.StartTestEmulator(t, context.TODO())
 	tr := trace.NewNoopTracerProvider().Tracer("")
-	udb := &userdb.UserDB{DB: fs, T: tr}
+	udb := &userdb.UserDB{DB: fs, T: tr, Cache: userdb.MockProfileCache{}}
 
 	faultyQuote := &mockQuoteProvider{err: context.DeadlineExceeded}
 	pt := &tradingService{udb: udb, quoteProvider: faultyQuote, tracer: tr, supportedTickers: []string{"BTC"}}
@@ -217,7 +217,7 @@ func Test_validateTradeRequest(t *testing.T) {
 func TestTrade(t *testing.T) {
 	tp := trace.NewNoopTracerProvider().Tracer("")
 	fs := firestoreutil.StartTestEmulator(t, context.TODO())
-	udb := &userdb.UserDB{DB: fs, T: tp}
+	udb := &userdb.UserDB{DB: fs, T: tp, Cache: userdb.MockProfileCache{}}
 
 	au := &github.GitHubUser{ID: 2, Username: "def"}
 	user, err := udb.EnsureAccountExists(context.TODO(), au)

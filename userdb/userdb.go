@@ -94,8 +94,10 @@ type ValuationHistory struct {
 }
 
 type UserDB struct {
-	DB *firestore.Client
-	T  trace.Tracer
+	DB    *firestore.Client
+	Cache ProfileCache
+
+	T trace.Tracer
 }
 
 func (u *UserDB) Create(ctx context.Context, au auth.AuthenticatedUser) error {
@@ -227,6 +229,12 @@ func (u *UserDB) Trade(ctx context.Context, uid string, ticker string, action gr
 	}
 	s.End()
 
+	subCtx, s = u.T.Start(ctx, "invalidate trade history cache")
+	if err := u.Cache.InvalidateTrades(subCtx, uid); err != nil {
+		s.RecordError(err)
+		ctxzap.Extract(ctx).Warn("failed to invalidate trade history cache", zap.Error(err))
+	}
+
 	// probabilistically delete unnecessary trade history records
 	if r.Float64() < tradeHistoryRotateCheck {
 		subCtx, s := u.T.Start(ctx, "rotate trade history")
@@ -255,6 +263,13 @@ func (u *UserDB) recordTradeHistory(ctx context.Context, uid string,
 func (u *UserDB) UserTrades(ctx context.Context, uid string) ([]TradeRecord, error) {
 	ctx, s := u.T.Start(ctx, "trade history")
 	defer s.End()
+
+	if v, ok, err := u.Cache.GetTrades(ctx, uid); err != nil {
+		return nil, fmt.Errorf("failed to query trade history cache: %v", err)
+	} else if ok {
+		return v, nil
+	}
+
 	var out []TradeRecord
 	iter := u.DB.Collection(fsUserCol).Doc(uid).Collection(fsTradesCol).Documents(ctx)
 	for {
@@ -273,6 +288,10 @@ func (u *UserDB) UserTrades(ctx context.Context, uid string) ([]TradeRecord, err
 		}
 		out = append(out, v)
 	}
+
+	if err := u.Cache.SaveTrades(ctx, uid, out); err != nil {
+		ctxzap.Extract(ctx).Warn("failed to save trade history to cache", zap.String("uid", uid))
+	}
 	return out, nil
 }
 
@@ -286,6 +305,13 @@ func (u *UserDB) UserValuationHistory(ctx context.Context, uid string) ([]Valuat
 	// TODO implement caching around this with a hourly key and precise ttl.
 	ctx, s := u.T.Start(ctx, "user valuation history")
 	defer s.End()
+
+	if v, ok, err := u.Cache.GetValuation(ctx, uid, time.Now()); err != nil {
+		return nil, fmt.Errorf("failed to retrieve valuation history: %v", err)
+	} else if ok {
+		return v, nil
+	}
+
 	var out []ValuationHistory
 	iter := u.DB.Collection(fsUserCol).Doc(uid).Collection(fsValueHistCol).Documents(ctx)
 	for {
@@ -304,12 +330,13 @@ func (u *UserDB) UserValuationHistory(ctx context.Context, uid string) ([]Valuat
 		}
 		out = append(out, v)
 	}
+	if err := u.Cache.SaveValuation(ctx, uid, time.Now(), out); err != nil {
+		ctxzap.Extract(ctx).Warn("failed to save portfolio valuation history", zap.String("uid", uid), zap.Int("size", len(out)))
+	}
 	return out, nil
 }
 
-func canonicalizeValuationHistoryDBKey(t time.Time) string {
-	return t.UTC().Format(time.RFC3339)
-}
+func canonicalizeValuationHistoryDBKey(t time.Time) string { return t.UTC().Format(time.RFC3339) }
 
 func (u *UserDB) SetUserValuationHistory(ctx context.Context, uid string, v ValuationHistory) error {
 	_, err := u.DB.Collection(fsUserCol).Doc(uid).Collection(fsValueHistCol).

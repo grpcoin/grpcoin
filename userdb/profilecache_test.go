@@ -1,3 +1,17 @@
+// Copyright 2021 Ahmet Alp Balkan
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package userdb
 
 import (
@@ -16,7 +30,7 @@ func TestTradeHistoryCaches(t *testing.T) {
 		t.Fatal(err)
 	}
 	rc := redis.NewClient(&redis.Options{Addr: s.Addr()})
-	c := userDBCache{r: rc}
+	c := UserDBCache{R: rc}
 
 	_, ok, err := c.GetTrades(context.TODO(), "foo")
 	if err != nil {
@@ -65,7 +79,7 @@ func TestPortfolioValidationHistoryCaches(t *testing.T) {
 		t.Fatal(err)
 	}
 	rc := redis.NewClient(&redis.Options{Addr: s.Addr()})
-	var c userDBCache = userDBCache{r: rc}
+	var c UserDBCache = UserDBCache{R: rc}
 	now := time.Date(2020, 01, 01, 0, 0, 0, 0, time.UTC)
 	_, ok, err := c.GetValuation(context.TODO(), "foo", now)
 	if err != nil {
@@ -87,10 +101,9 @@ func TestPortfolioValidationHistoryCaches(t *testing.T) {
 	// query too far ahead
 	if _, ok, err := c.GetValuation(context.TODO(), "foo", now.Add(time.Hour)); err != nil {
 		t.Fatal(err)
-	}else if ok{
+	} else if ok {
 		t.Fatal("was not expecting value bc queried too far ahead")
 	}
-
 
 	// query while cached data is valid
 	v, ok, err := c.GetValuation(context.TODO(), "foo", now.Add(time.Minute*59))

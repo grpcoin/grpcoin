@@ -87,7 +87,7 @@ func main() {
 	defer shutdown()
 
 	accountCache := &AccountCache{cache: rc}
-	udb := &userdb.UserDB{DB: db, T: tp}
+	udb := &userdb.UserDB{DB: db, T: tp, Cache: userdb.UserDBCache{R: rc}}
 	accountSvc := &accountService{cache: accountCache, udb: udb}
 	authenticator := &github.GitHubAuthenticator{T: tp, Cache: rc}
 

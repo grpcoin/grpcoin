@@ -1,3 +1,17 @@
+// Copyright 2021 Ahmet Alp Balkan
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package userdb
 
 import (
@@ -24,37 +38,37 @@ const (
 	portfolioValueChangeInterval = time.Hour
 )
 
-type userDBCache struct {
-	r *redis.Client
+type UserDBCache struct {
+	R *redis.Client
 }
 
-func (_ userDBCache) tradesCacheKey(uid string) string { return fmt.Sprintf("trades::%s", uid) }
-func (_ userDBCache) valuationCacheKey(uid string, now time.Time) string {
+func (_ UserDBCache) tradesCacheKey(uid string) string { return fmt.Sprintf("trades::%s", uid) }
+func (_ UserDBCache) valuationCacheKey(uid string, now time.Time) string {
 	return fmt.Sprintf("portfolioValuation::%s::%d", uid, now.Truncate(portfolioValueChangeInterval).Unix())
 }
 
-func (u userDBCache) GetTrades(ctx context.Context, uid string) ([]TradeRecord, bool, error) {
+func (u UserDBCache) GetTrades(ctx context.Context, uid string) ([]TradeRecord, bool, error) {
 	var v cachedTradeHistory
-	err := u.r.Get(ctx, u.tradesCacheKey(uid)).Scan(&v)
+	err := u.R.Get(ctx, u.tradesCacheKey(uid)).Scan(&v)
 	return v, !errors.Is(err, redis.Nil), nonRedisNilErr(err)
 }
 
-func (u userDBCache) SaveTrades(ctx context.Context, uid string, v []TradeRecord) error {
-	return u.r.Set(ctx, u.tradesCacheKey(uid), cachedTradeHistory(v), userTradeHistoryTTL).Err()
+func (u UserDBCache) SaveTrades(ctx context.Context, uid string, v []TradeRecord) error {
+	return u.R.Set(ctx, u.tradesCacheKey(uid), cachedTradeHistory(v), userTradeHistoryTTL).Err()
 }
 
-func (u userDBCache) InvalidateTrades(ctx context.Context, uid string) error {
-	return u.r.Del(ctx, u.tradesCacheKey(uid)).Err()
+func (u UserDBCache) InvalidateTrades(ctx context.Context, uid string) error {
+	return u.R.Del(ctx, u.tradesCacheKey(uid)).Err()
 }
 
-func (u userDBCache) GetValuation(ctx context.Context, uid string, now time.Time) ([]ValuationHistory, bool, error) {
+func (u UserDBCache) GetValuation(ctx context.Context, uid string, now time.Time) ([]ValuationHistory, bool, error) {
 	var v cachedValuationHistory
-	err := u.r.Get(ctx, u.valuationCacheKey(uid, now)).Scan(&v)
+	err := u.R.Get(ctx, u.valuationCacheKey(uid, now)).Scan(&v)
 	return v, !errors.Is(err, redis.Nil), nonRedisNilErr(err)
 }
 
-func (u userDBCache) SaveValuation(ctx context.Context, uid string, now time.Time, v []ValuationHistory) error {
-	return u.r.Set(ctx, u.valuationCacheKey(uid, now), cachedValuationHistory(v), portfolioValueChangeInterval).Err()
+func (u UserDBCache) SaveValuation(ctx context.Context, uid string, now time.Time, v []ValuationHistory) error {
+	return u.R.Set(ctx, u.valuationCacheKey(uid, now), cachedValuationHistory(v), portfolioValueChangeInterval).Err()
 }
 
 func nonRedisNilErr(err error) error {
