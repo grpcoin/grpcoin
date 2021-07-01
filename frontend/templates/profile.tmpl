@@ -170,10 +170,14 @@
                             tooltip: {
                                 x: {
                                     fillSeriesColor: false,
-                                    format: 'dd MMM yyyy HH:mm',
+                                    format: 'MMM dd HH:mm',
+                                    show: false,
                                 },
                                 y: {
                                     formatter: formatUSD,
+                                },
+                                marker: {
+                                    show: false
                                 },
                                 theme: 'dark'
                             },
@@ -199,7 +203,7 @@
                                 .then(data => {
                                     data.push([new Date().getTime(), {{ fmtAmountRaw $tv }} ]);
                                     options.series = [{
-                                        name: 'Portfolio',
+                                        name: 'Total holdings',
                                         data: data,
                                     }];
                                 }).catch(e => console.log(e));
