@@ -77,6 +77,9 @@ func (a Amount) IsNegative() bool   { return a.Units < 0 || a.Nanos < 0 }
 func (a Amount) IsZero() bool       { return a == Amount{} }
 func (a Amount) V() *grpcoin.Amount { return &grpcoin.Amount{Units: a.Units, Nanos: a.Nanos} }
 func (a Amount) F() decimal.Decimal { return toDecimal(a.V()) }
+func (a Amount) Less(b Amount) bool {
+	return a.Units < b.Units || (a.Units == b.Units && a.Nanos < b.Nanos)
+}
 
 // TradeRecord represents a trade user has made in the past.
 type TradeRecord struct {

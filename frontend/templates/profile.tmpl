@@ -40,27 +40,25 @@
                             </span>
                         </div>
                     </li>
-                    {{ range $tick, $amount := .U.Portfolio.Positions }}
+                    {{ range .Positions }}
                         <li class="list-group-item
                         justify-content-between d-flex bg-color-black bg-hover">
                             <div>
-                                <b>{{$tick}}</b><br/>
+                                <b>{{.Ticker}}</b><br/>
                                 <span class="text-muted">
-                                    x{{ fmtAmount $amount }}
+                                    x{{ fmtAmount .Amount }}
                                     <small class>
                                         at
-                                        <span id="price-{{$tick}}">{{ fmtPrice (index $.Quotes $tick ) }}</span>
+                                        <span id="price-{{.Ticker}}">{{ fmtPrice .Price }}</span>
                                     </small>
                                 </span>
                             </div>
                             <div class="text-end">
-                                <span id="posValue-{{$tick}}">{{ fmtPrice (mul $amount (index $.Quotes $tick )) }}</span><br/>
-                                <span class="text-muted" id="percent-{{$tick}}">
-                                {{ fmtPercent ( toPercent (div (mul $amount (index $.Quotes $tick )) $tv )) }}
-                            </span>
-
+                                <span id="posValue-{{.Ticker}}">{{ fmtPrice (.Value) }}</span><br/>
+                                <span class="text-muted" id="percent-{{.Ticker}}">
+                                    {{ fmtPercent ( toPercent (div (.Value) $tv )) }}
+                                </span>
                             </div>
-
                         </li>
                     {{ end }}
                 </ul>

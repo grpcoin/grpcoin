@@ -18,6 +18,7 @@ import (
 	"context"
 	_ "embed"
 	"net/http"
+	"sort"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -31,14 +32,23 @@ import (
 )
 
 type ProfileHandlerData struct {
-	Quotes  map[string]userdb.Amount
-	U       userdb.User
-	Returns []returns
-	Trades  []userdb.TradeRecord
+	Quotes    map[string]userdb.Amount
+	U         userdb.User
+	Positions []portfolioPosition
+	Returns   []returns
+	Trades    []userdb.TradeRecord
 }
+
 type returns struct {
 	Label   string
 	Percent userdb.Amount
+}
+
+type portfolioPosition struct {
+	Ticker string
+	Amount userdb.Amount
+	Price  userdb.Amount
+	Value  userdb.Amount
 }
 
 func (fe *frontend) userProfile(w http.ResponseWriter, r *http.Request) error {
@@ -57,7 +67,6 @@ func (fe *frontend) userProfile(w http.ResponseWriter, r *http.Request) error {
 		return status.Error(codes.NotFound, "user not found")
 	}
 
-	// TODO cache
 	trades, err := fe.DB.UserTrades(r.Context(), uid)
 	if err != nil {
 		return err
@@ -73,15 +82,29 @@ func (fe *frontend) userProfile(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
+	var positions []portfolioPosition
+	for ticker, amount := range u.Portfolio.Positions {
+		positions = append(positions, portfolioPosition{
+			Ticker: ticker,
+			Amount: amount,
+			Price:  quotes[ticker],
+			Value:  userdb.ToAmount(amount.F().Mul(quotes[ticker].F())),
+		})
+	}
+	sort.Slice(positions, func(i, j int) bool {
+		return !positions[i].Value.Less(positions[j].Value)
+	})
+
 	hist, err := fe.DB.UserValuationHistory(r.Context(), u.ID)
 	if err != nil {
 		return err
 	}
 	pv := valuation(u.Portfolio, quotes)
 	out := ProfileHandlerData{
-		Quotes: quotes,
-		U:      u,
-		Trades: trades,
+		Quotes:    quotes,
+		U:         u,
+		Positions: positions,
+		Trades:    trades,
 		Returns: []returns{
 			{"1 hour", findReturns(hist, pv, time.Hour)},
 			{"6 hours", findReturns(hist, pv, time.Hour*6)},
