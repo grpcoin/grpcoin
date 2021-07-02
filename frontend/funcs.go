@@ -22,29 +22,31 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/hako/durafmt"
+	"github.com/shopspring/decimal"
 
 	"github.com/grpcoin/grpcoin/userdb"
 )
 
 var (
 	funcs = template.FuncMap{
-		"fmtAmount":    fmtAmount,
-		"fmtAmountRaw": fmtAmountRaw,
-		"fmtPrice":     fmtPrice,
-		"fmtPriceFull": fmtPriceFull,
-		"fmtDate":      fmtDate,
-		"fmtDateISO":   fmtDateISO,
-		"fmtDuration":  fmtDuration,
-		"fmtPercent":   fmtPercent,
-		"toPercent":    toPercent,
-		"pv":           valuation,
-		"isNegative":   isNegative,
-		"isZero":       userdb.Amount.IsZero,
-		"since":        since,
-		"mul":          mul,
-		"div":          div,
-		"profilePic":   profilePic,
-		"comma":        comma,
+		"fmtAmount":     fmtAmount,
+		"fmtAmountRaw":  fmtAmountRaw,
+		"fmtPrice":      fmtPrice,
+		"fmtPriceFloat": fmtPriceFloat,
+		"fmtPriceFull":  fmtPriceFull,
+		"fmtDate":       fmtDate,
+		"fmtDateISO":    fmtDateISO,
+		"fmtDuration":   fmtDuration,
+		"fmtPercent":    fmtPercent,
+		"toPercent":     toPercent,
+		"pv":            valuation,
+		"isNegative":    isNegative,
+		"isZero":        userdb.Amount.IsZero,
+		"since":         since,
+		"mul":           mul,
+		"div":           div,
+		"profilePic":    profilePic,
+		"comma":         comma,
 	}
 )
 
@@ -71,6 +73,10 @@ func fmtPrice(a userdb.Amount) string {
 		return fmtPriceFull(a)
 	}
 	return fmt.Sprintf("$%s.%02d", humanize.Comma(a.Units), a.Nanos/1_000_000_0)
+}
+
+func fmtPriceFloat(f float64) string {
+	return fmtPrice(userdb.ToAmount(decimal.NewFromFloat(f)))
 }
 
 func fmtPriceFull(a userdb.Amount) string {

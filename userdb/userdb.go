@@ -24,6 +24,7 @@ import (
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"github.com/grpcoin/grpcoin/apiserver/firestoreutil"
+	"github.com/grpcoin/grpcoin/tradecounters"
 	"github.com/shopspring/decimal"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -97,10 +98,10 @@ type ValuationHistory struct {
 }
 
 type UserDB struct {
-	DB    *firestore.Client
-	Cache ProfileCache
-
-	T trace.Tracer
+	DB           *firestore.Client
+	Cache        ProfileCache
+	TradeCounter *tradecounters.TradeCounter
+	T            trace.Tracer
 }
 
 func (u *UserDB) Create(ctx context.Context, au auth.AuthenticatedUser) error {
@@ -247,6 +248,15 @@ func (u *UserDB) Trade(ctx context.Context, uid string, ticker string, action gr
 			ctxzap.Extract(ctx).Warn("failed to rotate trade history", zap.Error(err))
 		}
 	}
+
+	subCtx, s = u.T.Start(ctx, "update trade stats")
+	tradeAmount, _ := toDecimal(quantity).Mul(toDecimal(quote)).Float64()
+	if err := u.TradeCounter.IncrTrades(subCtx, time.Now(), tradeAmount); err != nil {
+		s.RecordError(err)
+		ctxzap.Extract(ctx).Warn("failed to update trade stats", zap.Error(err))
+	}
+	s.End()
+
 	return resultingPortfolio, nil // do not block trades on trade history bookkeeping
 }
 

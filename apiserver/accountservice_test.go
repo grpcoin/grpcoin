@@ -19,8 +19,6 @@ import (
 	"net"
 	"testing"
 
-	"github.com/alicebob/miniredis/v2"
-	"github.com/go-redis/redis/v8"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -29,6 +27,7 @@ import (
 	"github.com/grpcoin/grpcoin/apiserver/auth"
 	"github.com/grpcoin/grpcoin/apiserver/auth/github"
 	"github.com/grpcoin/grpcoin/apiserver/firestoreutil"
+	"github.com/grpcoin/grpcoin/testutil"
 	"github.com/grpcoin/grpcoin/userdb"
 )
 
@@ -49,7 +48,7 @@ func TestTestAuth(t *testing.T) {
 	}
 	udb := &userdb.UserDB{DB: fs, T: trace.NewNoopTracerProvider().Tracer("")}
 	lg, _ := zap.NewDevelopment()
-	r := redisTestInstance(t)
+	r := testutil.MockRedis(t)
 	srv := prepServer(lg, au, mockRateLimiter{}, udb, &accountService{cache: &AccountCache{cache: r}}, nil, nil)
 	go srv.Serve(l)
 	defer srv.Stop()
@@ -72,14 +71,4 @@ func TestTestAuth(t *testing.T) {
 	if resp.GetUserId() != expected {
 		t.Fatalf("uid expected=%q got=%q", expected, resp.GetUserId())
 	}
-}
-
-func redisTestInstance(t *testing.T) *redis.Client {
-	t.Helper()
-	s, err := miniredis.Run()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { s.Close() })
-	return redis.NewClient(&redis.Options{Addr: s.Addr()})
 }

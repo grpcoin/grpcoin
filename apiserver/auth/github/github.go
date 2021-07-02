@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
@@ -40,6 +41,10 @@ type GitHubUser struct {
 func (g GitHubUser) DBKey() string       { return fmt.Sprintf("github_%v", g.ID) }
 func (g GitHubUser) DisplayName() string { return g.Username }
 func (g GitHubUser) ProfileURL() string  { return "https://github.com/" + g.Username }
+
+const (
+	accountCacheTTL = time.Hour * 2
+)
 
 func VerifyUser(token string) (GitHubUser, error) {
 	req, _ := http.NewRequest("GET", "https://api.github.com/user", nil)
@@ -125,7 +130,7 @@ func (g *GitHubAuthenticator) tokenCached(ctx context.Context, tok string) (GitH
 
 func (g *GitHubAuthenticator) cacheToken(ctx context.Context, tok string, v GitHubUser) error {
 	b, _ := json.Marshal(v)
-	return g.Cache.Set(ctx, tokenCacheHash(tok), b, 0).Err()
+	return g.Cache.Set(ctx, tokenCacheHash(tok), b, accountCacheTTL).Err()
 }
 
 func tokenCacheHash(tok string) string {

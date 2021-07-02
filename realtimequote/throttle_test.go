@@ -77,6 +77,6 @@ func TestRateLimitedPerSymbol(t *testing.T) {
 		t.Fatalf("wrong X msg recv count:%d expected:%d", xCount, expected)
 	}
 	if expected := 5; yCount != expected {
-		t.Fatalf("wrong Y msg recv count:%d expected:%d", xCount, expected)
+		t.Fatalf("wrong Y msg recv count:%d expected:%d", yCount, expected)
 	}
 }

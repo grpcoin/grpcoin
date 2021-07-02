@@ -27,6 +27,8 @@ import (
 
 	"github.com/grpcoin/grpcoin/api/grpcoin"
 	"github.com/grpcoin/grpcoin/apiserver/firestoreutil"
+	"github.com/grpcoin/grpcoin/testutil"
+	"github.com/grpcoin/grpcoin/tradecounters"
 )
 
 type testUser struct {
@@ -41,8 +43,9 @@ func (t testUser) ProfileURL() string  { return "https://" + t.name }
 func TestGetUser_notFound(t *testing.T) {
 	ctx := context.Background()
 	udb := &UserDB{DB: firestoreutil.StartTestEmulator(t, ctx),
-		T:     trace.NewNoopTracerProvider().Tracer(""),
-		Cache: MockProfileCache{}}
+		T:            trace.NewNoopTracerProvider().Tracer(""),
+		TradeCounter: &tradecounters.TradeCounter{DB: testutil.MockRedis(t)},
+		Cache:        MockProfileCache{}}
 	u, ok, err := udb.Get(ctx, "foo")
 	if err != nil {
 		t.Fatal(err)
@@ -55,8 +58,9 @@ func TestGetUser_notFound(t *testing.T) {
 func TestNewUser(t *testing.T) {
 	ctx := context.Background()
 	udb := &UserDB{DB: firestoreutil.StartTestEmulator(t, ctx),
-		T:     trace.NewNoopTracerProvider().Tracer(""),
-		Cache: MockProfileCache{}}
+		T:            trace.NewNoopTracerProvider().Tracer(""),
+		TradeCounter: &tradecounters.TradeCounter{DB: testutil.MockRedis(t)},
+		Cache:        MockProfileCache{}}
 	tu := testUser{id: "foobar", name: "ab"}
 
 	err := udb.Create(ctx, tu)
@@ -93,8 +97,9 @@ func TestNewUser(t *testing.T) {
 func TestEnsureAccountExists(t *testing.T) {
 	ctx := context.Background()
 	udb := &UserDB{DB: firestoreutil.StartTestEmulator(t, ctx),
-		T:     trace.NewNoopTracerProvider().Tracer(""),
-		Cache: MockProfileCache{}}
+		T:            trace.NewNoopTracerProvider().Tracer(""),
+		TradeCounter: &tradecounters.TradeCounter{DB: testutil.MockRedis(t)},
+		Cache:        MockProfileCache{}}
 	tu := testUser{id: "testuser", name: "abc"}
 
 	u, err := udb.EnsureAccountExists(ctx, tu)
@@ -116,8 +121,9 @@ func TestEnsureAccountExists(t *testing.T) {
 func TestValuationHistory(t *testing.T) {
 	ctx := context.Background()
 	udb := &UserDB{DB: firestoreutil.StartTestEmulator(t, ctx),
-		T:     trace.NewNoopTracerProvider().Tracer(""),
-		Cache: MockProfileCache{}}
+		T:            trace.NewNoopTracerProvider().Tracer(""),
+		TradeCounter: &tradecounters.TradeCounter{DB: testutil.MockRedis(t)},
+		Cache:        MockProfileCache{}}
 	tu := testUser{id: "testuser", name: "abc"}
 	u, err := udb.EnsureAccountExists(ctx, tu)
 	if err != nil {
@@ -150,8 +156,9 @@ func TestValuationHistory(t *testing.T) {
 func TestRotateUserValuationHistory(t *testing.T) {
 	ctx := context.Background()
 	udb := &UserDB{DB: firestoreutil.StartTestEmulator(t, ctx),
-		T:     trace.NewNoopTracerProvider().Tracer(""),
-		Cache: MockProfileCache{}}
+		T:            trace.NewNoopTracerProvider().Tracer(""),
+		TradeCounter: &tradecounters.TradeCounter{DB: testutil.MockRedis(t)},
+		Cache:        MockProfileCache{}}
 	tu := testUser{id: "testuser", name: "abc"}
 	u, err := udb.EnsureAccountExists(ctx, tu)
 	if err != nil {
@@ -191,8 +198,9 @@ func TestRotateUserValuationHistory(t *testing.T) {
 func TestUserDB_Trade_OrderHistory(t *testing.T) {
 	ctx := context.Background()
 	udb := &UserDB{DB: firestoreutil.StartTestEmulator(t, ctx),
-		T:     trace.NewNoopTracerProvider().Tracer(""),
-		Cache: MockProfileCache{}}
+		T:            trace.NewNoopTracerProvider().Tracer(""),
+		TradeCounter: &tradecounters.TradeCounter{DB: testutil.MockRedis(t)},
+		Cache:        MockProfileCache{}}
 	tu := testUser{id: "testuser", name: "abc"}
 	if _, err := udb.EnsureAccountExists(ctx, tu); err != nil {
 		t.Fatal(err)
@@ -274,8 +282,9 @@ func TestUserDB_Trade_OrderHistory(t *testing.T) {
 func TestRotateOrderHistory(t *testing.T) {
 	ctx := context.Background()
 	udb := &UserDB{DB: firestoreutil.StartTestEmulator(t, ctx),
-		T:     trace.NewNoopTracerProvider().Tracer(""),
-		Cache: MockProfileCache{}}
+		T:            trace.NewNoopTracerProvider().Tracer(""),
+		TradeCounter: &tradecounters.TradeCounter{DB: testutil.MockRedis(t)},
+		Cache:        MockProfileCache{}}
 	tu := testUser{id: "testuser", name: "abc"}
 	if _, err := udb.EnsureAccountExists(ctx, tu); err != nil {
 		t.Fatal(err)

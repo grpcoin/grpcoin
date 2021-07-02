@@ -19,17 +19,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alicebob/miniredis/v2"
-	"github.com/go-redis/redis/v8"
 	"github.com/google/go-cmp/cmp"
+	"github.com/grpcoin/grpcoin/testutil"
 )
 
 func TestTradeHistoryCaches(t *testing.T) {
-	s, err := miniredis.Run()
-	if err != nil {
-		t.Fatal(err)
-	}
-	rc := redis.NewClient(&redis.Options{Addr: s.Addr()})
+	rc := testutil.MockRedis(t)
 	c := UserDBCache{R: rc}
 
 	_, ok, err := c.GetTrades(context.TODO(), "foo")
@@ -74,11 +69,7 @@ func TestTradeHistoryCaches(t *testing.T) {
 }
 
 func TestPortfolioValidationHistoryCaches(t *testing.T) {
-	s, err := miniredis.Run()
-	if err != nil {
-		t.Fatal(err)
-	}
-	rc := redis.NewClient(&redis.Options{Addr: s.Addr()})
+	rc := testutil.MockRedis(t)
 	var c UserDBCache = UserDBCache{R: rc}
 	now := time.Date(2020, 01, 01, 0, 0, 0, 0, time.UTC)
 	_, ok, err := c.GetValuation(context.TODO(), "foo", now)

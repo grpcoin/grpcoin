@@ -4,6 +4,16 @@
     <div class="text-center">
         <p class="lead display-2 fw-lighter">Leaderboard</p>
     </div>
+    <div class="row justify-content-center">
+        <div class="col-4 text-center">
+            <span>24h Trade Volume</span>
+            <h5 class="display-6">{{fmtPriceFloat .TotalTradeVolume}}</h5>
+        </div>
+        <div class="col-4 text-center">
+            <span>24h Trade Count</span>
+            <h5 class="display-6">{{comma .TotalTradeCount}}</h5>
+        </div>
+    </div>
     <div class="card mx-auto bg-color-black col-12 col-lg-6 p-0">
         <div class="card-body p-1 m-0">
             <table class="table table-borderless table-hover m-0 leaderboard">

@@ -34,6 +34,7 @@ import (
 	"github.com/grpcoin/grpcoin/realtimequote"
 	"github.com/grpcoin/grpcoin/realtimequote/binance"
 	"github.com/grpcoin/grpcoin/realtimequote/fanout"
+	"github.com/grpcoin/grpcoin/tradecounters"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -87,7 +88,11 @@ func main() {
 	defer shutdown()
 
 	accountCache := &AccountCache{cache: rc}
-	udb := &userdb.UserDB{DB: db, T: tp, Cache: userdb.UserDBCache{R: rc}}
+	udb := &userdb.UserDB{
+		DB:           db,
+		T:            tp,
+		Cache:        userdb.UserDBCache{R: rc},
+		TradeCounter: &tradecounters.TradeCounter{DB: rc}}
 	accountSvc := &accountService{cache: accountCache, udb: udb}
 	authenticator := &github.GitHubAuthenticator{T: tp, Cache: rc}
 

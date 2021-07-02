@@ -16,6 +16,7 @@ package main
 
 import (
 	"testing"
+	"time"
 
 	"github.com/go-redis/redismock/v8"
 )
@@ -57,7 +58,7 @@ func TestAccountCache(t *testing.T) {
 	// set
 	tok2 := mockToken("345")
 	tok2key := c.cacheKey(tok2)
-	mock.ExpectSet(tok2key, "cde", 0).SetVal("cde")
+	mock.ExpectSet(tok2key, "cde", time.Hour*2).SetVal("cde")
 	err = c.Set(tok2, "cde")
 	if err != nil {
 		t.Fatal(err)

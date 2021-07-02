@@ -36,7 +36,6 @@ func makeTrade(p *Portfolio, action grpcoin.TradeAction, ticker string, quote, q
 		p.Positions[ticker] = Amount{0, 0}
 	}
 	posN := toDecimal(pos.V())
-	// TODO support non-existing currencies by adding zero to positions map in the future
 
 	cost := toDecimal(quantity).Mul(toDecimal(quote))
 

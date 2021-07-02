@@ -25,8 +25,12 @@ import (
 	"github.com/yuin/goldmark"
 )
 
-func (fe *frontend) home(w http.ResponseWriter, _ *http.Request) error {
-	return tpl.ExecuteTemplate(w, "home.tmpl", nil)
+type HomeResponse struct {
+}
+
+func (fe *frontend) home(w http.ResponseWriter, r *http.Request) error {
+
+	return tpl.ExecuteTemplate(w, "home.tmpl", HomeResponse{})
 }
 
 var (

@@ -29,6 +29,7 @@ import (
 	"github.com/grpcoin/grpcoin/realtimequote"
 	"github.com/grpcoin/grpcoin/realtimequote/binance"
 	"github.com/grpcoin/grpcoin/realtimequote/fanout"
+	"github.com/grpcoin/grpcoin/tradecounters"
 	"go.uber.org/zap"
 
 	"github.com/grpcoin/grpcoin/serverutil"
@@ -91,9 +92,10 @@ func main() {
 		Trace:       trace,
 		Redis:       rc,
 		DB: &userdb.UserDB{
-			DB:    db,
-			Cache: userdb.UserDBCache{R: rc},
-			T:     trace}}
+			DB:           db,
+			Cache:        userdb.UserDBCache{R: rc},
+			TradeCounter: &tradecounters.TradeCounter{DB: rc},
+			T:            trace}}
 
 	// wait for initial set of quote prices to arrive
 	quoteCtx, cancel := context.WithTimeout(ctx, time.Second*10)

@@ -19,20 +19,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alicebob/miniredis/v2"
-	"github.com/go-redis/redis/v8"
+	"github.com/grpcoin/grpcoin/testutil"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 func TestRateLimiter_Hit(t *testing.T) {
-	s, err := miniredis.Run()
-	if err != nil {
-		t.Fatal(err)
-	}
-	rc := redis.NewClient(&redis.Options{Addr: s.Addr()})
-	defer s.Close()
+	rc := testutil.MockRedis(t)
 
 	var tt time.Time
 	rl := New(rc,

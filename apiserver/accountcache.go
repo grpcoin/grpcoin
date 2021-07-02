@@ -18,6 +18,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 )
@@ -31,7 +32,7 @@ type AccountCache struct {
 }
 
 func (a *AccountCache) Set(t AuthToken, uid string) error {
-	return a.cache.Set(context.TODO(), a.cacheKey(t), uid, 0).Err()
+	return a.cache.Set(context.TODO(), a.cacheKey(t), uid, time.Hour*2).Err()
 }
 
 func (a *AccountCache) Get(t AuthToken) (string, bool, error) {

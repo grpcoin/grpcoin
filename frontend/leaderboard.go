@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"sort"
 	"sync"
+	"time"
 
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
@@ -61,7 +62,9 @@ type leaderboardUser struct {
 }
 
 type LeaderboardHandlerData struct {
-	Users []leaderboardUser
+	Users            []leaderboardUser
+	TotalTradeCount  int
+	TotalTradeVolume float64
 }
 
 func (fe *frontend) leaderboard(w http.ResponseWriter, r *http.Request) error {
@@ -85,5 +88,13 @@ func (fe *frontend) leaderboard(w http.ResponseWriter, r *http.Request) error {
 	sort.Slice(out.Users, func(i, j int) bool {
 		return !out.Users[i].TotalPortfolioValue.Less(out.Users[j].TotalPortfolioValue)
 	})
+	out.TotalTradeCount, err = fe.DB.TradeCounter.PastDayTradeCounts(r.Context(), time.Now())
+	if err != nil {
+		return err
+	}
+	out.TotalTradeVolume, err = fe.DB.TradeCounter.PastDayTradeVolume(r.Context(), time.Now())
+	if err != nil {
+		return err
+	}
 	return tpl.ExecuteTemplate(w, "leaderboard.tmpl", out)
 }
