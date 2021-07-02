@@ -6,27 +6,27 @@
     </div>
     <div class="card mx-auto bg-color-black col-12 col-lg-6 p-0">
         <div class="card-body p-1 m-0">
-            <table class="table table-borderless table-hover m-0 leaderboard" id="LeaderTable">
+            <table class="table table-borderless table-hover m-0 leaderboard">
                 <thead class="card-header">
                 <tr>
-                    <th scope="col" class="p-3 fs-5">#</th>
+                    <th scope="col" class="p-3 fs-5 text-center">#</th>
                     <th scope="col" class="p-3 fs-5">Name</th>
-                    <th scope="col" class="p-3 fs-5">Portfolio Value</th>
+                    <th scope="col" class="p-3 fs-5 text-center">Portfolio Value</th>
                 </tr>
                 </thead>
                 <tbody>
                 {{ range .Users }}
                 <tr class="position-relative">
-                    <td></td>
+                    <td class="text-center"></td>
                     <td>
                         {{ with (profilePic .User.ID) }}
                             <img src="{{.}}" width="24" height="auto"/>
                         {{ end }}
-                        <a href="/user/{{.User.ID}}" id="{{.User.ID}}">
+                        <a href="/user/{{.User.ID}}">
                             {{.User.DisplayName}}</a>
                     </td>
-                    <td id="price-{{.User.ID}}">
-                        USD {{fmtPrice .Valuation}}
+                    <td class="text-center">
+                        {{fmtPrice .Valuation}}
                     </td>
                     {{ end }}
                 </tr>
