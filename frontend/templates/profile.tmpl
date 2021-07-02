@@ -34,7 +34,7 @@
                             <b>CASH</b>
                         </div>
                         <div class="text-end">
-                            {{fmtPrice .U.Portfolio.CashUSD -}}<br/>
+                            ${{fmtPrice .U.Portfolio.CashUSD -}}<br/>
                             <span class="text-muted" id="percent-cash">
                                 {{ fmtPercent (toPercent ( div .U.Portfolio.CashUSD $tv ) ) }}
                             </span>
@@ -49,12 +49,12 @@
                                     x{{ fmtAmount .Amount }}
                                     <small class>
                                         at
-                                        <span id="price-{{.Ticker}}">{{ fmtPrice .Price }}</span>
+                                        $<span class="odometer" id="price-{{.Ticker}}">{{ fmtAmount .Price }}</span>
                                     </small>
                                 </span>
                             </div>
                             <div class="text-end">
-                                <span id="posValue-{{.Ticker}}">{{ fmtPrice (.Value) }}</span><br/>
+                                $<span id="posValue-{{.Ticker}}" class="odometer">{{ fmtPrice (.Value) }}</span><br/>
                                 <span class="text-muted" id="percent-{{.Ticker}}">
                                     {{ fmtPercent ( toPercent (div (.Value) $tv )) }}
                                 </span>
@@ -66,8 +66,8 @@
                     <div>
                         <b>Total value</b>
                     </div>
-                    <div class="text-end" id="total">
-                        {{fmtPrice $tv }}
+                    <div class="text-end">
+                        $<span class="odometer" id="total">{{fmtPrice $tv }}</span>
                     </div>
                 </div>
             </div>
@@ -274,8 +274,8 @@
                                     <td>{{.Action}}</td>
                                     <td>{{.Ticker}}</td>
                                     <td>{{fmtAmount .Size}}</td>
-                                    <td>{{fmtPrice .Price}}</td>
-                                    <td>{{fmtPriceFull (mul .Price .Size)}}</td>
+                                    <td>${{fmtPrice .Price}}</td>
+                                    <td>${{fmtPriceFull (mul .Price .Size)}}</td>
                                     <td>
                                         <time
                                                 datetime="{{fmtDateISO .Date}}"
@@ -296,6 +296,12 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/decimal.js/9.0.0/decimal.min.js"></script>
 <script>
+    window.odometerOptions = {
+        format: '(,ddd).dd',
+        duration: 300,
+        animation: 'count',
+    };
+
     const toDecimal = v => new Decimal(v.Units || v.units || 0).plus(new Decimal(v.Nanos || v.nanos || 0).times(new Decimal(10).pow(-9)))
     const fmtPrice = v => v.toNumber().toLocaleString('en-US', {maximumFractionDigits: 2, minimumFractionDigits: 2});
 
@@ -326,7 +332,7 @@
                 const price = quotes[symbol] || toDecimal(initialQuotes[symbol])
                 const posValue = toDecimal(amount).times(price)
                 document.getElementById(`price-${symbol}`).innerHTML = fmtPrice(price);
-                document.getElementById(`posValue-${symbol}`).innerHTML = '$' + fmtPrice(posValue);
+                document.getElementById(`posValue-${symbol}`).innerHTML = fmtPrice(posValue);
                 return [symbol, posValue]
             }))
 
@@ -334,7 +340,7 @@
             for (const [symbol, val] of posValues) {
                 totalValue = totalValue.add(val)
             }
-            document.getElementById("total").innerHTML = '$' + fmtPrice(totalValue)
+            document.getElementById("total").innerHTML = fmtPrice(totalValue)
 
             const posPercentages = {};
             posValues.forEach((posValue, symbol) => {

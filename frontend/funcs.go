@@ -72,7 +72,7 @@ func fmtPrice(a userdb.Amount) string {
 	if a.Units == 0 {
 		return fmtPriceFull(a)
 	}
-	return fmt.Sprintf("$%s.%02d", humanize.Comma(a.Units), a.Nanos/1_000_000_0)
+	return fmt.Sprintf("%s.%02d", humanize.Comma(a.Units), a.Nanos/1_000_000_0)
 }
 
 func fmtPriceFloat(f float64) string {
@@ -80,7 +80,7 @@ func fmtPriceFloat(f float64) string {
 }
 
 func fmtPriceFull(a userdb.Amount) string {
-	return trimTrailingZeros(fmt.Sprintf("$%s.%09d", humanize.Comma(a.Units), a.Nanos))
+	return trimTrailingZeros(fmt.Sprintf("%s.%09d", humanize.Comma(a.Units), a.Nanos))
 }
 
 func fmtPercent(a userdb.Amount) string {
