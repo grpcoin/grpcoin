@@ -29,24 +29,6 @@ import (
 	"github.com/grpcoin/grpcoin/userdb"
 )
 
-type leaderboardUser struct {
-	User      userdb.User
-	Valuation userdb.Amount
-}
-
-type leaderboardUsers []leaderboardUser
-
-func (l leaderboardUsers) Len() int          { return len(l) }
-func (l leaderboardUsers) Swap(i int, j int) { l[i], l[j] = l[j], l[i] }
-func (l leaderboardUsers) Less(i int, j int) bool {
-	if l[i].Valuation.Units < l[j].Valuation.Units {
-		return true
-	} else if l[i].Valuation.Units == l[j].Valuation.Units && l[i].Valuation.Nanos < l[j].Valuation.Nanos {
-		return true
-	}
-	return false
-}
-
 func (fe *frontend) getQuotes(ctx context.Context) (map[string]userdb.Amount, error) {
 	ctx, s := fe.Trace.Start(ctx, "realtime quote")
 	defer s.End()
@@ -73,6 +55,11 @@ func (fe *frontend) getQuotes(ctx context.Context) (map[string]userdb.Amount, er
 	return out, eg.Wait()
 }
 
+type leaderboardUser struct {
+	User                userdb.User
+	TotalPortfolioValue userdb.Amount
+}
+
 type LeaderboardHandlerData struct {
 	Users []leaderboardUser
 }
@@ -88,12 +75,15 @@ func (fe *frontend) leaderboard(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	var out leaderboardUsers
+
+	var out LeaderboardHandlerData
 	for _, u := range users {
-		out = append(out, leaderboardUser{
-			User:      u,
-			Valuation: valuation(u.Portfolio, quotes)})
+		out.Users = append(out.Users, leaderboardUser{
+			User:                u,
+			TotalPortfolioValue: valuation(u.Portfolio, quotes)})
 	}
-	sort.Sort(sort.Reverse(out))
-	return tpl.ExecuteTemplate(w, "leaderboard.tmpl", LeaderboardHandlerData{Users: out})
+	sort.Slice(out.Users, func(i, j int) bool {
+		return !out.Users[i].TotalPortfolioValue.Less(out.Users[j].TotalPortfolioValue)
+	})
+	return tpl.ExecuteTemplate(w, "leaderboard.tmpl", out)
 }
