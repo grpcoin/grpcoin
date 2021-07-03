@@ -28,6 +28,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/grpcoin/grpcoin/userdb"
+	"github.com/shopspring/decimal"
 )
 
 func (fe *frontend) getQuotes(ctx context.Context) (map[string]userdb.Amount, error) {
@@ -64,7 +65,7 @@ type leaderboardUser struct {
 type LeaderboardHandlerData struct {
 	Users            []leaderboardUser
 	TotalTradeCount  int
-	TotalTradeVolume float64
+	TotalTradeVolume int
 }
 
 func (fe *frontend) leaderboard(w http.ResponseWriter, r *http.Request) error {
@@ -92,9 +93,10 @@ func (fe *frontend) leaderboard(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	out.TotalTradeVolume, err = fe.DB.TradeCounter.PastDayTradeVolume(r.Context(), time.Now())
+	totalTradeVolume, err := fe.DB.TradeCounter.PastDayTradeVolume(r.Context(), time.Now())
 	if err != nil {
 		return err
 	}
+	out.TotalTradeVolume = int(decimal.NewFromFloat(totalTradeVolume).IntPart())
 	return tpl.ExecuteTemplate(w, "leaderboard.tmpl", out)
 }
