@@ -49,12 +49,12 @@
                                     x{{ fmtAmount .Amount }}
                                     <small class>
                                         at
-                                        $<span class="odometer" id="price-{{.Ticker}}">{{ fmtAmount .Price }}</span>
+                                        $<span id="price-{{.Ticker}}">{{ fmtAmount .Price }}</span>
                                     </small>
                                 </span>
                             </div>
                             <div class="text-end">
-                                $<span id="posValue-{{.Ticker}}" class="odometer">{{ fmtPrice (.Value) }}</span><br/>
+                                $<span id="posValue-{{.Ticker}}">{{ fmtPrice (.Value) }}</span><br/>
                                 <span class="text-muted" id="percent-{{.Ticker}}">
                                     {{ fmtPercent ( toPercent (div (.Value) $tv )) }}
                                 </span>

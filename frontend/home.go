@@ -25,16 +25,12 @@ import (
 	"github.com/yuin/goldmark"
 )
 
-type HomeResponse struct {
-}
-
 func (fe *frontend) home(w http.ResponseWriter, r *http.Request) error {
-
-	return tpl.ExecuteTemplate(w, "home.tmpl", HomeResponse{})
+	return tpl.ExecuteTemplate(w, "home.tmpl", nil)
 }
 
 var (
-	//go:embed templates/join.md
+	//go:embed content/join.md
 	joinContent []byte
 
 	joinRender   sync.Once
