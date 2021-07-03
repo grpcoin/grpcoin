@@ -41,7 +41,7 @@ $100,000 cash available to trade. So all you need is a GitHub account.
 There are some very simple bot implementations on GitHub. Fork them and start
 writing your trading logic.
 
-* [Go example bot](./example-bot/)
+* [Go example bot](https://github.com/grpcoin/grpcoin/tree/main/example-bot)
 * [C# example bot](https://github.com/grpcoin/example-bot-csharp)
 * [Node.js command-line tool](https://github.com/grpcoin/example-cli-node)
 * [Python example bot](https://github.com/grpcoin/example-grpcoin-bot-python)
