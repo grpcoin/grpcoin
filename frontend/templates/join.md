@@ -44,6 +44,7 @@ writing your trading logic.
 * [Go example bot](./example-bot/)
 * [C# example bot](https://github.com/grpcoin/example-bot-csharp)
 * [Node.js command-line tool](https://github.com/grpcoin/example-cli-node)
+* [Python example bot](https://github.com/grpcoin/example-grpcoin-bot-python)
 
 ### Option 3: Writing a bot using the API
 
