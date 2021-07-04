@@ -46,11 +46,7 @@ func prepTickerService(t *testing.T) *grpc.ClientConn {
 		}),
 	}
 	grpcoin.RegisterTickerInfoServer(srv, ts)
-	go func() {
-		if err := srv.Serve(l); err != nil {
-			t.Fatal(err)
-		}
-	}()
+	go srv.Serve(l)
 	t.Cleanup(func() {
 		srv.Stop()
 		l.Close()

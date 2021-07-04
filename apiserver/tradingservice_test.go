@@ -104,6 +104,22 @@ func TestPortfolio(t *testing.T) {
 	}
 }
 
+func TestSupportedCurrencies(t *testing.T) {
+	ts := &tradingService{}
+	resp, err := ts.ListSupportedCurrencies(context.TODO(), &grpcoin.ListSupportedCurrenciesRequest{})
+	if err != nil {
+		t.Fatal(err)
+		if len(resp.SupportedCurrencies) != len(realtimequote.SupportedTickers) {
+			t.Fatalf("expected %d currencies, got %#v", len(realtimequote.SupportedTickers), resp.SupportedCurrencies)
+		}
+	}
+	for _, ticker := range resp.SupportedCurrencies {
+		if !realtimequote.IsSupported(realtimequote.SupportedTickers, ticker.GetSymbol()) {
+			t.Fatalf("received unsupported ticker %s", ticker.GetSymbol())
+		}
+	}
+}
+
 func TestTradeQuotePrices(t *testing.T) {
 	fs := firestoreutil.StartTestEmulator(t, context.TODO())
 	tr := trace.NewNoopTracerProvider().Tracer("")
