@@ -30,4 +30,11 @@ It's not recommended to make trades concurrently. To protect against data
 inconsistency, all trades are serialized and executed one by one. This means
 if you issue `Trade()` requests in parallel, some will fail.
 
+### Game Resets
+
+We are probably going to reset the game (accounts won't be deleted) periodically
+so that new users have a chance. We still have not decided when and how
+frequently this will happen. Stay tuned (**and don't be frustrated when the game
+resets**).
+
 [api]: https://github.com/grpcoin/grpcoin/blob/main/api/grpcoin.proto
