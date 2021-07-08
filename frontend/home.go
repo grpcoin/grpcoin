@@ -17,42 +17,49 @@ package main
 import (
 	"bytes"
 	_ "embed"
-	"fmt"
 	"html/template"
 	"net/http"
-	"sync"
 
 	"github.com/yuin/goldmark"
 )
+
+type StaticPage struct {
+	Content template.HTML
+}
+
+var (
+	//go:embed content/join.md
+	joinMD []byte
+	//go:embed content/game.md
+	gameMD []byte
+
+	gameContent, joinContent template.HTML
+)
+
+func init() {
+	for _, p := range []struct {
+		src []byte
+		out *template.HTML
+	}{
+		{joinMD, &joinContent},
+		{gameMD, &gameContent},
+	} {
+		var b bytes.Buffer
+		if err := goldmark.Convert(p.src, &b); err != nil {
+			panic(err)
+		}
+		*p.out = template.HTML(b.String())
+	}
+}
 
 func (fe *frontend) home(w http.ResponseWriter, r *http.Request) error {
 	return tpl.ExecuteTemplate(w, "home.tmpl", nil)
 }
 
-var (
-	//go:embed content/join.md
-	joinContent []byte
-
-	joinRender   sync.Once
-	joinRendered string
-)
-
-type JoinHandlerData struct {
-	Content template.HTML
+func (fe *frontend) join(w http.ResponseWriter, _ *http.Request) error {
+	return tpl.ExecuteTemplate(w, "join.tmpl", StaticPage{Content: joinContent})
 }
 
-func (fe *frontend) join(w http.ResponseWriter, _ *http.Request) error {
-	var b bytes.Buffer
-	var err error
-	joinRender.Do(func() {
-		err = goldmark.Convert(joinContent, &b)
-		joinRendered = b.String()
-	})
-	if err != nil {
-		return fmt.Errorf("markdown rendering error: %w", err)
-	}
-	if joinRendered == "" {
-		return fmt.Errorf("markdown didn't render for this page")
-	}
-	return tpl.ExecuteTemplate(w, "join.tmpl", JoinHandlerData{Content: template.HTML(joinRendered)})
+func (fe *frontend) rules(w http.ResponseWriter, _ *http.Request) error {
+	return tpl.ExecuteTemplate(w, "game.tmpl", StaticPage{Content: gameContent})
 }

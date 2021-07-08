@@ -83,6 +83,7 @@ func (fe *frontend) Handlers(log *zap.Logger) http.Handler {
 	m.HandleFunc("/ws/tickers", toHandler(fe.wsTickers))
 	m.HandleFunc("/leaderboard", toHandler(fe.leaderboard))
 	m.HandleFunc("/join", toHandler(fe.join))
+	m.HandleFunc("/rules", toHandler(fe.rules))
 	return m
 }
 

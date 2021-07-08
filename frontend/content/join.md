@@ -65,7 +65,7 @@ This file defines the API endpoints and how they work. It's worth noting:
      libraries and use gRPC in your language. (Instructions are different for
      each language.)
 
-1. Point your API client to `api.grpco.in:443` (TLS).
+1. Point your gRPC client to `api.grpco.in:443` (uses TLS).
 
 1. Authenticate to the API by providing your permissionless [GitHub personal
    access token][pat] by adding `authorization` header (gRPC calls headers
@@ -79,12 +79,8 @@ This file defines the API endpoints and how they work. It's worth noting:
 
 ## Game rules
 
-1. All players start with $100,000 cash.
-1. All trades are "market orders" (no limit or stop orders, this is by design), and
-   they execute with the real-time prices at the time.
-1. You can't trade coins with other coins (e.g., you can buy BTC with cash, or sell
-   BTC for cash).
-1. Supported coin symbols (e.g., BTC, DOGE, ETH) are documented [in the API][api].
+See [Game Rules](/rules) page on how trading mechanics, API rate limits and
+other aspects of the game work.
 
 [pb]: https://developers.google.com/protocol-buffers/
 [grpc]: https://grpc.io
