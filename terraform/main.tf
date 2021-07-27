@@ -141,10 +141,12 @@ resource "google_vpc_access_connector" "default" {
   depends_on = [
     google_project_service.vpcaccess
   ]
+  provider      = google-beta # allows us to configure machine_type for now
   name          = "vpc-connector"
   region        = var.region
   project       = var.project
   network       = google_compute_network.vpc.name
+  machine_type  = "f1-micro"
   ip_cidr_range = "10.8.0.0/28"
 }
 
