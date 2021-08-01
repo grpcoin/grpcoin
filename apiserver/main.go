@@ -76,11 +76,11 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
-	rc, close, err := serverutil.ConnectRedis(ctx, os.Getenv("REDIS_IP"))
+	rc, closeInstance, err := serverutil.ConnectRedis(ctx, os.Getenv("REDIS_IP"))
 	if err != nil {
 		log.Fatal("failed to get redis instance", zap.Error(err))
 	}
-	defer close()
+	defer closeInstance()
 	defer rc.Close()
 
 	db, shutdown, err := serverutil.DetectDatabase(ctxzap.ToContext(ctx, log.With(zap.String("facility", "db"))),
@@ -161,7 +161,7 @@ func prepServer(log *zap.Logger, au auth.Authenticator, rl ratelimiter2.RateLimi
 }
 
 func internalErrorHidingInterceptor(ctx context.Context,
-	req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+	req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 	resp, err = handler(ctx, req)
 	c := status.Code(err)
 	if c == codes.Internal {
