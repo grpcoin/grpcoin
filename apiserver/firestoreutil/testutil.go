@@ -15,7 +15,7 @@
 package firestoreutil
 
 import (
-	"cloud.google.com/go/firestore"
+	firestore "cloud.google.com/go/firestore"
 	"context"
 	"testing"
 )
