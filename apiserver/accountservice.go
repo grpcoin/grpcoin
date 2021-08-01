@@ -27,10 +27,6 @@ import (
 	"github.com/grpcoin/grpcoin/userdb"
 )
 
-type accountServiceOpts struct {
-	redisIP string
-}
-
 type accountService struct {
 	cache *AccountCache
 	udb   *userdb.UserDB
@@ -38,11 +34,11 @@ type accountService struct {
 	grpcoin.UnimplementedAccountServer
 }
 
-func (s *accountService) createAccount(ctx context.Context) {
+func (s *accountService) createAccount() {
 	panic("unimplemented")
 }
 
-func (s *accountService) TestAuth(ctx context.Context, req *grpcoin.TestAuthRequest) (*grpcoin.TestAuthResponse, error) {
+func (s *accountService) TestAuth(ctx context.Context, _ *grpcoin.TestAuthRequest) (*grpcoin.TestAuthResponse, error) {
 	log := ctxzap.Extract(ctx)
 	v := auth.AuthInfoFromContext(ctx)
 	if v == nil {

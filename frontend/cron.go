@@ -34,7 +34,7 @@ var (
 	maxPortfolioHistory = time.Hour * 24 * 31
 )
 
-func (fe *frontend) calcPortfolioHistory(w http.ResponseWriter, r *http.Request) error {
+func (fe *frontend) calcPortfolioHistory(_ http.ResponseWriter, r *http.Request) error {
 	log := loggerFrom(r.Context())
 	if fe.CronSAEmail != "" {
 		token := strings.TrimPrefix(r.Header.Get("authorization"), "Bearer ")
@@ -62,7 +62,10 @@ func (fe *frontend) calcPortfolioHistory(w http.ResponseWriter, r *http.Request)
 
 	// TODO process in parallel in batches
 	for _, u := range users {
-		sem.Acquire(context.TODO(), 1)
+		err := sem.Acquire(context.TODO(), 1)
+		if err != nil {
+			return err
+		}
 		go func(u userdb.User) {
 			defer sem.Release(1)
 			pv := valuation(u.Portfolio, quotes)

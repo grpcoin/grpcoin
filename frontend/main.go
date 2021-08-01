@@ -57,11 +57,11 @@ func main() {
 		panic(err)
 	}
 
-	rc, close, err := serverutil.ConnectRedis(ctx, os.Getenv("REDIS_IP"))
+	rc, closeInstance, err := serverutil.ConnectRedis(ctx, os.Getenv("REDIS_IP"))
 	if err != nil {
 		log.Fatal("failed to get redis instance", zap.Error(err))
 	}
-	defer close()
+	defer closeInstance()
 	defer rc.Close()
 
 	db, shutdownDB, err := serverutil.DetectDatabase(ctxzap.ToContext(ctx, log.With(zap.String("facility", "db"))),

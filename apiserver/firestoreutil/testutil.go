@@ -15,10 +15,9 @@
 package firestoreutil
 
 import (
+	"cloud.google.com/go/firestore"
 	"context"
 	"testing"
-
-	firestore "cloud.google.com/go/firestore"
 )
 
 func StartTestEmulator(t *testing.T, ctx context.Context) *firestore.Client {

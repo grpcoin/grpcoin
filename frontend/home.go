@@ -52,7 +52,7 @@ func init() {
 	}
 }
 
-func (fe *frontend) home(w http.ResponseWriter, r *http.Request) error {
+func (fe *frontend) home(w http.ResponseWriter, _ *http.Request) error {
 	return tpl.ExecuteTemplate(w, "home.tmpl", nil)
 }
 

@@ -25,11 +25,11 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
-	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpcmiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpcauth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
+	grpczap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
-	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
+	grpcctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	ratelimiter2 "github.com/grpcoin/grpcoin/ratelimiter"
 	"github.com/grpcoin/grpcoin/realtimequote"
 	"github.com/grpcoin/grpcoin/realtimequote/binance"
@@ -76,11 +76,11 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
-	rc, close, err := serverutil.ConnectRedis(ctx, os.Getenv("REDIS_IP"))
+	rc, closeInstance, err := serverutil.ConnectRedis(ctx, os.Getenv("REDIS_IP"))
 	if err != nil {
 		log.Fatal("failed to get redis instance", zap.Error(err))
 	}
-	defer close()
+	defer closeInstance()
 	defer rc.Close()
 
 	db, shutdown, err := serverutil.DetectDatabase(ctxzap.ToContext(ctx, log.With(zap.String("facility", "db"))),
@@ -136,21 +136,21 @@ func main() {
 }
 
 func prepServer(log *zap.Logger, au auth.Authenticator, rl ratelimiter2.RateLimiter, udb *userdb.UserDB, as *accountService, ts *tickerService, pt *tradingService) *grpc.Server {
-	unaryInterceptors := grpc_middleware.WithUnaryServerChain(
+	unaryInterceptors := grpcmiddleware.WithUnaryServerChain(
 		otelgrpc.UnaryServerInterceptor(),
-		grpc_ctxtags.UnaryServerInterceptor(grpc_ctxtags.WithFieldExtractor(grpc_ctxtags.CodeGenRequestFieldExtractor)),
-		grpc_zap.UnaryServerInterceptor(log),
+		grpcctxtags.UnaryServerInterceptor(grpcctxtags.WithFieldExtractor(grpcctxtags.CodeGenRequestFieldExtractor)),
+		grpczap.UnaryServerInterceptor(log),
 		internalErrorHidingInterceptor,
-		grpc_auth.UnaryServerInterceptor(auth.AuthenticatingInterceptor(au)),
-		grpc_auth.UnaryServerInterceptor(rateLimitInterceptor(rl)),
-		grpc_auth.UnaryServerInterceptor(udb.EnsureAccountExistsInterceptor()),
+		grpcauth.UnaryServerInterceptor(auth.AuthenticatingInterceptor(au)),
+		grpcauth.UnaryServerInterceptor(rateLimitInterceptor(rl)),
+		grpcauth.UnaryServerInterceptor(udb.EnsureAccountExistsInterceptor()),
 	)
 
 	// not adding the otel interceptor here since it's just the TickerInfo.Watch() call for now
-	streamInterceptors := grpc_middleware.WithStreamServerChain(
-		grpc_ctxtags.StreamServerInterceptor(grpc_ctxtags.WithFieldExtractor(grpc_ctxtags.CodeGenRequestFieldExtractor)),
-		grpc_zap.StreamServerInterceptor(log),
-		grpc_auth.StreamServerInterceptor(rateLimitInterceptor(rl)),
+	streamInterceptors := grpcmiddleware.WithStreamServerChain(
+		grpcctxtags.StreamServerInterceptor(grpcctxtags.WithFieldExtractor(grpcctxtags.CodeGenRequestFieldExtractor)),
+		grpczap.StreamServerInterceptor(log),
+		grpcauth.StreamServerInterceptor(rateLimitInterceptor(rl)),
 	)
 	//grpc_zap.ReplaceGrpcLoggerV2(log) // grpc's internal logs
 	srv := grpc.NewServer(unaryInterceptors, streamInterceptors)
@@ -161,7 +161,7 @@ func prepServer(log *zap.Logger, au auth.Authenticator, rl ratelimiter2.RateLimi
 }
 
 func internalErrorHidingInterceptor(ctx context.Context,
-	req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+	req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 	resp, err = handler(ctx, req)
 	c := status.Code(err)
 	if c == codes.Internal {
