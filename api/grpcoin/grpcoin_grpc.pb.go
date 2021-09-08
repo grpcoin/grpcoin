@@ -19,7 +19,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TickerInfoClient interface {
 	// Watch returns real-time quotes of the ticker.
-	// The only supported tickers are "BTC", "ETH", "DOGE", "DOT".
+	// The only supported tickers are "BTC", "ETH", "BNB", "DOGE", "DOT".
 	//
 	// This stream terminates after 15 minutes, so expect being
 	// abruptly disconnected and need to reconnect.
@@ -73,7 +73,7 @@ func (x *tickerInfoWatchClient) Recv() (*Quote, error) {
 // for forward compatibility
 type TickerInfoServer interface {
 	// Watch returns real-time quotes of the ticker.
-	// The only supported tickers are "BTC", "ETH", "DOGE", "DOT".
+	// The only supported tickers are "BTC", "ETH", "BNB", "DOGE", "DOT".
 	//
 	// This stream terminates after 15 minutes, so expect being
 	// abruptly disconnected and need to reconnect.

@@ -30,14 +30,15 @@ func TestWatch(t *testing.T) {
 	ctx, cancel := context.WithCancel(timedCtx)
 	defer cancel()
 
-	ch, err := qf.Watch(ctx, "BTC", "DOGE", "ETH", "DOT")
+	ch, err := qf.Watch(ctx, "BTC", "ETH", "BNB", "DOGE", "DOT")
 	if err != nil {
 		t.Fatal(err)
 	}
 	m := map[string][]realtimequote.Quote{
-		"DOGE": nil,
 		"BTC":  nil,
 		"ETH":  nil,
+		"BNB":  nil,
+		"DOGE": nil,
 		"DOT":  nil,
 	}
 

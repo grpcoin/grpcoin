@@ -17,6 +17,7 @@ package realtimequote
 var SupportedTickers = []string{ // make sure to update the grpcoin.proto for documentation as well
 	"BTC",
 	"ETH",
+	"BNB",
 	"DOGE",
 	"DOT"}
 

@@ -21,7 +21,7 @@ import "google/protobuf/timestamp.proto";
 
 service TickerInfo {
     // Watch returns real-time quotes of the ticker.
-    // The only supported tickers are "BTC", "ETH", "DOGE", "DOT".
+    // The only supported tickers are "BTC", "ETH", "BNB", "DOGE", "DOT".
     //
     // This stream terminates after 15 minutes, so expect being
     // abruptly disconnected and need to reconnect.

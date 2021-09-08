@@ -28,13 +28,13 @@ type Quote struct {
 }
 
 type QuoteProvider interface {
-	// GetQuote provides real-time quote for ticker (e.g. BTC, ETH, DOGE, ...).
+	// GetQuote provides real-time quote for ticker (e.g. BTC, ETH, BNB, DOGE, ...).
 	// It can block until it gets a "recent enough" quote. Can quit early if ctx is cancelled.
 	GetQuote(ctx context.Context, ticker string) (*grpcoin.Amount, error)
 }
 
 type QuoteStream interface {
-	// Watch provides real-time quotes for given product (e.g. BTC, ETH, DOGE, ...)
+	// Watch provides real-time quotes for given product (e.g. BTC, ETH, BNB, DOGE, ...)
 	// err is returned if it fails to connect and start streaming.
 	// ch is closed when ctx is done, or if the stream disconnects.
 	Watch(ctx context.Context, products ...string) (ch <-chan Quote, err error)
